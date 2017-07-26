@@ -37,48 +37,79 @@
 **
 ****************************************************************************/
 
-
-#include "qgtkbackingstore.h"
-#include "qgtkintegration.h"
 #include "qgtkwindow.h"
-#include "qscreen.h"
-#include <QtCore/qdebug.h>
-#include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
 
-QT_BEGIN_NAMESPACE
+#include <qpa/qwindowsysteminterface.h>
 
-QGtkBackingStore::QGtkBackingStore(QWindow *window)
-    : QPlatformBackingStore(window)
+#include <QDebug>
+
+Qt::KeyboardModifiers QGtkWindow::convertGdkKeyboardModsToQtKeyboardMods(guint mask)
 {
-    qDebug() << "QGtkBackingStore";
+    Qt::KeyboardModifiers mods = Qt::NoModifier;
+
+    if (mask & GDK_SHIFT_MASK)
+        mods |= Qt::ShiftModifier;
+    if (mask & GDK_CONTROL_MASK)
+        mods |= Qt::ControlModifier;
+    if (mask & GDK_MOD1_MASK)
+        mods |= Qt::AltModifier;
+    if (mask & GDK_META_MASK)
+        mods |= Qt::MetaModifier;
+#if 0
+    if (mask & GDK_SUPER_MASK)
+        qDebug() << "Super";
+    if (mask & GDK_HYPER_MASK)
+        qDebug() << "Hyper";
+    if (mask & GDK_MOD2_MASK)
+        qDebug() << "Mod2";
+    if (mask & GDK_MOD3_MASK)
+        qDebug() << "Mod3";
+    if (mask & GDK_MOD4_MASK)
+        qDebug() << "Mod4";
+    if (mask & GDK_MOD5_MASK)
+        qDebug() << "Mod5";
+#endif
+    return mods;
 }
 
-QGtkBackingStore::~QGtkBackingStore()
+bool QGtkWindow::onKeyPress(GdkEvent *event)
 {
+    GdkEventKey *ev = (GdkEventKey*)event;
+
+    // ### doc says this is deprecated...
+    const QString text = QString::fromUtf8(ev->string, ev->length);
+
+    return QWindowSystemInterface::handleExtendedKeyEvent(
+        window(),
+        ev->time,
+        QEvent::KeyPress,
+        ev->keyval,
+        Qt::KeyboardModifiers(0), // ###
+        ev->hardware_keycode,
+        ev->hardware_keycode,
+        0,
+        text
+    );
 }
 
-QPaintDevice *QGtkBackingStore::paintDevice()
+bool QGtkWindow::onKeyRelease(GdkEvent *event)
 {
-    return &mImage;
+    GdkEventKey *ev = (GdkEventKey*)event;
+
+    // ### doc says this is deprecated...
+    const QString text = QString::fromUtf8(ev->string, ev->length);
+
+    return QWindowSystemInterface::handleExtendedKeyEvent(
+        window(),
+        ev->time,
+        QEvent::KeyRelease,
+        ev->keyval,
+        Qt::KeyboardModifiers(0), // ###
+        ev->hardware_keycode,
+        ev->hardware_keycode,
+        0,
+        text
+    );
 }
 
-void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
-{
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
 
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
-}
-
-void QGtkBackingStore::resize(const QSize &size, const QRegion &)
-{
-    QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
-}
-
-QT_END_NAMESPACE

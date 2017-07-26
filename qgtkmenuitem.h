@@ -37,48 +37,48 @@
 **
 ****************************************************************************/
 
+#ifndef QGTKMENUITEM_H
+#define QGTKMENUITEM_H
 
-#include "qgtkbackingstore.h"
-#include "qgtkintegration.h"
-#include "qgtkwindow.h"
-#include "qscreen.h"
-#include <QtCore/qdebug.h>
-#include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
+#include <qpa/qplatformmenu.h>
 
-QT_BEGIN_NAMESPACE
+#include <gtk/gtk.h>
 
-QGtkBackingStore::QGtkBackingStore(QWindow *window)
-    : QPlatformBackingStore(window)
+class QGtkMenuItem : public QPlatformMenuItem
 {
-    qDebug() << "QGtkBackingStore";
-}
+    Q_OBJECT
+public:
+    QGtkMenuItem();
+    ~QGtkMenuItem();
 
-QGtkBackingStore::~QGtkBackingStore()
-{
-}
+    void setTag(quintptr tag) override;
+    quintptr tag()const override;
+    void setText(const QString &text) override;
+    void setIcon(const QIcon &icon) override;
+    void setMenu(QPlatformMenu *menu) override;
+    void setVisible(bool isVisible) override;
+    void setIsSeparator(bool isSeparator) override;
+    void setFont(const QFont &font) override;
+    void setRole(MenuRole role) override;
+    void setCheckable(bool checkable) override;
+    void setChecked(bool isChecked) override;
+    void setShortcut(const QKeySequence& shortcut) override;
+    void setEnabled(bool enabled) override;
+    void setIconSize(int size) override;
+    void setNativeContents(WId item) override;
+    void setHasExclusiveGroup(bool hasExclusiveGroup) override;
 
-QPaintDevice *QGtkBackingStore::paintDevice()
-{
-    return &mImage;
-}
+    GtkMenuItem *gtkMenuItem() const;
 
-void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
-{
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
+    void emitSelect();
+    void emitActivate();
+Q_SIGNALS:
+    void changed();
 
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
-}
+private:
+    QString m_text;
+};
 
-void QGtkBackingStore::resize(const QSize &size, const QRegion &)
-{
-    QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
-}
+#endif // QGTKMENUITEM_H
 
-QT_END_NAMESPACE
+

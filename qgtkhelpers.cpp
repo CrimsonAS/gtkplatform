@@ -37,48 +37,71 @@
 **
 ****************************************************************************/
 
+#include "qgtkhelpers.h"
 
-#include "qgtkbackingstore.h"
-#include "qgtkintegration.h"
-#include "qgtkwindow.h"
-#include "qscreen.h"
-#include <QtCore/qdebug.h>
-#include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
-
-QT_BEGIN_NAMESPACE
-
-QGtkBackingStore::QGtkBackingStore(QWindow *window)
-    : QPlatformBackingStore(window)
+// Returns the largest image for this icon, in RGB32 format.
+static QImage qt_getBiggestImageForIcon(const QIcon &icon)
 {
-    qDebug() << "QGtkBackingStore";
+    QList<QSize> sizes = icon.availableSizes(QIcon::Normal, QIcon::On);
+    if (!sizes.length()) {
+        qWarning() << "No available icons for icon?" << icon;
+        return QImage();
+    }
+
+    // Find the largest size, hopefully it's the best looking.
+    QSize sz;
+    for (int i = 0; i < sizes.length(); ++i) {
+        const QSize &nsz = sizes.at(i);
+
+        if (nsz.width() * nsz.height() >= sz.width() * sz.height()) {
+            sz = nsz;
+        }
+    }
+
+    QPixmap p = icon.pixmap(sz, QIcon::Normal, QIcon::On);
+    QImage i = p.toImage().convertToFormat(QImage::Format_RGB32);
+    return i;
 }
 
-QGtkBackingStore::~QGtkBackingStore()
+// Convert a QIcon to a GdkPixbuf for use elsewhere.
+// The GdkPixbuf is started with an initial refcount, so it must be
+// unreffed by the caller.
+GdkPixbuf *qt_iconToPixbuf(const QIcon &icon)
 {
+    QImage i = qt_getBiggestImageForIcon(icon);
+    if (i.isNull())
+        return 0;
+    GdkPixbuf *gpb = gdk_pixbuf_new_from_data(
+        i.constBits(),
+        GDK_COLORSPACE_RGB,
+        false,
+        8,
+        i.width(),
+        i.height(),
+        i.bytesPerLine(),
+        NULL,
+        NULL
+    );
+
+    return gpb;
 }
 
-QPaintDevice *QGtkBackingStore::paintDevice()
+// Convert a QIcon to a GIcon for use elsewhere.
+// The GIcon is started with an initial refcount, so it must be unreffed by the
+// caller.
+GIcon *qt_iconToIcon(const QIcon &icon)
 {
-    return &mImage;
+    QImage i = qt_getBiggestImageForIcon(icon);
+    GBytes *bytes = g_bytes_new_take(const_cast<uchar*>(i.constBits()), i.byteCount());
+    GIcon *ico = g_bytes_icon_new(bytes);
+    g_bytes_unref(bytes);
+    return ico;
 }
 
-void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
+// Qt uses &, gtk uses _.
+QString qt_convertToGtkMnemonics(const QString &text)
 {
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
-
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
+    QString cpy = text;
+    return cpy.replace("&", "_"); // ### too simple! need to leave &&.
 }
 
-void QGtkBackingStore::resize(const QSize &size, const QRegion &)
-{
-    QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
-}
-
-QT_END_NAMESPACE

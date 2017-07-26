@@ -41,53 +41,69 @@
 #define QPLATFORMINTEGRATION_GTK_H
 
 #include <qpa/qplatformintegration.h>
+#include <qpa/qplatformnativeinterface.h>
 #include <qpa/qplatformscreen.h>
+#include <QtCore/qscopedpointer.h>
+
+#include <gtk/gtk.h>
+#include <gdk/gdk.h>
 
 QT_BEGIN_NAMESPACE
 
-class QGtkScreen : public QPlatformScreen
+class QTouchDevice;
+class QGtkScreen;
+
+class QGtkIntegration : public QPlatformIntegration, public QPlatformNativeInterface
 {
 public:
-    QGtkScreen()
-        : mDepth(32), mFormat(QImage::Format_ARGB32_Premultiplied) {}
-
-    QRect geometry() const Q_DECL_OVERRIDE { return mGeometry; }
-    int depth() const Q_DECL_OVERRIDE { return mDepth; }
-    QImage::Format format() const Q_DECL_OVERRIDE { return mFormat; }
-
-public:
-    QRect mGeometry;
-    int mDepth;
-    QImage::Format mFormat;
-    QSize mPhysicalSize;
-};
-
-class QGtkIntegration : public QPlatformIntegration
-{
-public:
-    enum Options { // Options to be passed on command line or determined from environment
-        DebugBackingStore = 0x1,
-        EnableFonts = 0x2,
-        FreeTypeFontDatabase = 0x4
-    };
-
     explicit QGtkIntegration(const QStringList &parameters);
     ~QGtkIntegration();
 
-    bool hasCapability(QPlatformIntegration::Capability cap) const Q_DECL_OVERRIDE;
-    QPlatformFontDatabase *fontDatabase() const Q_DECL_OVERRIDE;
+    QPlatformOpenGLContext *createPlatformOpenGLContext(QOpenGLContext *context) const override;
+    bool hasCapability(QPlatformIntegration::Capability cap) const override;
+    QPlatformFontDatabase *fontDatabase() const override;
+    //QPlatformClipboard *clipboard() const override;
+    QStringList themeNames() const override;
+    QPlatformTheme *createPlatformTheme(const QString &name) const override;
+    QPlatformServices *services() const override;
+    QPlatformNativeInterface *nativeInterface() const override;
 
-    QPlatformWindow *createPlatformWindow(QWindow *window) const Q_DECL_OVERRIDE;
-    QPlatformBackingStore *createPlatformBackingStore(QWindow *window) const Q_DECL_OVERRIDE;
-    QAbstractEventDispatcher *createEventDispatcher() const Q_DECL_OVERRIDE;
+    // QPlatformNativeInterface
+    void *nativeResourceForIntegration(const QByteArray &resource) override;
+    void *nativeResourceForScreen(const QByteArray &resource, QScreen *screen) override;
+    void *nativeResourceForWindow(const QByteArray &resource, QWindow *window) override;
+    void *nativeResourceForContext(const QByteArray &resource, QOpenGLContext *context) override;
+    NativeResourceForContextFunction nativeResourceFunctionForContext(const QByteArray &resource) override;
 
-    unsigned options() const { return m_options; }
+    QPlatformWindow *createPlatformWindow(QWindow *window) const override;
+    QPlatformBackingStore *createPlatformBackingStore(QWindow *window) const override;
+    QAbstractEventDispatcher *createEventDispatcher() const override;
 
     static QGtkIntegration *instance();
 
+    void onMonitorAdded(GdkMonitor *monitor);
+    void onMonitorRemoved(GdkMonitor *monitor);
+
+    void onDeviceAdded(GdkDevice *device);
+    void onDeviceRemoved(GdkDevice *device);
+
+    GtkApplication *application() const;
+
 private:
-    mutable QPlatformFontDatabase *m_fontDatabase;
-    unsigned m_options;
+    QScopedPointer<QPlatformServices> m_services;
+    QScopedPointer<QPlatformFontDatabase> m_fontDatabase;
+    GdkDisplay *m_display;
+    QVector<const char*> m_arguments; /* must remain allocated for gdk's sake */
+    QVector<QGtkScreen*> m_screens;
+
+    struct QGdkDevice
+    {
+        GdkDevice *m_gdkDevice;
+        QTouchDevice *m_qTouchDevice;
+    };
+
+    QVector<QGdkDevice> m_devices;
+    GtkApplication *m_application;
 };
 
 QT_END_NAMESPACE

@@ -37,48 +37,37 @@
 **
 ****************************************************************************/
 
+#ifndef QGTKSCREEN_H
+#define QGTKSCREEN_H
 
-#include "qgtkbackingstore.h"
-#include "qgtkintegration.h"
-#include "qgtkwindow.h"
-#include "qscreen.h"
-#include <QtCore/qdebug.h>
 #include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
+
+#include <gdk/gdk.h>
 
 QT_BEGIN_NAMESPACE
 
-QGtkBackingStore::QGtkBackingStore(QWindow *window)
-    : QPlatformBackingStore(window)
+class QGtkScreen : public QPlatformScreen
 {
-    qDebug() << "QGtkBackingStore";
-}
+public:
+    QGtkScreen(GdkMonitor *monitor);
 
-QGtkBackingStore::~QGtkBackingStore()
-{
-}
+    QRect availableGeometry() const override;
+    QRect geometry() const override;
+    int depth() const override;
+    QImage::Format format() const override;
+    QSizeF physicalSize() const override;
+    //QDpi logicalDpi() const override;
+    qreal devicePixelRatio() const override;
+    qreal refreshRate() const override;
 
-QPaintDevice *QGtkBackingStore::paintDevice()
-{
-    return &mImage;
-}
 
-void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
-{
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
+    GdkMonitor *monitor() const { return m_monitor; }
 
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
-}
+public:
+    GdkMonitor *m_monitor;
+};
 
-void QGtkBackingStore::resize(const QSize &size, const QRegion &)
-{
-    QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
-}
 
 QT_END_NAMESPACE
+
+#endif // QGTKSCREEN_H

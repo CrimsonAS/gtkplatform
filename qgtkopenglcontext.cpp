@@ -37,48 +37,90 @@
 **
 ****************************************************************************/
 
-
-#include "qgtkbackingstore.h"
-#include "qgtkintegration.h"
+#include "qgtkopenglcontext.h"
 #include "qgtkwindow.h"
-#include "qscreen.h"
+
 #include <QtCore/qdebug.h>
-#include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
 
-QT_BEGIN_NAMESPACE
+#include <gtk/gtk.h>
+#include <EGL/egl.h>
+#include <dlfcn.h>
 
-QGtkBackingStore::QGtkBackingStore(QWindow *window)
-    : QPlatformBackingStore(window)
+QGtkOpenGLContext::QGtkOpenGLContext(const QSurfaceFormat &desiredFormat)
+    : m_fbo(0)
 {
-    qDebug() << "QGtkBackingStore";
+    QSurfaceFormat format(desiredFormat);
+    format.setAlphaBufferSize(8);
+    format.setRedBufferSize(8);
+    format.setGreenBufferSize(8);
+    format.setBlueBufferSize(8);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+    m_format = format;
 }
 
-QGtkBackingStore::~QGtkBackingStore()
+QGtkOpenGLContext::~QGtkOpenGLContext()
 {
+
+    qWarning() << "Stub";
 }
 
-QPaintDevice *QGtkBackingStore::paintDevice()
+void QGtkOpenGLContext::initialize()
 {
-    return &mImage;
+    m_fbo = new QOpenGLFramebufferObject(400, 400, GL_TEXTURE_2D);
+    qWarning() << "Stub";
 }
 
-void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
+QSurfaceFormat QGtkOpenGLContext::format() const
 {
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
-
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
+    return m_format;
 }
 
-void QGtkBackingStore::resize(const QSize &size, const QRegion &)
+GLuint QGtkOpenGLContext::defaultFramebufferObject(QPlatformSurface *surface) const
 {
-    QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
+    return m_fbo->handle();
 }
 
-QT_END_NAMESPACE
+void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
+{
+    //usleep(40000);
+    qWarning() << "Stub";
+
+}
+bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
+{
+    QGtkWindow *win = static_cast<QGtkWindow*>(surface);
+    win->setFramebuffer(m_fbo);
+    GdkGLContext *ctx = win->gdkGLContext();
+    qDebug() << "Making current";
+    gdk_gl_context_make_current(ctx);
+    qDebug() << "Done making current";
+    return true;
+}
+
+void QGtkOpenGLContext::doneCurrent()
+{
+    qDebug() << "Done clearing current";
+    gdk_gl_context_clear_current();
+    qDebug() << "Done clearing current";
+}
+
+bool QGtkOpenGLContext::isSharing() const
+{
+    qWarning() << "Stub";
+    return false;
+}
+bool QGtkOpenGLContext::isValid() const
+{
+    qWarning() << "Stub";
+    return true;
+}
+
+QFunctionPointer QGtkOpenGLContext::getProcAddress(const char *procName)
+{
+    eglBindAPI(EGL_OPENGL_API); // ### EGL_OPENGL_ES_API?
+    QFunctionPointer proc = (QFunctionPointer)eglGetProcAddress(procName);
+    if (!proc) {
+        proc = (QFunctionPointer)dlsym(RTLD_DEFAULT, procName);
+    }
+    return proc;
+}

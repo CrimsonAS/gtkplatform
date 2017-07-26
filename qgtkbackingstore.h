@@ -58,7 +58,6 @@ public:
 
 private:
     QImage mImage;
-    const bool mDebug;
 };
 
 QT_END_NAMESPACE

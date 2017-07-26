@@ -37,48 +37,60 @@
 **
 ****************************************************************************/
 
+#include "qgtkscreen.h"
 
-#include "qgtkbackingstore.h"
-#include "qgtkintegration.h"
-#include "qgtkwindow.h"
-#include "qscreen.h"
-#include <QtCore/qdebug.h>
-#include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
+#include <QDebug>
 
-QT_BEGIN_NAMESPACE
-
-QGtkBackingStore::QGtkBackingStore(QWindow *window)
-    : QPlatformBackingStore(window)
-{
-    qDebug() << "QGtkBackingStore";
-}
-
-QGtkBackingStore::~QGtkBackingStore()
+QGtkScreen::QGtkScreen(GdkMonitor *monitor)
+    : m_monitor(monitor)
 {
 }
 
-QPaintDevice *QGtkBackingStore::paintDevice()
+QRect QGtkScreen::availableGeometry() const
 {
-    return &mImage;
+    GdkRectangle geometry;
+    gdk_monitor_get_workarea(m_monitor, &geometry);
+    return QRect(geometry.x, geometry.y, geometry.width, geometry.height);
 }
 
-void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
+QRect QGtkScreen::geometry() const
 {
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
-
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
+    GdkRectangle geometry;
+    gdk_monitor_get_geometry(m_monitor, &geometry);
+    qDebug() << QRect(geometry.x, geometry.y, geometry.width, geometry.height);
+    return QRect(geometry.x, geometry.y, geometry.width, geometry.height);
 }
 
-void QGtkBackingStore::resize(const QSize &size, const QRegion &)
+int QGtkScreen::depth() const
 {
-    QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
+    return 32;
 }
 
-QT_END_NAMESPACE
+QImage::Format QGtkScreen::format() const
+{
+    return QImage::Format_ARGB32_Premultiplied;
+}
+
+QSizeF QGtkScreen::physicalSize() const
+{
+    return QPlatformScreen::physicalSize();
+
+    // for some reason, this makes fonts bizarrely huge ???
+    //return QSizeF(gdk_monitor_get_width_mm(m_monitor), gdk_monitor_get_height_mm(m_monitor));
+}
+
+//QDpi QGtkScreen::logicalDpi() const
+//{
+//}
+
+qreal QGtkScreen::devicePixelRatio() const
+{
+    return gdk_monitor_get_scale_factor(m_monitor);
+}
+
+qreal QGtkScreen::refreshRate() const
+{
+    // gdk gives us millihz..
+    return gdk_monitor_get_refresh_rate(m_monitor) / 1000;
+}
+

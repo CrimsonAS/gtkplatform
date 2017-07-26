@@ -37,48 +37,61 @@
 **
 ****************************************************************************/
 
+#ifndef QGTKMENU_H
+#define QGTKMENU_H
 
-#include "qgtkbackingstore.h"
-#include "qgtkintegration.h"
-#include "qgtkwindow.h"
-#include "qscreen.h"
-#include <QtCore/qdebug.h>
-#include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
+#include <qpa/qplatformmenu.h>
+
+#include <gtk/gtk.h>
 
 QT_BEGIN_NAMESPACE
 
-QGtkBackingStore::QGtkBackingStore(QWindow *window)
-    : QPlatformBackingStore(window)
-{
-    qDebug() << "QGtkBackingStore";
-}
+class QGtkMenuItem;
 
-QGtkBackingStore::~QGtkBackingStore()
+class QGtkMenu : public QPlatformMenu
 {
-}
+    Q_OBJECT
+public:
+    QGtkMenu();
+    ~QGtkMenu();
 
-QPaintDevice *QGtkBackingStore::paintDevice()
-{
-    return &mImage;
-}
+    void insertMenuItem(QPlatformMenuItem *menuItem, QPlatformMenuItem *before) override;
+    void removeMenuItem(QPlatformMenuItem *menuItem) override;
+    void syncMenuItem(QPlatformMenuItem *menuItem) override;
+    void syncSeparatorsCollapsible(bool enable) override;
 
-void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
-{
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
+    void setTag(quintptr tag) override;
+    quintptr tag()const override;
 
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
-}
+    void setText(const QString &text) override;
+    void setIcon(const QIcon &icon) override;
+    void setEnabled(bool enabled) override;
+    bool isEnabled() const override;
+    void setVisible(bool visible) override;
 
-void QGtkBackingStore::resize(const QSize &size, const QRegion &)
-{
-    QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
-}
+    void showPopup(const QWindow *parentWindow, const QRect &targetRect, const QPlatformMenuItem  *item) override;
+    void dismiss() override;
+
+    QPlatformMenuItem *menuItemAt(int position) const override;
+    QPlatformMenuItem *menuItemForTag(quintptr tag) const override;
+
+    GtkMenuItem *gtkMenuItem() const;
+
+    void emitShow();
+    void emitHide();
+
+private Q_SLOTS:
+    void regenerate();
+
+Q_SIGNALS:
+    void changed();
+
+private:
+    QVector<QGtkMenuItem*> m_items;
+    QString m_text;
+};
 
 QT_END_NAMESPACE
+
+#endif // QGTKMENU_H
+

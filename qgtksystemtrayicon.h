@@ -37,48 +37,40 @@
 **
 ****************************************************************************/
 
+ #ifndef QGTKSYSTEMTRAYICON_P_H
+ #define QGTKSYSTEMTRAYICON_P_H
 
-#include "qgtkbackingstore.h"
-#include "qgtkintegration.h"
-#include "qgtkwindow.h"
-#include "qscreen.h"
-#include <QtCore/qdebug.h>
-#include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
+ #include <QtCore/qglobal.h>
 
-QT_BEGIN_NAMESPACE
+ #include "QtCore/qstring.h"
+ #include "QtGui/qpa/qplatformsystemtrayicon.h"
 
-QGtkBackingStore::QGtkBackingStore(QWindow *window)
-    : QPlatformBackingStore(window)
-{
-    qDebug() << "QGtkBackingStore";
-}
+#include <gtk/gtk.h>
 
-QGtkBackingStore::~QGtkBackingStore()
-{
-}
+ QT_BEGIN_NAMESPACE
 
-QPaintDevice *QGtkBackingStore::paintDevice()
-{
-    return &mImage;
-}
+ class Q_GUI_EXPORT QGtkSystemTrayIcon : public QPlatformSystemTrayIcon
+ {
+ public:
+     QGtkSystemTrayIcon();
+     ~QGtkSystemTrayIcon();
 
-void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
-{
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
+     void init() override;
+     void cleanup() override;
+     void updateIcon(const QIcon &icon) override;
+     void updateToolTip(const QString &toolTip) override;
+     void updateMenu(QPlatformMenu *menu) override;
+     QRect geometry() const override;
+     void showMessage(const QString &title, const QString &msg,
+                      const QIcon& icon, MessageIcon iconType, int secs) override;
 
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
-}
+     bool isSystemTrayAvailable() const override;
+     bool supportsMessages() const override;
 
-void QGtkBackingStore::resize(const QSize &size, const QRegion &)
-{
-    QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
-}
+ private:
+     GtkStatusIcon *m_icon;
+ };
 
-QT_END_NAMESPACE
+ QT_END_NAMESPACE
+
+ #endif // QGTKSYSTEMTRAYICON_P_H

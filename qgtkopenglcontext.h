@@ -37,48 +37,41 @@
 **
 ****************************************************************************/
 
+#ifndef QGTKOPENGLCONTEXT_H
+#define QGTKOPENGLCONTEXT_H
 
-#include "qgtkbackingstore.h"
-#include "qgtkintegration.h"
-#include "qgtkwindow.h"
-#include "qscreen.h"
-#include <QtCore/qdebug.h>
-#include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
+#include <qpa/qplatformopenglcontext.h>
+#include <QtGui/qopenglframebufferobject.h>
 
 QT_BEGIN_NAMESPACE
 
-QGtkBackingStore::QGtkBackingStore(QWindow *window)
-    : QPlatformBackingStore(window)
+class QGtkOpenGLContext : public QPlatformOpenGLContext
 {
-    qDebug() << "QGtkBackingStore";
-}
+public:
+    QGtkOpenGLContext(const QSurfaceFormat &desiredFormat);
+    ~QGtkOpenGLContext();
 
-QGtkBackingStore::~QGtkBackingStore()
-{
-}
+    void initialize() override;
 
-QPaintDevice *QGtkBackingStore::paintDevice()
-{
-    return &mImage;
-}
+    GLuint defaultFramebufferObject(QPlatformSurface *surface) const override;
+    QSurfaceFormat format() const override;
 
-void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
-{
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
+    void swapBuffers(QPlatformSurface *surface) override;
+    bool makeCurrent(QPlatformSurface *surface) override;
+    void doneCurrent() override;
 
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
-}
+    bool isSharing() const override;
+    bool isValid() const override;
 
-void QGtkBackingStore::resize(const QSize &size, const QRegion &)
-{
-    QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
-}
+    QFunctionPointer getProcAddress(const char *procName) override;
+
+private:
+    QSurfaceFormat m_format;
+
+    QOpenGLFramebufferObject *m_fbo;
+};
 
 QT_END_NAMESPACE
+
+#endif // QGTKOPENGLCONTEXT_H
+

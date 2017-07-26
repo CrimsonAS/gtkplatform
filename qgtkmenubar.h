@@ -37,48 +37,40 @@
 **
 ****************************************************************************/
 
+#ifndef QGTKMENUBAR_H
+#define QGTKMENUBAR_H
 
-#include "qgtkbackingstore.h"
-#include "qgtkintegration.h"
-#include "qgtkwindow.h"
-#include "qscreen.h"
-#include <QtCore/qdebug.h>
-#include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
+#include <qpa/qplatformmenu.h>
+
+#include <gtk/gtk.h>
 
 QT_BEGIN_NAMESPACE
 
-QGtkBackingStore::QGtkBackingStore(QWindow *window)
-    : QPlatformBackingStore(window)
-{
-    qDebug() << "QGtkBackingStore";
-}
+class QGtkMenu;
 
-QGtkBackingStore::~QGtkBackingStore()
+class QGtkMenuBar : public QPlatformMenuBar
 {
-}
+public:
+    QGtkMenuBar();
+    ~QGtkMenuBar();
 
-QPaintDevice *QGtkBackingStore::paintDevice()
-{
-    return &mImage;
-}
+    void insertMenu(QPlatformMenu *menu, QPlatformMenu *before) override;
+    void removeMenu(QPlatformMenu *menu) override;
+    void syncMenu(QPlatformMenu *menuItem) override;
+    void handleReparent(QWindow *newParentWindow) override;
 
-void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
-{
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
+    QPlatformMenu *menuForTag(quintptr tag) const override;
+    QPlatformMenu *createMenu() const override;
 
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
-}
+private Q_SLOTS:
+    void regenerate();
 
-void QGtkBackingStore::resize(const QSize &size, const QRegion &)
-{
-    QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
-}
+private:
+    GtkMenuBar *m_menubar;
+    QVector<QGtkMenu*> m_items;
+};
 
 QT_END_NAMESPACE
+
+#endif // QGTKMENUBAR
+

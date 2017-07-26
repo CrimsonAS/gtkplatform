@@ -37,48 +37,19 @@
 **
 ****************************************************************************/
 
+#include "qgtkmenuitem.h"
 
-#include "qgtkbackingstore.h"
-#include "qgtkintegration.h"
-#include "qgtkwindow.h"
-#include "qscreen.h"
 #include <QtCore/qdebug.h>
-#include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
+
+#ifndef QGTKHELPERS_H
+#define QGTKHELPERS_H
 
 QT_BEGIN_NAMESPACE
 
-QGtkBackingStore::QGtkBackingStore(QWindow *window)
-    : QPlatformBackingStore(window)
-{
-    qDebug() << "QGtkBackingStore";
-}
-
-QGtkBackingStore::~QGtkBackingStore()
-{
-}
-
-QPaintDevice *QGtkBackingStore::paintDevice()
-{
-    return &mImage;
-}
-
-void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
-{
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
-
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
-}
-
-void QGtkBackingStore::resize(const QSize &size, const QRegion &)
-{
-    QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
-}
+GdkPixbuf *qt_iconToPixbuf(const QIcon &icon);
+GIcon *qt_iconToIcon(const QIcon &icon);
+QString qt_convertToGtkMnemonics(const QString &text);
 
 QT_END_NAMESPACE
+
+#endif

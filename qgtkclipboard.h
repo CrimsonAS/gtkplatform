@@ -37,48 +37,47 @@
 **
 ****************************************************************************/
 
+#ifndef QGTKCLIPBOARD_H
+#define QGTKCLIPBOARD_H
 
-#include "qgtkbackingstore.h"
-#include "qgtkintegration.h"
-#include "qgtkwindow.h"
-#include "qscreen.h"
-#include <QtCore/qdebug.h>
-#include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
+#include <qpa/qplatformclipboard.h>
 
 QT_BEGIN_NAMESPACE
 
-QGtkBackingStore::QGtkBackingStore(QWindow *window)
-    : QPlatformBackingStore(window)
+class QGtkClipboardMime : QInternalMimeData
 {
-    qDebug() << "QGtkBackingStore";
-}
+    Q_OBJECT
+public:
+    QGtkClipboardMime(QClipboard::Mode clipboardMode);
+    ~QGtkClipboardMime();
 
-QGtkBackingStore::~QGtkBackingStore()
+protected:
+    bool hasFormat_sys(const QString &mimeType) const override;
+    QStringList formats_sys() const override;
+    QVariant retrieveData_sys(const QString &mimeType, QVariant::Type type) const override;
+
+private:
+    QClipboard::Mode m_clipboardMode;
+};
+
+class QGtkClipboard : public QPlatformClipboard
 {
-}
+public:
+    QGtkClipboard();
+    ~QGtkClipboard();
 
-QPaintDevice *QGtkBackingStore::paintDevice()
-{
-    return &mImage;
-}
+    QMimeData *mimeData(QClipboard::Mode mode = QClipboard::Clipboard) override;
+    void setMimeData(QMimeData *data, QClipboard::Mode mode = QClipboard::Clipboard) override;
+    bool supportsMode(QClipboard::Mode mode) const override;
+    bool ownsMode(QClipboard::Mode mode) const override;
 
-void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
-{
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
-
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
-}
-
-void QGtkBackingStore::resize(const QSize &size, const QRegion &)
-{
-    QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
-}
+private:
+    QGtkClipboardMime *m_clipData;
+    QGtkClipboardMime *m_selData;
+    QGtkClipboardMime *mimeForMode(QClipboard::Mode mode);
+};
 
 QT_END_NAMESPACE
+
+#endif // QGTKCLIPBOARD_H
+

@@ -37,48 +37,39 @@
 **
 ****************************************************************************/
 
+#ifndef QGTKTHEME_H
+#define QGTKTHEME_H
 
-#include "qgtkbackingstore.h"
-#include "qgtkintegration.h"
-#include "qgtkwindow.h"
-#include "qscreen.h"
-#include <QtCore/qdebug.h>
-#include <qpa/qplatformscreen.h>
-#include <private/qguiapplication_p.h>
+#include <qpa/qplatformtheme.h>
 
-QT_BEGIN_NAMESPACE
-
-QGtkBackingStore::QGtkBackingStore(QWindow *window)
-    : QPlatformBackingStore(window)
+class QGtkTheme : public QPlatformTheme
 {
-    qDebug() << "QGtkBackingStore";
-}
+public:
+    QGtkTheme();
+    ~QGtkTheme();
 
-QGtkBackingStore::~QGtkBackingStore()
-{
-}
+    QPlatformMenuItem* createPlatformMenuItem() const override;
+    QPlatformMenu* createPlatformMenu() const override;
+    QPlatformMenuBar* createPlatformMenuBar() const override;
 
-QPaintDevice *QGtkBackingStore::paintDevice()
-{
-    return &mImage;
-}
+#ifndef QT_NO_SYSTEMTRAYICON
+    QPlatformSystemTrayIcon *createPlatformSystemTrayIcon() const override;
+#endif
 
-void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
-{
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
+    bool usePlatformNativeDialog(DialogType dialogType) const override;   
+    QPlatformDialogHelper *createPlatformDialogHelper(DialogType dialogType) const override;
 
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
-}
+    const QPalette *palette(Palette type = SystemPalette) const override; 
+    const QFont *font(Font type = SystemFont) const override;
+    QPixmap standardPixmap(StandardPixmap sp, const QSizeF &size) const override;
+    QPixmap fileIconPixmap(const QFileInfo &fileInfo,
+            const QSizeF &size,
+            QPlatformTheme::IconOptions options = 0) const override;
 
-void QGtkBackingStore::resize(const QSize &size, const QRegion &)
-{
-    QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
-}
+    QVariant themeHint(ThemeHint hint) const override;
+    QString standardButtonText(int button) const override;
 
-QT_END_NAMESPACE
+    static const char *name;
+};
+
+#endif // QGTKTHEME_H
