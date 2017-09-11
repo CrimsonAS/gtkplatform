@@ -250,14 +250,18 @@ void QGtkWindow::onRender()
     // XXX Could that be solved by creating a QOpenGLContext for it,
     // using the native handle trick?
 
+    GLint dims[4] = {0};
+    glGetIntegerv(GL_VIEWPORT, dims);
+    GLint fbWidth = dims[2];
+    GLint fbHeight = dims[3];
+
     // XXX This is an awful, lazy way to blit a texture
     GLuint fboId = 0;
     glGenFramebuffers(1, &fboId);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fboId);
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_surfaceTexture->textureId(), 0);
     glBlitFramebuffer(0, 0, m_surfaceTexture->width(), m_surfaceTexture->height(),
-                            0, 0, geometry().width(), geometry().height(),
-                            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+                      0, 0, fbWidth, fbHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glDeleteFramebuffers(1, &fboId);
 
