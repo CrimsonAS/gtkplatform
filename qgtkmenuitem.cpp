@@ -122,8 +122,8 @@ void QGtkMenuItem::setChecked(bool isChecked)
 
 void QGtkMenuItem::setShortcut(const QKeySequence& shortcut)
 {
-
-    qWarning() << "Stub";
+    m_shortcut = shortcut;
+    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setEnabled(bool enabled)
@@ -180,6 +180,28 @@ GtkWidget *QGtkMenuItem::gtkMenuItem() const
     GtkWidget *mi = gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData());
     g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
     g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
+    GtkWidget *label = gtk_bin_get_child(GTK_BIN(mi));
+
+    Qt::KeyboardModifiers qtMods = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+
+    // ### what about the other keys?
+    guint gKey = m_shortcut[0] & ~qtMods;
+    guint gModifiers = 0;
+
+    if (m_shortcut[0] & Qt::ShiftModifier) {
+        gModifiers |= GDK_SHIFT_MASK;
+    }
+    if (m_shortcut[0] & Qt::ControlModifier) {
+        gModifiers |= GDK_CONTROL_MASK;
+    }
+    if (m_shortcut[0] & Qt::AltModifier) {
+        gModifiers |= GDK_MOD1_MASK;
+    }
+    if (m_shortcut[0] & Qt::MetaModifier) {
+        gModifiers |= GDK_META_MASK;
+    }
+
+    gtk_accel_label_set_accel(GTK_ACCEL_LABEL(label), gKey, GdkModifierType(gModifiers));
 
     return mi;
 }

@@ -81,6 +81,7 @@ private:
     QString m_text;
     bool m_isSeparator = false;
     QGtkMenu *m_childMenu = nullptr;
+    QKeySequence m_shortcut;
 };
 
 #endif // QGTKMENUITEM_H
