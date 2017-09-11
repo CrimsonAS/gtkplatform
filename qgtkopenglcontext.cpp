@@ -208,16 +208,16 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
 bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
 {
     QGtkWindow *win = static_cast<QGtkWindow*>(surface);
-    qDebug() << "Making current";
     gdk_gl_context_make_current(m_gdkContext);
 
-    if (m_fbo && m_fbo->size() != win->geometry().size()) {
+    QSize sz = win->geometry().size() * win->devicePixelRatio();
+    if (m_fbo && m_fbo->size() != sz) {
         qDebug() << "clearing old context FBO of size" << m_fbo->size();
         delete m_fbo;
         m_fbo = nullptr;
     }
     if (!m_fbo) {
-        m_fbo = new QOpenGLFramebufferObject(win->geometry().size(), QOpenGLFramebufferObject::CombinedDepthStencil);
+        m_fbo = new QOpenGLFramebufferObject(sz, QOpenGLFramebufferObject::CombinedDepthStencil);
         qDebug() << "created new context FBO of size" << m_fbo->size();
     }
 
