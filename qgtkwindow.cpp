@@ -38,6 +38,7 @@
 ****************************************************************************/
 
 #include "qgtkwindow.h"
+#include "qgtkhelpers.h"
 
 #include <qpa/qwindowsysteminterface.h>
 
@@ -357,8 +358,15 @@ void QGtkWindow::setWindowFilePath(const QString &title)
 
 void QGtkWindow::setWindowIcon(const QIcon &icon)
 {
-    // icon -> GdkPixbuf, and send gtk_window_set_icon_list
-    qWarning() << "setWindowIcon: Not implemented";
+    if (icon.isNull()) {
+        gtk_window_set_icon(GTK_WINDOW(m_window), nullptr);
+        return;
+    }
+
+    GdkPixbuf *pb = qt_iconToPixbuf(icon);
+
+    // ### consider gtk_window_set_icon_list
+    gtk_window_set_icon(GTK_WINDOW(m_window), pb);
 }
 
 void QGtkWindow::raise()
