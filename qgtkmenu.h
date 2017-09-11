@@ -88,6 +88,7 @@ Q_SIGNALS:
 
 private:
     QVector<QGtkMenuItem*> m_items;
+    bool m_enabled = true;
     QString m_text;
     qintptr m_tag;
 };

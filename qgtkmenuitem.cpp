@@ -129,25 +129,21 @@ void QGtkMenuItem::setShortcut(const QKeySequence& shortcut)
 
 void QGtkMenuItem::setEnabled(bool enabled)
 {
-
-    qWarning() << "Stub";
+    m_enabled = enabled;
+    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setIconSize(int size)
 {
-
     qWarning() << "Stub";
 }
 
 void QGtkMenuItem::setNativeContents(WId item)
 {
-
-    qWarning() << "Stub";
 }
 
 void QGtkMenuItem::setHasExclusiveGroup(bool hasExclusiveGroup)
 {
-
     qWarning() << "Stub";
 }
 
@@ -182,6 +178,7 @@ GtkWidget *QGtkMenuItem::gtkMenuItem() const
         // stick our title on it
         GtkWidget *child = gtk_bin_get_child (GTK_BIN (mi));
         gtk_label_set_markup_with_mnemonic(GTK_LABEL(child), m_text.toUtf8().constData());
+        gtk_widget_set_sensitive(GTK_WIDGET(mi), m_enabled);
         return GTK_WIDGET(mi);
     }
 
@@ -193,6 +190,7 @@ GtkWidget *QGtkMenuItem::gtkMenuItem() const
         mi = gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData());
     }
 
+    gtk_widget_set_sensitive(mi, m_enabled);
     g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
     g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
     GtkWidget *label = gtk_bin_get_child(GTK_BIN(mi));

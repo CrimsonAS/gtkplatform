@@ -83,6 +83,7 @@ private:
     bool m_visible = true;
     bool m_checkable = false;
     bool m_checked = false;
+    bool m_enabled = true;
     QGtkMenu *m_childMenu = nullptr;
     QKeySequence m_shortcut;
     qintptr m_tag;

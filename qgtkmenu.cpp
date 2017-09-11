@@ -121,14 +121,13 @@ void QGtkMenu::setIcon(const QIcon &icon)
 
 void QGtkMenu::setEnabled(bool enabled)
 {
-
-    qWarning() << "Stub";
+    m_enabled = enabled;
+    regenerate();
 }
 
 bool QGtkMenu::isEnabled() const
 {
-
-    qWarning() << "Stub";
+    return m_enabled;
 }
 
 void QGtkMenu::setVisible(bool visible)
@@ -199,6 +198,7 @@ GtkMenuItem *QGtkMenu::gtkMenuItem() const
 
     GtkMenuItem *mi = GTK_MENU_ITEM(gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData()));
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (mi), GTK_WIDGET(menu));
+    gtk_widget_set_sensitive(GTK_WIDGET(mi), m_enabled);
 
     // not what we want; menu appears to be visible when it isn't opened (as
     // it's a widget whose parent is visible, maybe?)
