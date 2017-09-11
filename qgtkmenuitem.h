@@ -80,6 +80,7 @@ Q_SIGNALS:
 private:
     QString m_text;
     bool m_isSeparator = false;
+    bool m_visible = true;
     QGtkMenu *m_childMenu = nullptr;
     QKeySequence m_shortcut;
 };

@@ -86,8 +86,8 @@ void QGtkMenuItem::setMenu(QPlatformMenu *pmenu)
 
 void QGtkMenuItem::setVisible(bool isVisible)
 {
-
-    qWarning() << "Stub";
+    m_visible = isVisible;
+    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setIsSeparator(bool isSeparator)
@@ -164,6 +164,10 @@ static void activate_cb(GtkMenuItem *, gpointer qgtkMenuItem)
 
 GtkWidget *QGtkMenuItem::gtkMenuItem() const
 {
+    if (!m_visible) {
+        return 0;
+    }
+
     if (m_isSeparator) {
         GtkWidget *sep = gtk_separator_menu_item_new();
         return sep;

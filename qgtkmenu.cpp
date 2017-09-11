@@ -188,7 +188,10 @@ GtkMenuItem *QGtkMenu::gtkMenuItem() const
     GtkMenu *menu = GTK_MENU(gtk_menu_new());
 
     for (const QGtkMenuItem *item : m_items) {
-        gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(item->gtkMenuItem()));
+        GtkWidget *w = item->gtkMenuItem();
+        if (!w)
+            continue;
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(w));
     }
 
     GtkMenuItem *mi = GTK_MENU_ITEM(gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData()));
