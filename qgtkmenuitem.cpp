@@ -39,6 +39,7 @@
 
 #include "qgtkmenuitem.h"
 #include "qgtkhelpers.h"
+#include "qgtkmenu.h"
 
 #include <QtCore/qdebug.h>
 
@@ -77,10 +78,10 @@ void QGtkMenuItem::setIcon(const QIcon &icon)
     //Q_EMIT changed();
 }
 
-// Turn this item into a menu container
 void QGtkMenuItem::setMenu(QPlatformMenu *pmenu)
 {
-    qWarning() << "Stub";
+    m_childMenu = static_cast<QGtkMenu*>(pmenu);
+    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setVisible(bool isVisible)
@@ -163,15 +164,24 @@ static void activate_cb(GtkMenuItem *, gpointer qgtkMenuItem)
 
 GtkWidget *QGtkMenuItem::gtkMenuItem() const
 {
-    if (!m_isSeparator) {
-        GtkWidget *mi = gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData());
+    if (m_isSeparator) {
+        GtkWidget *sep = gtk_separator_menu_item_new();
+        return sep;
+    }
+
+    if (m_childMenu) {
+        qWarning() << "Creating a child submenu, but this is broken right now...";
+        GtkMenuItem *mi = m_childMenu->gtkMenuItem();
         g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
         g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
-        return mi;
-    } else {
-         GtkWidget *sep = gtk_separator_menu_item_new();
-         return sep;
+        return GTK_WIDGET(mi);
     }
+
+    GtkWidget *mi = gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData());
+    g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
+    g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
+
+    return mi;
 }
 
 void QGtkMenuItem::emitSelect()

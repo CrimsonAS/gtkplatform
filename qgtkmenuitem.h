@@ -44,6 +44,8 @@
 
 #include <gtk/gtk.h>
 
+class QGtkMenu;
+
 class QGtkMenuItem : public QPlatformMenuItem
 {
     Q_OBJECT
@@ -78,6 +80,7 @@ Q_SIGNALS:
 private:
     QString m_text;
     bool m_isSeparator = false;
+    QGtkMenu *m_childMenu = nullptr;
 };
 
 #endif // QGTKMENUITEM_H
