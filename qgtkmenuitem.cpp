@@ -80,7 +80,13 @@ void QGtkMenuItem::setIcon(const QIcon &icon)
 
 void QGtkMenuItem::setMenu(QPlatformMenu *pmenu)
 {
+    if (m_childMenu) {
+        disconnect(m_childMenu, &QGtkMenu::changed, this, &QGtkMenuItem::changed);
+    }
     m_childMenu = static_cast<QGtkMenu*>(pmenu);
+    if (m_childMenu) {
+        connect(m_childMenu, &QGtkMenu::changed, this, &QGtkMenuItem::changed);
+    }
     Q_EMIT changed();
 }
 
@@ -174,6 +180,10 @@ GtkWidget *QGtkMenuItem::gtkMenuItem() const
         GtkMenuItem *mi = m_childMenu->gtkMenuItem();
         g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
         g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
+
+        // stick our title on it
+        GtkWidget *child = gtk_bin_get_child (GTK_BIN (mi));
+        gtk_label_set_markup_with_mnemonic(GTK_LABEL(child), m_text.toUtf8().constData());
         return GTK_WIDGET(mi);
     }
 
