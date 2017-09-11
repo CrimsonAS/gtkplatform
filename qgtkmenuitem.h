@@ -68,7 +68,7 @@ public:
     void setNativeContents(WId item) override;
     void setHasExclusiveGroup(bool hasExclusiveGroup) override;
 
-    GtkMenuItem *gtkMenuItem() const;
+    GtkWidget *gtkMenuItem() const;
 
     void emitSelect();
     void emitActivate();
@@ -77,6 +77,7 @@ Q_SIGNALS:
 
 private:
     QString m_text;
+    bool m_isSeparator = false;
 };
 
 #endif // QGTKMENUITEM_H

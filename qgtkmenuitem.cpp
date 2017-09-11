@@ -91,8 +91,8 @@ void QGtkMenuItem::setVisible(bool isVisible)
 
 void QGtkMenuItem::setIsSeparator(bool isSeparator)
 {
-
-    qWarning() << "Stub";
+    m_isSeparator = isSeparator;
+    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setFont(const QFont &font)
@@ -161,12 +161,17 @@ static void activate_cb(GtkMenuItem *, gpointer qgtkMenuItem)
     gm->emitActivate();
 }
 
-GtkMenuItem *QGtkMenuItem::gtkMenuItem() const
+GtkWidget *QGtkMenuItem::gtkMenuItem() const
 {
-    GtkMenuItem *mi = GTK_MENU_ITEM(gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData()));
-    g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
-    g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
-    return mi;
+    if (!m_isSeparator) {
+        GtkWidget *mi = gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData());
+        g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
+        g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
+        return mi;
+    } else {
+         GtkWidget *sep = gtk_separator_menu_item_new();
+         return sep;
+    }
 }
 
 void QGtkMenuItem::emitSelect()
