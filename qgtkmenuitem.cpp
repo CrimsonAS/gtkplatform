@@ -71,10 +71,6 @@ void QGtkMenuItem::setText(const QString &text)
 
 void QGtkMenuItem::setIcon(const QIcon &icon)
 {
-    //GIcon *ico = q_iconToIcon(icon);
-    //g_menu_item_set_icon(m_menuItem, ico);
-    //g_object_unref(ico);
-    //Q_EMIT changed();
 }
 
 void QGtkMenuItem::setMenu(QPlatformMenu *pmenu)
@@ -135,7 +131,6 @@ void QGtkMenuItem::setEnabled(bool enabled)
 
 void QGtkMenuItem::setIconSize(int size)
 {
-    qWarning() << "Stub";
 }
 
 void QGtkMenuItem::setNativeContents(WId item)
