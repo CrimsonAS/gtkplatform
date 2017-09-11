@@ -44,6 +44,7 @@
 #include <QtCore/qdebug.h>
 
 QGtkMenuItem::QGtkMenuItem()
+    : m_tag((qintptr)this)
 {
 }
 
@@ -54,14 +55,12 @@ QGtkMenuItem::~QGtkMenuItem()
 
 void QGtkMenuItem::setTag(quintptr tag)
 {
-
-    qWarning() << "Stub";
+    m_tag = tag;
 }
 
 quintptr QGtkMenuItem::tag()const
 {
-
-    qWarning() << "Stub";
+    return m_tag;
 }
 
 void QGtkMenuItem::setText(const QString &text)

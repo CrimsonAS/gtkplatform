@@ -89,6 +89,7 @@ Q_SIGNALS:
 private:
     QVector<QGtkMenuItem*> m_items;
     QString m_text;
+    qintptr m_tag;
 };
 
 QT_END_NAMESPACE

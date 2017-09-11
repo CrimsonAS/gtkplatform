@@ -46,6 +46,7 @@
 #include <QtCore/qdebug.h>
 
 QGtkMenu::QGtkMenu()
+    : m_tag((qintptr)this)
 {
 }
 
@@ -98,14 +99,12 @@ void QGtkMenu::syncSeparatorsCollapsible(bool enable)
 
 void QGtkMenu::setTag(quintptr tag)
 {
-
-    qWarning() << "Stub";
+    m_tag = tag;
 }
 
 quintptr QGtkMenu::tag()const
 {
-
-    qWarning() << "Stub";
+    return m_tag;
 }
 
 void QGtkMenu::setText(const QString &text)
@@ -156,7 +155,6 @@ void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, c
 
 void QGtkMenu::dismiss()
 {
-
     qWarning() << "Stub";
 }
 
@@ -167,8 +165,13 @@ QPlatformMenuItem *QGtkMenu::menuItemAt(int position) const
 
 QPlatformMenuItem *QGtkMenu::menuItemForTag(quintptr tag) const
 {
+    for (QGtkMenuItem *item : qAsConst(m_items)) {
+        if (item->tag() == tag) {
+            return item;
+        }
+    }
 
-    qWarning() << "Stub";
+    return nullptr;
 }
 
 static void show_cb(GtkWidget *, gboolean, gpointer qgtkMenu)

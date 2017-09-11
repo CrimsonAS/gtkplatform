@@ -85,6 +85,7 @@ private:
     bool m_checked = false;
     QGtkMenu *m_childMenu = nullptr;
     QKeySequence m_shortcut;
+    qintptr m_tag;
 };
 
 #endif // QGTKMENUITEM_H
