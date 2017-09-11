@@ -176,7 +176,6 @@ GtkWidget *QGtkMenuItem::gtkMenuItem() const
     }
 
     if (m_childMenu) {
-        qWarning() << "Creating a child submenu, but this is broken right now...";
         GtkMenuItem *mi = m_childMenu->gtkMenuItem();
         g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
         g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
