@@ -422,10 +422,19 @@ bool QGtkWindow::startSystemResize(const QPoint &pos, Qt::Corner corner){}
 
 void QGtkWindow::setFrameStrutEventsEnabled(bool enabled){}
 bool QGtkWindow::frameStrutEventsEnabled() const{}
+*/
 
-void QGtkWindow::setAlertState(bool enabled){}
-bool QGtkWindow::isAlertState() const{}
+void QGtkWindow::setAlertState(bool enabled)
+{
+    gtk_window_set_urgency_hint(GTK_WINDOW(m_window), enabled);
+}
 
+bool QGtkWindow::isAlertState() const
+{
+    gtk_window_get_urgency_hint(GTK_WINDOW(m_window));
+}
+
+/*
 void QGtkWindow::invalidateSurface(){}
 void QGtkWindow::requestUpdate()
 {

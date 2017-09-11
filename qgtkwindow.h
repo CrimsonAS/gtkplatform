@@ -103,10 +103,10 @@ public:
 
     void setFrameStrutEventsEnabled(bool enabled) override;
     bool frameStrutEventsEnabled() const override;
-
+*/
     void setAlertState(bool enabled) override;
     bool isAlertState() const override;
-
+/*
     void invalidateSurface() override;
     void requestUpdate() override;
 */
