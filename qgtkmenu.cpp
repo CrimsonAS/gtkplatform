@@ -93,8 +93,6 @@ void QGtkMenu::syncMenuItem(QPlatformMenuItem *menuItem)
 
 void QGtkMenu::syncSeparatorsCollapsible(bool enable)
 {
-
-    qWarning() << "Stub";
 }
 
 void QGtkMenu::setTag(quintptr tag)

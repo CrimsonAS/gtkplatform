@@ -144,7 +144,8 @@ void QGtkMenuItem::setNativeContents(WId item)
 
 void QGtkMenuItem::setHasExclusiveGroup(bool hasExclusiveGroup)
 {
-    qWarning() << "Stub";
+    m_hasExclusiveGroup = hasExclusiveGroup;
+    Q_EMIT changed();
 }
 
 static void select_cb(GtkMenuItem *, gpointer qgtkMenuItem)
@@ -190,6 +191,9 @@ GtkWidget *QGtkMenuItem::gtkMenuItem() const
         mi = gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData());
     }
 
+    if (GTK_IS_CHECK_MENU_ITEM(mi)) {
+        g_object_set(mi, "draw-as-radio", m_hasExclusiveGroup, NULL);
+    }
     gtk_widget_set_sensitive(mi, m_enabled);
     g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
     g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
