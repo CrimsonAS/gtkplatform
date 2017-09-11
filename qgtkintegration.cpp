@@ -258,7 +258,9 @@ bool QGtkIntegration::hasCapability(QPlatformIntegration::Capability cap) const
     case ThreadedPixmaps:
     case MultipleWindows:
     case OpenGL:
+        return true;
     case ThreadedOpenGL:
+        return false;
     case WindowManagement:
         return true;
     default:
