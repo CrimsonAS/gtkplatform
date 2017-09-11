@@ -81,6 +81,8 @@ private:
     QString m_text;
     bool m_isSeparator = false;
     bool m_visible = true;
+    bool m_checkable = false;
+    bool m_checked = false;
     QGtkMenu *m_childMenu = nullptr;
     QKeySequence m_shortcut;
 };

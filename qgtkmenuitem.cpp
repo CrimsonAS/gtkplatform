@@ -98,26 +98,22 @@ void QGtkMenuItem::setIsSeparator(bool isSeparator)
 
 void QGtkMenuItem::setFont(const QFont &font)
 {
-
-    qWarning() << "Stub";
 }
 
 void QGtkMenuItem::setRole(MenuRole role)
 {
-
-    qWarning() << "Stub";
 }
 
 void QGtkMenuItem::setCheckable(bool checkable)
 {
-
-    qWarning() << "Stub";
+    m_checkable = checkable;
+    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setChecked(bool isChecked)
 {
-
-    qWarning() << "Stub";
+    m_checked = isChecked;
+    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setShortcut(const QKeySequence& shortcut)
@@ -181,7 +177,14 @@ GtkWidget *QGtkMenuItem::gtkMenuItem() const
         return GTK_WIDGET(mi);
     }
 
-    GtkWidget *mi = gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData());
+    GtkWidget *mi = nullptr;
+    if (m_checkable) {
+        mi = gtk_check_menu_item_new_with_mnemonic(m_text.toUtf8().constData());
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mi), m_checked);
+    } else {
+        mi = gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData());
+    }
+
     g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
     g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
     GtkWidget *label = gtk_bin_get_child(GTK_BIN(mi));
