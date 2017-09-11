@@ -590,4 +590,3 @@ void QGtk3FontDialogHelper::applyOptions()
 
 QT_END_NAMESPACE
 
-#include "qgtk3dialoghelpers.moc"
