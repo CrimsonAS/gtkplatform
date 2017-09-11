@@ -49,11 +49,16 @@
 #include <QtGui/qopengltexture.h>
 
 #include <QDebug>
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcWindow, "qt.qpa.gtk.window");
+Q_LOGGING_CATEGORY(lcWindowRender, "qt.qpa.gtk.window.render");
 
 // GL
 gboolean render_cb(GtkGLArea *, GdkGLContext *ctx, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindowRender) << "render_cb" << pw;
     pw->onRender();
     return TRUE;
 }
@@ -62,12 +67,14 @@ gboolean render_cb(GtkGLArea *, GdkGLContext *ctx, gpointer platformWindow)
 void draw_cb(GtkWidget *, cairo_t *cr, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindowRender) << "draw_cb" << pw;
     pw->onDraw(cr);
 }
 
 gboolean map_cb(GtkWidget *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindowRender) << "map_cb" << pw;
     pw->onMap();
     return FALSE;
 }
@@ -75,6 +82,7 @@ gboolean map_cb(GtkWidget *, gpointer platformWindow)
 gboolean unmap_cb(GtkWidget *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindowRender) << "unmap_cb" << pw;
     pw->onUnmap();
     return FALSE;
 }
@@ -82,6 +90,7 @@ gboolean unmap_cb(GtkWidget *, gpointer platformWindow)
 gboolean configure_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindowRender) << "configure_cb" << pw;
     pw->onConfigure(event);
     return FALSE;
 }
@@ -89,48 +98,56 @@ gboolean configure_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 gboolean delete_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindowRender) << "delete_cb" << pw;
     return pw->onDelete() ? TRUE : FALSE;
 }
 
 gboolean key_press_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindow) << "key_press_cb" << pw;
     return pw->onKeyPress(event) ? TRUE : FALSE;
 }
 
 gboolean key_release_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindow) << "key_release_cb" << pw;
     return pw->onKeyRelease(event) ? TRUE : FALSE;
 }
 
 gboolean button_press_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindow) << "button_press_cb" << pw;
     return pw->onButtonPress(event) ? TRUE : FALSE;
 }
 
 gboolean button_release_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindow) << "button_release_cb" << pw;
     return pw->onButtonRelease(event) ? TRUE : FALSE;
 }
 
 gboolean touch_event_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindow) << "touch_event_cb" << pw;
     return pw->onTouchEvent(event) ? TRUE : FALSE;
 }
 
 gboolean motion_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindow) << "motion_notify_cb" << pw;
     return pw->onMotionNotify(event) ? TRUE : FALSE;
 }
 
 gboolean scroll_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindow) << "scroll_cb" << pw;
     return pw->onScrollEvent(event) ? TRUE : FALSE;
 }
 
@@ -238,6 +255,7 @@ void QGtkWindow::onDraw(cairo_t *cr)
 
 void QGtkWindow::onRender()
 {
+    qCDebug(lcWindowRender) << "Start render";
     // inside this function it's safe to use GL; the given
     // #GdkGLContext has been made current to the drawable
     // surface used by the #GtkGLArea and the viewport has
@@ -268,6 +286,7 @@ void QGtkWindow::onRender()
     // we completed our drawing; the draw commands will be
     // flushed at the end of the signal emission chain, and
     // the buffers will be drawn on the window
+    qCDebug(lcWindowRender) << "Done render";
 }
 
 void QGtkWindow::onMap()
