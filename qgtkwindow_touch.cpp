@@ -42,6 +42,10 @@
 #include <qpa/qwindowsysteminterface.h>
 
 #include <QDebug>
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcTouch, "qt.qpa.gtk.touch");
+Q_LOGGING_CATEGORY(lcTouchUpdate, "qt.qpa.gtk.touch.update");
 
 static Qt::TouchPointState gtkTouchStateToQtTouchState(GdkEventType type)
 {
@@ -65,14 +69,15 @@ bool QGtkWindow::onTouchEvent(GdkEvent *event)
     QWindowSystemInterface::TouchPoint *tp = 0;
     int touchpointId = int(reinterpret_cast<intptr_t>(ev->sequence));
 
-    const char *type = "";
     switch (ev->type) {
     case GDK_TOUCH_BEGIN:
+        qCDebug(lcTouch) << "Begin " << touchpointId;
         m_activeTouchPoints.append(QWindowSystemInterface::TouchPoint());
         tp = &m_activeTouchPoints.last();
         tp->id = touchpointId;
         break;
     case GDK_TOUCH_UPDATE:
+        qCDebug(lcTouchUpdate) << "Update " << touchpointId;
         for (int i = 0; i < m_activeTouchPoints.length(); ++i) {
             if (m_activeTouchPoints.at(i).id == touchpointId) {
                 tp = &m_activeTouchPoints[i];
@@ -81,10 +86,19 @@ bool QGtkWindow::onTouchEvent(GdkEvent *event)
         }
         break;
     case GDK_TOUCH_END:
-    case GDK_TOUCH_CANCEL:
+        qCDebug(lcTouch) << "End " << touchpointId;
         for (int i = 0; i < m_activeTouchPoints.length(); ++i) {
             if (m_activeTouchPoints.at(i).id == touchpointId) {
-                m_activeTouchPoints.removeAt(i);
+                tp = &m_activeTouchPoints[i];
+                break;
+            }
+        }
+        break;
+    case GDK_TOUCH_CANCEL:
+        qCDebug(lcTouch) << "Cancel " << touchpointId;
+        for (int i = 0; i < m_activeTouchPoints.length(); ++i) {
+            if (m_activeTouchPoints.at(i).id == touchpointId) {
+                tp = &m_activeTouchPoints[i];
                 break;
             }
         }
@@ -123,8 +137,6 @@ bool QGtkWindow::onTouchEvent(GdkEvent *event)
         tp->normalPosition = QPointF(nx, ny);
     }
 
-qDebug() << "Reporting " << m_activeTouchPoints;
-
     // report unconditionally even if tp was not found
     // (in that case there was a release event)
     QWindowSystemInterface::handleTouchEvent(
@@ -134,6 +146,20 @@ qDebug() << "Reporting " << m_activeTouchPoints;
         m_activeTouchPoints,
         convertGdkKeyboardModsToQtKeyboardMods(ev->state)
     );
+
+    switch (ev->type) {
+    case GDK_TOUCH_END:
+    case GDK_TOUCH_CANCEL:
+        for (int i = 0; i < m_activeTouchPoints.length(); ++i) {
+            if (m_activeTouchPoints.at(i).id == touchpointId) {
+                m_activeTouchPoints.removeAt(i);
+                break;
+            }
+        }
+        break;
+    default:
+        break;
+    }
 
     // Eat the event so that GTK doesn't synthesize pointer events from these.
     return true;
