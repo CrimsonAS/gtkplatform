@@ -204,11 +204,11 @@ bool QGtkWindow::onScrollEvent(GdkEvent *event)
         // ### I have literally no idea what I'm doing here
         const int pixelsToDegrees = 50;
         angleDelta.setX(ev->delta_x * pixelsToDegrees);
-        angleDelta.setY(ev->delta_y * pixelsToDegrees);
+        angleDelta.setY(-ev->delta_y * pixelsToDegrees);
         source = Qt::MouseEventSynthesizedBySystem;
 
         pixelDelta.setX(ev->delta_x * pixelsToDegrees);
-        pixelDelta.setY(ev->delta_y * pixelsToDegrees);
+        pixelDelta.setY(-ev->delta_y * pixelsToDegrees);
     } else if (ev->direction == GDK_SCROLL_UP ||
                ev->direction == GDK_SCROLL_DOWN) {
         angleDelta.setY(qBound(-120, int(ev->delta_y * 10000), 120));
