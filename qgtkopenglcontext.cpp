@@ -41,33 +41,131 @@
 #include "qgtkwindow.h"
 
 #include <QtCore/qdebug.h>
+#include <QtGui/qopenglcontext.h>
+#include <QtGui/qopengltexture.h>
 
 #include <gtk/gtk.h>
+#include <gdk/gdk.h>
 #include <EGL/egl.h>
 #include <dlfcn.h>
 
-QGtkOpenGLContext::QGtkOpenGLContext(const QSurfaceFormat &desiredFormat)
-    : m_fbo(0)
+// GDK creates an internal 'paint context' for each GDKWindow, and exposes
+// an API to create additional contexts which share with the paint context.
+// Unfortunately, that means it's not possible to create a context that can
+// share with multiple GDKWindows, which is a requirement of how the
+// QOpenGLContext API is structured.
+//
+// As a painful workaround, QGtkOpenGLContext uses a fake window to create
+// an independent context for use by Qt rendering, and explicitly copies to
+// the surface's context by reading back and re-uploading the framebuffer.
+//
+// It may be possible on some drivers to map a buffer from this context and
+// use the mapped pointer in an upload to another context, and have that
+// actually bypass the CPU for copying. I can't find many references to
+// that technique, but it may be worth experimenting.
+//
+// Otherwise, we need GDK to provide enough API to guarantee that all paint
+// contexts end up shared with eachother. A way to specify a shared context
+// for the paint context would be sufficient.
+
+static void updateFormatFromContext(QSurfaceFormat &format)
 {
-    QSurfaceFormat format(desiredFormat);
-    format.setAlphaBufferSize(8);
-    format.setRedBufferSize(8);
-    format.setGreenBufferSize(8);
-    format.setBlueBufferSize(8);
-    format.setProfile(QSurfaceFormat::CoreProfile);
-    m_format = format;
+    // Update the version, profile, and context bit of the format
+    int major = 0, minor = 0;
+    QByteArray versionString(reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+    qWarning() << "GL_VERSION is" << versionString;
+    if (QPlatformOpenGLContext::parseOpenGLVersion(versionString, major, minor)) {
+        format.setMajorVersion(major);
+        format.setMinorVersion(minor);
+    }
+
+    format.setProfile(QSurfaceFormat::NoProfile);
+    format.setOptions(QSurfaceFormat::FormatOptions());
+
+    if (format.renderableType() == QSurfaceFormat::OpenGL) {
+        if (format.version() < qMakePair(3, 0)) {
+            format.setOption(QSurfaceFormat::DeprecatedFunctions);
+            return;
+        }
+
+        // Version 3.0 onwards - check if it includes deprecated functionality or is
+        // a debug context
+        GLint value = 0;
+        glGetIntegerv(GL_CONTEXT_FLAGS, &value);
+        if (!(value & GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT))
+            format.setOption(QSurfaceFormat::DeprecatedFunctions);
+        if (value & GL_CONTEXT_FLAG_DEBUG_BIT)
+            format.setOption(QSurfaceFormat::DebugContext);
+        if (format.version() < qMakePair(3, 2))
+            return;
+
+        // Version 3.2 and newer have a profile
+        value = 0;
+        glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &value);
+
+        if (value & GL_CONTEXT_CORE_PROFILE_BIT)
+            format.setProfile(QSurfaceFormat::CoreProfile);
+        else if (value & GL_CONTEXT_COMPATIBILITY_PROFILE_BIT)
+            format.setProfile(QSurfaceFormat::CompatibilityProfile);
+    }
+
+#if 0
+    // These are all returning 0, for some reason?
+    GLint depth = 0, red = 0, green = 0, blue = 0, alpha = 0, stencil = 0;
+    glGetIntegerv(GL_DEPTH_BITS, &value);
+    glGetIntegerv(GL_RED_BITS, &value);
+    glGetIntegerv(GL_GREEN_BITS, &value);
+    glGetIntegerv(GL_BLUE_BITS, &value);
+    glGetIntegerv(GL_ALPHA_BITS, &value);
+    glGetIntegerv(GL_STENCIL_BITS, &value);
+#else
+    GLint depth = 24, red = 8, green = 8, blue = 8, alpha = 8, stencil = 8;
+#endif
+    format.setDepthBufferSize(depth);
+    format.setRedBufferSize(red);
+    format.setGreenBufferSize(green);
+    format.setBlueBufferSize(blue);
+    format.setAlphaBufferSize(alpha);
+    format.setStencilBufferSize(stencil);
+
+    qDebug() << "Updated format, is now" << format;
+}
+
+QGtkOpenGLContext::QGtkOpenGLContext(QOpenGLContext *qtContext)
+    : m_gdkContext(nullptr)
+    , m_fbo(nullptr)
+{
+    // The only GDK API for creating a GL context requires a window,
+    // but the created context is explicitly not tied exclusively to that
+    // window. Create a fake window to create an independent context here.
+    //
+    // The alternative is to figure out the platform and directly create
+    // wayland or GLX contexts without GDK. That would give us more
+    // flexibility, but might be more fragile.
+    GtkWidget *fakeGtkWin = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_widget_realize(fakeGtkWin);
+    GdkWindow *fakeGdkWin = gtk_widget_get_window(fakeGtkWin);
+    m_gdkContext = gdk_window_create_gl_context(fakeGdkWin, NULL);
+    Q_ASSERT(m_gdkContext);
+    bool context_realized = gdk_gl_context_realize(m_gdkContext, NULL);
+    Q_ASSERT(context_realized);
+    gdk_gl_context_make_current(m_gdkContext);
+    gtk_widget_destroy(fakeGtkWin);
+
+    m_format = qtContext->format();
+    m_format.setRenderableType(QSurfaceFormat::OpenGL);
+    updateFormatFromContext(m_format);
 }
 
 QGtkOpenGLContext::~QGtkOpenGLContext()
 {
-
+    // XXX leaking context
+    delete m_fbo;
     qWarning() << "Stub";
 }
 
 void QGtkOpenGLContext::initialize()
 {
-    m_fbo = new QOpenGLFramebufferObject(400, 400, GL_TEXTURE_2D);
-    qWarning() << "Stub";
 }
 
 QSurfaceFormat QGtkOpenGLContext::format() const
@@ -77,46 +175,81 @@ QSurfaceFormat QGtkOpenGLContext::format() const
 
 GLuint QGtkOpenGLContext::defaultFramebufferObject(QPlatformSurface *surface) const
 {
+    Q_ASSERT(m_fbo);
     return m_fbo->handle();
 }
 
 void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
 {
-    //usleep(40000);
-    qWarning() << "Stub";
+    QGtkWindow *win = static_cast<QGtkWindow*>(surface);
+    GdkGLContext *surfaceContext = win->gdkGLContext();
 
+    // Download rendered frame, slowly, so slowly.
+    QImage frame = m_fbo->toImage(false);
+
+    // XXX This is probably not threadsafe for multithreaded renderer at all
+    // XXX surfaceChanged definitely isn't. Should probably do all of this
+    // with queued calls
+    // Switch to the window's rendering context
+    gdk_gl_context_make_current(surfaceContext);
+
+    // Update the window's texture
+    QOpenGLTexture *surfaceTexture = win->surfaceTexture();
+    // XXX Slower than necessary
+    surfaceTexture->destroy();
+    surfaceTexture->setData(frame, QOpenGLTexture::DontGenerateMipMaps);
+
+    // Trigger rendering
+    win->surfaceChanged();
+
+    gdk_gl_context_make_current(m_gdkContext);
 }
+
 bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
 {
     QGtkWindow *win = static_cast<QGtkWindow*>(surface);
-    win->setFramebuffer(m_fbo);
-    GdkGLContext *ctx = win->gdkGLContext();
     qDebug() << "Making current";
-    gdk_gl_context_make_current(ctx);
-    qDebug() << "Done making current";
+    gdk_gl_context_make_current(m_gdkContext);
+
+    if (m_fbo && m_fbo->size() != win->geometry().size()) {
+        qDebug() << "clearing old context FBO of size" << m_fbo->size();
+        delete m_fbo;
+        m_fbo = nullptr;
+    }
+    if (!m_fbo) {
+        m_fbo = new QOpenGLFramebufferObject(win->geometry().size(), QOpenGLFramebufferObject::CombinedDepthStencil);
+        qDebug() << "created new context FBO of size" << m_fbo->size();
+    }
+
+    if (!m_fbo->isValid())
+        return false;
+    m_fbo->bind();
     return true;
 }
 
 void QGtkOpenGLContext::doneCurrent()
 {
-    qDebug() << "Done clearing current";
     gdk_gl_context_clear_current();
     qDebug() << "Done clearing current";
 }
 
 bool QGtkOpenGLContext::isSharing() const
 {
-    qWarning() << "Stub";
+    // Sharing isn't supported, because GDK doesn't give us control over
+    // shared contexts. If that ends up being a serious problem, the
+    // alternative is to try to create EGL/GLX contexts directly and hope
+    // they end up compatible.
     return false;
 }
+
 bool QGtkOpenGLContext::isValid() const
 {
-    qWarning() << "Stub";
-    return true;
+    return m_gdkContext;
 }
 
 QFunctionPointer QGtkOpenGLContext::getProcAddress(const char *procName)
 {
+    // XXX no
     eglBindAPI(EGL_OPENGL_API); // ### EGL_OPENGL_ES_API?
     QFunctionPointer proc = (QFunctionPointer)eglGetProcAddress(procName);
     if (!proc) {

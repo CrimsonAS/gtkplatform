@@ -37,10 +37,16 @@
 **
 ****************************************************************************/
 
+// XXX Hacky way to be able to do GL rendering on a GTK context
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <GL/glext.h>
+
 #include "qgtkwindow.h"
 #include "qgtkhelpers.h"
 
 #include <qpa/qwindowsysteminterface.h>
+#include <QtGui/qopengltexture.h>
 
 #include <QDebug>
 
@@ -135,6 +141,8 @@ gboolean scroll_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 QGtkWindow::QGtkWindow(QWindow *window)
     : QPlatformWindow(window)
     , m_buttons(Qt::NoButton)
+    , m_gl_context(nullptr)
+    , m_surfaceTexture(nullptr)
 {
     m_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     g_signal_connect(m_window, "map", G_CALLBACK(map_cb), this);
@@ -182,6 +190,7 @@ QGtkWindow::QGtkWindow(QWindow *window)
         // this has to wait until everything is set up.
         gtk_widget_realize(m_content);
         m_gl_context = gtk_gl_area_get_context(GTK_GL_AREA(m_content));
+        m_surfaceTexture = new QOpenGLTexture(QOpenGLTexture::Target2D);
     }
 
     m_touchDevice = new QTouchDevice;
@@ -195,6 +204,7 @@ QGtkWindow::~QGtkWindow()
     // ### destroy the window?
 
     QWindowSystemInterface::unregisterTouchDevice(m_touchDevice);
+    delete m_surfaceTexture;
 }
 
 void QGtkWindow::onDraw(cairo_t *cr)
@@ -226,32 +236,37 @@ void QGtkWindow::onDraw(cairo_t *cr)
     cairo_surface_destroy(surf);
 }
 
-#include <QtGui/QOpenGLExtraFunctions>
-
 void QGtkWindow::onRender()
 {
-    QOpenGLExtraFunctions funcs;
-    funcs.initializeOpenGLFunctions();
-
     // inside this function it's safe to use GL; the given
     // #GdkGLContext has been made current to the drawable
     // surface used by the #GtkGLArea and the viewport has
     // already been set to be the size of the allocation
+    //
+    // However, beware that none of Qt's OpenGL classes are usable
+    // here, because this GL context is not represented by a
+    // QOpenGLContext.
+    //
+    // XXX Could that be solved by creating a QOpenGLContext for it,
+    // using the native handle trick?
 
-    GLint fboId;
-    funcs.glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fboId);
-
-    funcs.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboId);
-    funcs.glBindFramebuffer(GL_READ_FRAMEBUFFER, m_fbo->handle());
-
-    funcs.glBlitFramebuffer(0, 0, 400, 400, 0, 0, 400, 400, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    // XXX This is an awful, lazy way to blit a texture
+    GLuint fboId = 0;
+    glGenFramebuffers(1, &fboId);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fboId);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_surfaceTexture->textureId(), 0);
+    glBlitFramebuffer(0, 0, m_surfaceTexture->width(), m_surfaceTexture->height(),
+                            0, 0, geometry().width(), geometry().height(),
+                            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glDeleteFramebuffers(1, &fboId);
 
     // we completed our drawing; the draw commands will be
     // flushed at the end of the signal emission chain, and
     // the buffers will be drawn on the window
 }
 
-void QGtkWindow::onMap() 
+void QGtkWindow::onMap()
 {
     qDebug() << "map" << this;
     QWindowSystemInterface::handleExposeEvent(window(), QRect(QPoint(), geometry().size()));
@@ -492,3 +507,11 @@ GdkGLContext *QGtkWindow::gdkGLContext() const
     return m_gl_context;
 }
 
+QOpenGLTexture *QGtkWindow::surfaceTexture() const
+{
+    return m_surfaceTexture;
+}
+
+void QGtkWindow::surfaceChanged() {
+    gtk_widget_queue_draw(m_content);
+}

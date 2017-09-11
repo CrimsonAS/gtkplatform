@@ -249,7 +249,7 @@ GtkApplication *QGtkIntegration::application() const
 
 QPlatformOpenGLContext *QGtkIntegration::createPlatformOpenGLContext(QOpenGLContext *context) const
 {
-    return new QGtkOpenGLContext(context->format());
+    return new QGtkOpenGLContext(context);
 }
 
 bool QGtkIntegration::hasCapability(QPlatformIntegration::Capability cap) const

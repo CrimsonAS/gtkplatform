@@ -42,13 +42,13 @@
 
 #include <qpa/qplatformwindow.h>
 #include <qpa/qwindowsysteminterface.h>
-#include <QtGui/qopenglframebufferobject.h>
 
 #include <gtk/gtk.h>
 
 QT_BEGIN_NAMESPACE
 
 class QTouchDevice;
+class QOpenGLTexture;
 
 class QGtkWindow : public QPlatformWindow
 {
@@ -128,8 +128,8 @@ public:
     GtkMenuBar *gtkMenuBar() const;
     GtkWidget *gtkWindow() const;
     GdkGLContext *gdkGLContext() const;
-
-    void setFramebuffer(QOpenGLFramebufferObject *fbo) { m_fbo = fbo; }
+    QOpenGLTexture *surfaceTexture() const;
+    void surfaceChanged();
 
 private:
     static Qt::KeyboardModifiers convertGdkKeyboardModsToQtKeyboardMods(guint mask);
@@ -142,7 +142,7 @@ private:
     QList<QWindowSystemInterface::TouchPoint> m_activeTouchPoints;
     Qt::MouseButtons m_buttons;
     GdkGLContext *m_gl_context;
-    QOpenGLFramebufferObject *m_fbo;
+    QOpenGLTexture *m_surfaceTexture;
 };
 
 QT_END_NAMESPACE

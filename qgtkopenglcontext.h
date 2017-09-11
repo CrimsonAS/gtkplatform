@@ -40,15 +40,16 @@
 #ifndef QGTKOPENGLCONTEXT_H
 #define QGTKOPENGLCONTEXT_H
 
-#include <qpa/qplatformopenglcontext.h>
 #include <QtGui/qopenglframebufferobject.h>
+#include <qpa/qplatformopenglcontext.h>
+#include <gdk/gdk.h>
 
 QT_BEGIN_NAMESPACE
 
 class QGtkOpenGLContext : public QPlatformOpenGLContext
 {
 public:
-    QGtkOpenGLContext(const QSurfaceFormat &desiredFormat);
+    QGtkOpenGLContext(QOpenGLContext *qtContext);
     ~QGtkOpenGLContext();
 
     void initialize() override;
@@ -67,7 +68,7 @@ public:
 
 private:
     QSurfaceFormat m_format;
-
+    GdkGLContext *m_gdkContext;
     QOpenGLFramebufferObject *m_fbo;
 };
 
