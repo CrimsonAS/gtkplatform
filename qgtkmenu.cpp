@@ -157,7 +157,9 @@ void QGtkMenu::dismiss()
 
 QPlatformMenuItem *QGtkMenu::menuItemAt(int position) const
 {
-    return m_items.at(position);
+    if (position < m_items.size() - 1)
+        return m_items.at(position);
+    return nullptr;
 }
 
 QPlatformMenuItem *QGtkMenu::menuItemForTag(quintptr tag) const
