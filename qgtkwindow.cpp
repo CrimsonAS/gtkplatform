@@ -408,12 +408,20 @@ void QGtkWindow::setMask(const QRegion &region){}
 void QGtkWindow::requestActivateWindow(){}
 
 void QGtkWindow::handleContentOrientationChange(Qt::ScreenOrientation orientation){}
-
-qreal QGtkWindow::devicePixelRatio() const{}
-
-bool QGtkWindow::setKeyboardGrabEnabled(bool grab){}
-bool QGtkWindow::setMouseGrabEnabled(bool grab){}
-
+*/
+bool QGtkWindow::setKeyboardGrabEnabled(bool grab)
+{
+    if (grab) {
+        gtk_window_present(GTK_WINDOW(m_window));
+    }
+}
+bool QGtkWindow::setMouseGrabEnabled(bool grab)
+{
+    if (grab) {
+        gtk_window_present(GTK_WINDOW(m_window));
+    }
+}
+/*
 bool QGtkWindow::setWindowModified(bool modified){}
 
 void QGtkWindow::windowEvent(QEvent *event){}

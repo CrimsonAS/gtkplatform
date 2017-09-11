@@ -89,12 +89,10 @@ public:
     void requestActivateWindow() override;
 
     void handleContentOrientationChange(Qt::ScreenOrientation orientation) override;
-
-    qreal devicePixelRatio() const override;
-
+*/
     bool setKeyboardGrabEnabled(bool grab) override;
     bool setMouseGrabEnabled(bool grab) override;
-
+/*
     bool setWindowModified(bool modified) override;
 
     void windowEvent(QEvent *event) override;
