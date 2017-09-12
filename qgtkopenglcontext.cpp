@@ -83,6 +83,7 @@ static void updateFormatFromContext(QSurfaceFormat &format)
         format.setMinorVersion(minor);
     }
 
+    format.setRenderableType(QSurfaceFormat::OpenGL);
     format.setProfile(QSurfaceFormat::NoProfile);
     format.setOptions(QSurfaceFormat::FormatOptions());
 
@@ -135,8 +136,9 @@ static void updateFormatFromContext(QSurfaceFormat &format)
     qDebug() << "Updated format, is now" << format;
 }
 
-QGtkOpenGLContext::QGtkOpenGLContext(QOpenGLContext *qtContext)
-    : m_gdkContext(nullptr)
+QGtkOpenGLContext::QGtkOpenGLContext(const QSurfaceFormat &format)
+    : m_format(format)
+    , m_gdkContext(nullptr)
     , m_fbo(nullptr)
 {
     // The only GDK API for creating a GL context requires a window,
@@ -156,9 +158,13 @@ QGtkOpenGLContext::QGtkOpenGLContext(QOpenGLContext *qtContext)
     gdk_gl_context_make_current(m_gdkContext);
     gtk_widget_destroy(fakeGtkWin);
 
-    m_format = qtContext->format();
-    m_format.setRenderableType(QSurfaceFormat::OpenGL);
     updateFormatFromContext(m_format);
+}
+
+QGtkOpenGLContext::QGtkOpenGLContext()
+    : m_gdkContext(nullptr)
+    , m_fbo(nullptr)
+{
 }
 
 QGtkOpenGLContext::~QGtkOpenGLContext()
@@ -261,4 +267,42 @@ QFunctionPointer QGtkOpenGLContext::getProcAddress(const char *procName)
         proc = (QFunctionPointer)dlsym(RTLD_DEFAULT, procName);
     }
     return proc;
+}
+
+// QGtkOpenGLInternalContext represents GTK-side contexts for internal use, allowing
+// QOpenGLContexts to be created for them and the use of Qt's OpenGL functions.
+//
+// These contexts do not render to the user-provided surface. They are purely a
+// wrapper around a GTK context.
+QGtkOpenGLInternalContext::QGtkOpenGLInternalContext(GdkGLContext *nativeContext)
+{
+    m_gdkContext = nativeContext;
+    gdk_gl_context_make_current(m_gdkContext);
+    updateFormatFromContext(m_format);
+}
+
+QGtkOpenGLInternalContext::~QGtkOpenGLInternalContext()
+{
+}
+
+GLuint QGtkOpenGLInternalContext::defaultFramebufferObject(QPlatformSurface *surface) const
+{
+    Q_UNUSED(surface);
+    return 0;
+}
+
+bool QGtkOpenGLInternalContext::makeCurrent(QPlatformSurface *surface)
+{
+    if (surface) {
+        gdk_gl_context_make_current(m_gdkContext);
+    } else {
+        gdk_gl_context_clear_current();
+    }
+    return true;
+}
+
+void QGtkOpenGLInternalContext::swapBuffers(QPlatformSurface *surface)
+{
+    Q_UNUSED(surface);
+    qWarning() << "QGtkOpenGLInternalContext cannot swap buffers, it does not manage surfaces";
 }

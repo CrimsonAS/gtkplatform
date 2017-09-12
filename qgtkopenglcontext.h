@@ -49,7 +49,7 @@ QT_BEGIN_NAMESPACE
 class QGtkOpenGLContext : public QPlatformOpenGLContext
 {
 public:
-    QGtkOpenGLContext(QOpenGLContext *qtContext);
+    QGtkOpenGLContext(const QSurfaceFormat &format);
     ~QGtkOpenGLContext();
 
     void initialize() override;
@@ -66,10 +66,23 @@ public:
 
     QFunctionPointer getProcAddress(const char *procName) override;
 
-private:
+protected:
     QSurfaceFormat m_format;
     GdkGLContext *m_gdkContext;
     QOpenGLFramebufferObject *m_fbo;
+
+    QGtkOpenGLContext();
+};
+
+class QGtkOpenGLInternalContext : public QGtkOpenGLContext
+{
+public:
+    QGtkOpenGLInternalContext(GdkGLContext *nativeContext);
+    ~QGtkOpenGLInternalContext();
+
+    GLuint defaultFramebufferObject(QPlatformSurface *surface) const override;
+    bool makeCurrent(QPlatformSurface *surface) override;
+    void swapBuffers(QPlatformSurface *surface) override;
 };
 
 QT_END_NAMESPACE

@@ -141,7 +141,8 @@ private:
     QTouchDevice *m_touchDevice = nullptr;
     QList<QWindowSystemInterface::TouchPoint> m_activeTouchPoints;
     Qt::MouseButtons m_buttons;
-    GdkGLContext *m_gl_context = nullptr;
+    GdkGLContext *m_gtkContext = nullptr;
+    QOpenGLContext *m_gtkContextQt = nullptr;
     QOpenGLTexture *m_surfaceTexture = nullptr;
 };
 

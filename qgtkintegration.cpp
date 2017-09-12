@@ -245,7 +245,15 @@ GtkApplication *QGtkIntegration::application() const
 
 QPlatformOpenGLContext *QGtkIntegration::createPlatformOpenGLContext(QOpenGLContext *context) const
 {
-    return new QGtkOpenGLContext(context);
+    if (!context->nativeHandle().isNull()) {
+        GdkGLContext *nativeContext = reinterpret_cast<GdkGLContext*>(context->nativeHandle().value<void*>());
+        if (!nativeContext) {
+            return nullptr;
+        }
+
+        return new QGtkOpenGLInternalContext(nativeContext);
+    }
+    return new QGtkOpenGLContext(context->format());
 }
 
 bool QGtkIntegration::hasCapability(QPlatformIntegration::Capability cap) const

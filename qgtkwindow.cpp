@@ -37,16 +37,13 @@
 **
 ****************************************************************************/
 
-// XXX Hacky way to be able to do GL rendering on a GTK context
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
-
 #include "qgtkwindow.h"
 #include "qgtkhelpers.h"
 
 #include <qpa/qwindowsysteminterface.h>
 #include <QtGui/qopengltexture.h>
+#include <QtGui/qopenglcontext.h>
+#include <QtGui/qopenglextrafunctions.h>
 
 #include <QDebug>
 #include <QLoggingCategory>
@@ -158,8 +155,6 @@ gboolean scroll_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 QGtkWindow::QGtkWindow(QWindow *window)
     : QPlatformWindow(window)
     , m_buttons(Qt::NoButton)
-    , m_gl_context(nullptr)
-    , m_surfaceTexture(nullptr)
 {
     m_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     g_signal_connect(m_window, "map", G_CALLBACK(map_cb), this);
@@ -207,7 +202,12 @@ QGtkWindow::QGtkWindow(QWindow *window)
     if (window->supportsOpenGL()) {
         // this has to wait until everything is set up.
         gtk_widget_realize(m_content);
-        m_gl_context = gtk_gl_area_get_context(GTK_GL_AREA(m_content));
+        m_gtkContext = gtk_gl_area_get_context(GTK_GL_AREA(m_content));
+        m_gtkContextQt = new QOpenGLContext;
+        m_gtkContextQt->setNativeHandle(QVariant::fromValue<void*>(m_gtkContext));
+        if (!m_gtkContextQt->create()) {
+            Q_ASSERT_X(false, "QGtkWindow", "failed to create wrapper context for GTK contexT");
+        }
         m_surfaceTexture = new QOpenGLTexture(QOpenGLTexture::Target2D);
     }
 
@@ -223,6 +223,7 @@ QGtkWindow::~QGtkWindow()
 
     QWindowSystemInterface::unregisterTouchDevice(m_touchDevice);
     delete m_surfaceTexture;
+    delete m_gtkContextQt;
 }
 
 void QGtkWindow::onDraw(cairo_t *cr)
@@ -257,36 +258,32 @@ void QGtkWindow::onDraw(cairo_t *cr)
 void QGtkWindow::onRender()
 {
     qCDebug(lcWindowRender) << "Start render";
-    // inside this function it's safe to use GL; the given
-    // #GdkGLContext has been made current to the drawable
-    // surface used by the #GtkGLArea and the viewport has
-    // already been set to be the size of the allocation
-    //
-    // However, beware that none of Qt's OpenGL classes are usable
-    // here, because this GL context is not represented by a
-    // QOpenGLContext.
-    //
-    // XXX Could that be solved by creating a QOpenGLContext for it,
-    // using the native handle trick?
+
+    // m_gtkContextQt is a QOpenGLContext wrapping the GtkGLArea's rendering
+    // context. It cannot be used to swap, but it is possible to call makeCurrent
+    // and enable the use of Qt's OpenGL functions during rendering here.
+    bool isCurrent = m_gtkContextQt->makeCurrent(window());
+    Q_ASSERT(isCurrent);
+
+    // XXX If this remains useful, it should be cached
+    QOpenGLExtraFunctions funcs(m_gtkContextQt);
 
     GLint dims[4] = {0};
-    glGetIntegerv(GL_VIEWPORT, dims);
+    funcs.glGetIntegerv(GL_VIEWPORT, dims);
     GLint fbWidth = dims[2];
     GLint fbHeight = dims[3];
 
     // XXX This is an awful, lazy way to blit a texture
     GLuint fboId = 0;
-    glGenFramebuffers(1, &fboId);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fboId);
-    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_surfaceTexture->textureId(), 0);
-    glBlitFramebuffer(0, 0, m_surfaceTexture->width(), m_surfaceTexture->height(),
-                      0, 0, fbWidth, fbHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    glDeleteFramebuffers(1, &fboId);
+    funcs.glGenFramebuffers(1, &fboId);
+    funcs.glBindFramebuffer(GL_READ_FRAMEBUFFER, fboId);
+    funcs.glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_surfaceTexture->textureId(), 0);
+    funcs.glBlitFramebuffer(0, 0, m_surfaceTexture->width(), m_surfaceTexture->height(),
+                            0, 0, fbWidth, fbHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    funcs.glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    funcs.glDeleteFramebuffers(1, &fboId);
 
-    // we completed our drawing; the draw commands will be
-    // flushed at the end of the signal emission chain, and
-    // the buffers will be drawn on the window
+    m_gtkContextQt->doneCurrent();
     qCDebug(lcWindowRender) << "Done render";
 }
 
@@ -544,7 +541,7 @@ GtkMenuBar *QGtkWindow::gtkMenuBar() const
 
 GdkGLContext *QGtkWindow::gdkGLContext() const
 {
-    return m_gl_context;
+    return m_gtkContext;
 }
 
 QOpenGLTexture *QGtkWindow::surfaceTexture() const
