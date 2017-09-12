@@ -98,7 +98,10 @@ void QGtkMenuBar::removeMenu(QPlatformMenu *menu)
 }
 
 void QGtkMenuBar::syncMenu(QPlatformMenu *menuItem)
-{ qWarning() << "Stub"; }
+{
+    Q_UNUSED(menuItem);
+    qWarning() << "Stub";
+}
 
 void QGtkMenuBar::handleReparent(QWindow *newParentWindow)
 {
@@ -127,7 +130,10 @@ void QGtkMenuBar::handleReparent(QWindow *newParentWindow)
 }
 
 QPlatformMenu *QGtkMenuBar::menuForTag(quintptr tag) const
-{ qWarning() << "Stub"; }
+{
+    Q_UNUSED(tag);
+    qWarning() << "Stub"; return 0;
+}
 
 QPlatformMenu *QGtkMenuBar::createMenu() const
 {

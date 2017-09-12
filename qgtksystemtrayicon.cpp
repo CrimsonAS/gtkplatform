@@ -95,6 +95,7 @@ void QGtkSystemTrayIcon::updateToolTip(const QString &toolTip)
 void QGtkSystemTrayIcon::updateMenu(QPlatformMenu *menu)
 {
     // ### todo
+    Q_UNUSED(menu);
     return;
 }
 
@@ -107,6 +108,7 @@ QRect QGtkSystemTrayIcon::geometry() const
 void QGtkSystemTrayIcon::showMessage(const QString &title, const QString &msg,
                  const QIcon& icon, MessageIcon iconType, int secs)
 {
+    Q_UNUSED(secs);
     qDebug() << title << msg;
     return; // broken for now
 

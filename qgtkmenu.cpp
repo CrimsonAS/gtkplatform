@@ -63,7 +63,7 @@ void QGtkMenu::regenerate()
 void QGtkMenu::insertMenuItem(QPlatformMenuItem *menuItem, QPlatformMenuItem *before)
 {
     QGtkMenuItem *mi = static_cast<QGtkMenuItem*>(menuItem);
-    QGtkMenuItem *bi = static_cast<QGtkMenuItem*>(bi);
+    QGtkMenuItem *bi = static_cast<QGtkMenuItem*>(before);
 
     int idx = m_items.indexOf(bi);
     if (idx < 0)
@@ -87,12 +87,13 @@ void QGtkMenu::removeMenuItem(QPlatformMenuItem *menuItem)
 
 void QGtkMenu::syncMenuItem(QPlatformMenuItem *menuItem)
 {
-
+    Q_UNUSED(menuItem);
     qWarning() << "Stub";
 }
 
 void QGtkMenu::syncSeparatorsCollapsible(bool enable)
 {
+    Q_UNUSED(enable);
 }
 
 void QGtkMenu::setTag(quintptr tag)
@@ -113,7 +114,7 @@ void QGtkMenu::setText(const QString &text)
 
 void QGtkMenu::setIcon(const QIcon &icon)
 {
-
+    Q_UNUSED(icon);
     qWarning() << "Stub";
 }
 
@@ -131,11 +132,14 @@ bool QGtkMenu::isEnabled() const
 void QGtkMenu::setVisible(bool visible)
 {
     //aboutToShow, aboutToHide signals
+    Q_UNUSED(visible);
     qWarning() << "Stub";
 }
 
-void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, const QPlatformMenuItem  *item)
+void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, const QPlatformMenuItem *item)
 {
+    Q_UNUSED(item);
+
     // ### this isn't called because of a Q_OS check in qtbase?
     GtkMenuItem *mi = gtkMenuItem();
     GtkWidget *menu = gtk_menu_item_get_submenu(mi);
@@ -173,18 +177,6 @@ QPlatformMenuItem *QGtkMenu::menuItemForTag(quintptr tag) const
     return nullptr;
 }
 
-static void show_cb(GtkWidget *, gboolean, gpointer qgtkMenu)
-{
-    QGtkMenu *gm = static_cast<QGtkMenu*>(qgtkMenu);
-    gm->emitShow();
-}
-
-static void hide_cb(GtkWidget *, gboolean, gpointer qgtkMenu)
-{
-    QGtkMenu *gm = static_cast<QGtkMenu*>(qgtkMenu);
-    gm->emitHide();
-}
-
 GtkMenuItem *QGtkMenu::gtkMenuItem() const
 {
     GtkMenu *menu = GTK_MENU(gtk_menu_new());
@@ -206,15 +198,5 @@ GtkMenuItem *QGtkMenu::gtkMenuItem() const
     //g_signal_connect(mi, "hide", G_CALLBACK(hide_cb), const_cast<QGtkMenu*>(this));
 
     return mi;
-}
-
-void QGtkMenu::emitShow()
-{
-    Q_EMIT aboutToShow();
-}
-
-void QGtkMenu::emitHide()
-{
-    Q_EMIT aboutToHide();
 }
 

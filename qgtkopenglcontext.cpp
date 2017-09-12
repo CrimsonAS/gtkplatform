@@ -185,6 +185,7 @@ QSurfaceFormat QGtkOpenGLContext::format() const
 
 GLuint QGtkOpenGLContext::defaultFramebufferObject(QPlatformSurface *surface) const
 {
+    Q_UNUSED(surface);
     Q_ASSERT(m_fbo);
     return m_fbo->handle();
 }

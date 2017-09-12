@@ -131,9 +131,9 @@ bool QGtkWindow::onTouchEvent(GdkEvent *event)
 
         tp->area = tpArea;
 
-        QScreen *s = window()->screen();
-        qreal nx = ev->x / (window()->screen()->size().width() / 2);
-        qreal ny = ev->y / (window()->screen()->size().height() / 2);
+        QSize s = window()->screen()->size();
+        qreal nx = ev->x / (s.width() / 2);
+        qreal ny = ev->y / (s.height() / 2);
         tp->normalPosition = QPointF(nx, ny);
     }
 

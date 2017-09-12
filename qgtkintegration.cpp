@@ -59,25 +59,25 @@ QT_BEGIN_NAMESPACE
 
 class QCoreTextFontEngine;
 
-void monitor_added(GdkDisplay *display, GdkMonitor *monitor, gpointer integration)
+void monitor_added(GdkDisplay *, GdkMonitor *monitor, gpointer integration)
 {
     QGtkIntegration *ig = static_cast<QGtkIntegration*>(integration);
     ig->onMonitorAdded(monitor);
 }
 
-void monitor_removed(GdkDisplay *display, GdkMonitor *monitor, gpointer integration)
+void monitor_removed(GdkDisplay *, GdkMonitor *monitor, gpointer integration)
 {
     QGtkIntegration *ig = static_cast<QGtkIntegration*>(integration);
     ig->onMonitorRemoved(monitor);
 }
 
-void device_added(GdkSeat *seat, GdkDevice *device, gpointer integration)
+void device_added(GdkSeat *, GdkDevice *device, gpointer integration)
 {
     QGtkIntegration *ig = static_cast<QGtkIntegration*>(integration);
     ig->onDeviceAdded(device);
 }
 
-void device_removed(GdkSeat *seat, GdkDevice *device, gpointer integration)
+void device_removed(GdkSeat *, GdkDevice *device, gpointer integration)
 {
     QGtkIntegration *ig = static_cast<QGtkIntegration*>(integration);
     ig->onDeviceRemoved(device);
@@ -314,21 +314,21 @@ void *QGtkIntegration::nativeResourceForIntegration(const QByteArray &resource)
 void *QGtkIntegration::nativeResourceForScreen(const QByteArray &resource, QScreen *screen)
 {
     void *result = 0;
-    qWarning() << "Unimplemented request for " << resource;
+    qWarning() << "Unimplemented request for " << resource << " on " << screen;
     return result;
 }
 
 void *QGtkIntegration::nativeResourceForWindow(const QByteArray &resource, QWindow *window)
 {
     void *result = 0;
-    qWarning() << "Unimplemented request for " << resource;
+    qWarning() << "Unimplemented request for " << resource << " on " << window;
     return result;
 }
 
 void *QGtkIntegration::nativeResourceForContext(const QByteArray &resource, QOpenGLContext *context)
 {
     void *result = 0;
-    qWarning() << "Unimplemented request for " << resource;
+    qWarning() << "Unimplemented request for " << resource << " on " << context;
     return result;
 }
 

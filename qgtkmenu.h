@@ -77,9 +77,6 @@ public:
 
     GtkMenuItem *gtkMenuItem() const;
 
-    void emitShow();
-    void emitHide();
-
 private Q_SLOTS:
     void regenerate();
 

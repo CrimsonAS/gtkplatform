@@ -88,6 +88,8 @@ bool QGtkTheme::usePlatformNativeDialog(DialogType dialogType) const
     case QPlatformTheme::FontDialog:
     case QPlatformTheme::ColorDialog:
         return true;
+    case QPlatformTheme::MessageDialog:
+        break;
     }
     return false;
 }
@@ -101,6 +103,8 @@ QPlatformDialogHelper *QGtkTheme::createPlatformDialogHelper(DialogType dialogTy
         return new QGtk3FontDialogHelper;
     case QPlatformTheme::ColorDialog:
         return new QGtk3ColorDialogHelper;
+    case QPlatformTheme::MessageDialog:
+        break;
     }
     return 0;
 }

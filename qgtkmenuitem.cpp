@@ -71,6 +71,7 @@ void QGtkMenuItem::setText(const QString &text)
 
 void QGtkMenuItem::setIcon(const QIcon &icon)
 {
+    Q_UNUSED(icon);
 }
 
 void QGtkMenuItem::setMenu(QPlatformMenu *pmenu)
@@ -99,10 +100,12 @@ void QGtkMenuItem::setIsSeparator(bool isSeparator)
 
 void QGtkMenuItem::setFont(const QFont &font)
 {
+    Q_UNUSED(font);
 }
 
 void QGtkMenuItem::setRole(MenuRole role)
 {
+    Q_UNUSED(role);
 }
 
 void QGtkMenuItem::setCheckable(bool checkable)
@@ -131,10 +134,12 @@ void QGtkMenuItem::setEnabled(bool enabled)
 
 void QGtkMenuItem::setIconSize(int size)
 {
+    Q_UNUSED(size);
 }
 
 void QGtkMenuItem::setNativeContents(WId item)
 {
+    Q_UNUSED(item);
 }
 
 void QGtkMenuItem::setHasExclusiveGroup(bool hasExclusiveGroup)

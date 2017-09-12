@@ -53,7 +53,7 @@ Q_LOGGING_CATEGORY(lcWindow, "qt.qpa.gtk.window");
 Q_LOGGING_CATEGORY(lcWindowRender, "qt.qpa.gtk.window.render");
 
 // GL
-gboolean render_cb(GtkGLArea *, GdkGLContext *ctx, gpointer platformWindow)
+gboolean render_cb(GtkGLArea *, GdkGLContext *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindowRender) << "render_cb" << pw;
@@ -93,7 +93,7 @@ gboolean configure_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
     return FALSE;
 }
 
-gboolean delete_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+gboolean delete_cb(GtkWidget *, GdkEvent *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindowRender) << "delete_cb" << pw;
@@ -384,12 +384,12 @@ void QGtkWindow::setVisible(bool visible)
 
 void QGtkWindow::setWindowFlags(Qt::WindowFlags flags)
 {
-    qWarning() << "setWindowFlags: Not implemented";
+    qWarning() << "setWindowFlags: Not implemented: " << flags;
 }
 
 void QGtkWindow::setWindowState(Qt::WindowState state)
 {
-    qWarning() << "setWindowState: Not implemented";
+    qWarning() << "setWindowState: Not implemented: " << state;
 }
 
 WId QGtkWindow::winId() const
@@ -414,7 +414,7 @@ void QGtkWindow::setWindowTitle(const QString &title)
 void QGtkWindow::setWindowFilePath(const QString &title)
 {
     // WTF is this?
-    qWarning() << "setWindowFilePath: Not implemented";
+    qWarning() << "setWindowFilePath: Not implemented: " << title;
 }
 
 void QGtkWindow::setWindowIcon(const QIcon &icon)
@@ -471,12 +471,14 @@ bool QGtkWindow::setKeyboardGrabEnabled(bool grab)
     if (grab) {
         gtk_window_present(GTK_WINDOW(m_window));
     }
+    return true;
 }
 bool QGtkWindow::setMouseGrabEnabled(bool grab)
 {
     if (grab) {
         gtk_window_present(GTK_WINDOW(m_window));
     }
+    return true;
 }
 /*
 bool QGtkWindow::setWindowModified(bool modified){}
@@ -496,7 +498,7 @@ void QGtkWindow::setAlertState(bool enabled)
 
 bool QGtkWindow::isAlertState() const
 {
-    gtk_window_get_urgency_hint(GTK_WINDOW(m_window));
+    return gtk_window_get_urgency_hint(GTK_WINDOW(m_window));
 }
 
 /*
@@ -516,6 +518,8 @@ void QGtkWindow::requestUpdate()
 
 void QGtkWindow::setWindowContents(const QImage &image, const QRegion &region, const QPoint &offset)
 {
+    Q_UNUSED(region);
+    Q_UNUSED(offset);
     m_image = image;
 
 #if 0

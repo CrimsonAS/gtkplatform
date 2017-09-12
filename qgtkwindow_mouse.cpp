@@ -155,6 +155,7 @@ bool QGtkWindow::onButtonPress(GdkEvent *event)
         QGtkWindow::convertGdkKeyboardModsToQtKeyboardMods(ev->state),
         isTabletEvent ? Qt::MouseEventSynthesizedByQt : Qt::MouseEventNotSynthesized
     );
+    return true;
 }
 
 bool QGtkWindow::onButtonRelease(GdkEvent *event)
@@ -174,6 +175,7 @@ bool QGtkWindow::onButtonRelease(GdkEvent *event)
         QGtkWindow::convertGdkKeyboardModsToQtKeyboardMods(ev->state),
         isTabletEvent ? Qt::MouseEventSynthesizedByQt : Qt::MouseEventNotSynthesized
     );
+    return true;
 }
 
 bool QGtkWindow::onMotionNotify(GdkEvent *event)
@@ -190,6 +192,7 @@ bool QGtkWindow::onMotionNotify(GdkEvent *event)
         QGtkWindow::convertGdkKeyboardModsToQtKeyboardMods(ev->state),
         isTabletEvent ? Qt::MouseEventSynthesizedByQt : Qt::MouseEventNotSynthesized
     );
+    return true;
 }
 
 bool QGtkWindow::onScrollEvent(GdkEvent *event)
@@ -233,6 +236,7 @@ bool QGtkWindow::onScrollEvent(GdkEvent *event)
         source,
         false /* isInverted */
     );
+    return true;
 }
 
 
