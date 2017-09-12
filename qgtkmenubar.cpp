@@ -66,7 +66,6 @@ void QGtkMenuBar::regenerate()
 
     for (int i = 0; i < m_items.count(); ++i) {
         GtkMenuItem *it = m_items.at(i)->gtkMenuItem();
-        qDebug() << it;
         if (!it)
             continue;
         gtk_menu_shell_append(GTK_MENU_SHELL(m_menubar), GTK_WIDGET(it));
