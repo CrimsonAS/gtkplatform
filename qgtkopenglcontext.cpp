@@ -43,6 +43,7 @@
 #include <QtCore/qdebug.h>
 #include <QtGui/qopenglcontext.h>
 #include <QtGui/qopengltexture.h>
+#include <QtGui/qopenglfunctions.h>
 
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
@@ -194,27 +195,14 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
 {
     qDebug(lcContext) << "Swapping";
     QGtkWindow *win = static_cast<QGtkWindow*>(surface);
-    GdkGLContext *surfaceContext = win->gdkGLContext();
 
     // Download rendered frame, slowly, so slowly.
-    QImage frame = m_fbo->toImage(false);
+    QByteArray frameData;
+    frameData.resize(m_fbo->width() * m_fbo->height() * 4);
+    QOpenGLFunctions funcs(QOpenGLContext::currentContext());
+    funcs.glReadPixels(0, 0, m_fbo->width(), m_fbo->height(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, frameData.data());
 
-    // XXX This is probably not threadsafe for multithreaded renderer at all
-    // XXX surfaceChanged definitely isn't. Should probably do all of this
-    // with queued calls
-    // Switch to the window's rendering context
-    gdk_gl_context_make_current(surfaceContext);
-
-    // Update the window's texture
-    QOpenGLTexture *surfaceTexture = win->surfaceTexture();
-    // XXX Slower than necessary
-    surfaceTexture->destroy();
-    surfaceTexture->setData(frame, QOpenGLTexture::DontGenerateMipMaps);
-
-    // Trigger rendering
-    win->surfaceChanged();
-
-    gdk_gl_context_make_current(m_gdkContext);
+    win->updateRenderBuffer(frameData, m_fbo->size());
     qDebug(lcContext) << "Done swapping";
 }
 

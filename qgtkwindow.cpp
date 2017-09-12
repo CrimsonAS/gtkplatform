@@ -272,6 +272,23 @@ void QGtkWindow::onRender()
     GLint fbWidth = dims[2];
     GLint fbHeight = dims[3];
 
+    // Upload renderBuffer to the texture, if it has changed
+    if (!m_renderBuffer.isEmpty()) {
+        if (m_surfaceTexture->isStorageAllocated() &&
+            (m_surfaceTexture->width() != m_renderBufferSize.width() ||
+             m_surfaceTexture->height() != m_renderBufferSize.height()))
+        {
+            m_surfaceTexture->destroy();
+        }
+        if (!m_surfaceTexture->isStorageAllocated()) {
+            m_surfaceTexture->setSize(m_renderBufferSize.width(), m_renderBufferSize.height());
+            m_surfaceTexture->setFormat(QOpenGLTexture::RGBA8_UNorm);
+            m_surfaceTexture->allocateStorage();
+        }
+        m_surfaceTexture->setData(QOpenGLTexture::RGBA, QOpenGLTexture::UInt32_RGBA8_Rev, m_renderBuffer.constData());
+        qCDebug(lcWindowRender) << "updated texture" << m_surfaceTexture->width() << m_surfaceTexture->height();
+    }
+
     if (!m_surfaceBlitter.isCreated()) {
         bool blitterCreated = m_surfaceBlitter.create();
         Q_ASSERT(blitterCreated);
@@ -281,6 +298,10 @@ void QGtkWindow::onRender()
     // happen briefly during resizes, for example. It should probably be stopped.
     QRectF target(0, 0, fbWidth, fbHeight);
     QRect source(0, 0, m_surfaceTexture->width(), m_surfaceTexture->height());
+
+    if (target.size() != source.size()) {
+        qCDebug(lcWindowRender) << "rendered surface size" << source.size() << "doesn't match output FBO size" << target.size() << "-- this will stretch window content";
+    }
 
     m_surfaceBlitter.bind();
     m_surfaceBlitter.blit(m_surfaceTexture->textureId(),
@@ -553,11 +574,9 @@ GdkGLContext *QGtkWindow::gdkGLContext() const
     return m_gtkContext;
 }
 
-QOpenGLTexture *QGtkWindow::surfaceTexture() const
+void QGtkWindow::updateRenderBuffer(const QByteArray &buffer, const QSize &size)
 {
-    return m_surfaceTexture;
-}
-
-void QGtkWindow::surfaceChanged() {
+    m_renderBuffer = buffer;
+    m_renderBufferSize = size;
     gtk_widget_queue_draw(m_content);
 }

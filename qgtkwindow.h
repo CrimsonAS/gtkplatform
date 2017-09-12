@@ -129,8 +129,8 @@ public:
     GtkMenuBar *gtkMenuBar() const;
     GtkWidget *gtkWindow() const;
     GdkGLContext *gdkGLContext() const;
-    QOpenGLTexture *surfaceTexture() const;
-    void surfaceChanged();
+
+    void updateRenderBuffer(const QByteArray &buffer, const QSize &size);
 
 private:
     static Qt::KeyboardModifiers convertGdkKeyboardModsToQtKeyboardMods(guint mask);
@@ -146,6 +146,8 @@ private:
     QOpenGLContext *m_gtkContextQt = nullptr;
     QOpenGLTexture *m_surfaceTexture = nullptr;
     QOpenGLTextureBlitter m_surfaceBlitter;
+    QByteArray m_renderBuffer;
+    QSize m_renderBufferSize;
 };
 
 QT_END_NAMESPACE
