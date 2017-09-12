@@ -134,15 +134,15 @@ public:
 private:
     static Qt::KeyboardModifiers convertGdkKeyboardModsToQtKeyboardMods(guint mask);
 
-    GtkWidget *m_window;
-    GtkMenuBar *m_menubar;
-    GtkWidget *m_content;
+    GtkWidget *m_window = nullptr;
+    GtkMenuBar *m_menubar = nullptr;
+    GtkWidget *m_content = nullptr;
     QImage m_image;
-    QTouchDevice *m_touchDevice;
+    QTouchDevice *m_touchDevice = nullptr;
     QList<QWindowSystemInterface::TouchPoint> m_activeTouchPoints;
     Qt::MouseButtons m_buttons;
-    GdkGLContext *m_gl_context;
-    QOpenGLTexture *m_surfaceTexture;
+    GdkGLContext *m_gl_context = nullptr;
+    QOpenGLTexture *m_surfaceTexture = nullptr;
 };
 
 QT_END_NAMESPACE

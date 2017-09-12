@@ -348,7 +348,23 @@ qreal QGtkWindow::devicePixelRatio() const
     return gtk_widget_get_scale_factor(m_window);
 }
 
-QMargins QGtkWindow::frameMargins() const{}
+QMargins QGtkWindow::frameMargins() const
+{
+    GdkWindow *gwindow = gtk_widget_get_window(m_window);
+    if (!gwindow) {
+        return QMargins();
+    }
+    GdkRectangle frame_rect;
+    gdk_window_get_frame_extents(gtk_widget_get_window(m_window), &frame_rect);
+    GdkRectangle alloc_rect;
+    gtk_widget_get_allocation(m_window, &alloc_rect);
+    return QMargins(
+        alloc_rect.x,
+        alloc_rect.y,
+        frame_rect.width - alloc_rect.width - alloc_rect.x,
+        frame_rect.height - alloc_rect.height - alloc_rect.y
+    );
+}
 
 void QGtkWindow::setVisible(bool visible)
 {
