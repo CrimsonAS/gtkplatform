@@ -169,6 +169,7 @@ QGtkWindow::QGtkWindow(QWindow *window)
     g_signal_connect(m_window, "key-press-event", G_CALLBACK(key_press_cb), this);
     g_signal_connect(m_window, "key-release-event", G_CALLBACK(key_release_cb), this);
     g_signal_connect(m_window, "scroll-event", G_CALLBACK(scroll_cb), this);
+    gtk_window_resize(GTK_WINDOW(m_window), window->geometry().width(), window->geometry().height());
 
     GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
     gtk_container_add(GTK_CONTAINER(m_window), vbox);
