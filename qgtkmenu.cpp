@@ -44,20 +44,22 @@
 
 #include <QtGui/qwindow.h>
 #include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
+
+Q_LOGGING_CATEGORY(lcMenu, "qt.qpa.gtk.menu");
 
 QGtkMenu::QGtkMenu()
     : m_tag((qintptr)this)
 {
+    m_menu = GTK_MENU(gtk_menu_new());
+    m_menuItem = GTK_MENU_ITEM(gtk_menu_item_new_with_mnemonic(""));
+    gtk_menu_item_set_submenu(m_menuItem, GTK_WIDGET(m_menu));
+    g_object_ref_sink(m_menuItem);
 }
 
 QGtkMenu::~QGtkMenu()
 {
-}
-
-void QGtkMenu::regenerate()
-{
-    // ### handle popup menu case too
-    Q_EMIT changed();
+    g_object_unref(m_menuItem);
 }
 
 void QGtkMenu::insertMenuItem(QPlatformMenuItem *menuItem, QPlatformMenuItem *before)
@@ -66,29 +68,44 @@ void QGtkMenu::insertMenuItem(QPlatformMenuItem *menuItem, QPlatformMenuItem *be
     QGtkMenuItem *bi = static_cast<QGtkMenuItem*>(before);
 
     int idx = m_items.indexOf(bi);
-    if (idx < 0)
+    if (idx < 0) {
+        m_gtkItems.append(mi->sync());
         m_items.append(mi);
-    else
+        gtk_menu_shell_append(GTK_MENU_SHELL(m_menu), m_gtkItems.last());
+    } else {
+        m_gtkItems.insert(idx, mi->sync());
         m_items.insert(idx, mi);
-
-    connect(mi, &QGtkMenuItem::changed, this, &QGtkMenu::regenerate);
-    regenerate();
+        gtk_menu_shell_insert(GTK_MENU_SHELL(m_menu), m_gtkItems.at(idx), idx);
+    }
+    qCDebug(lcMenu) << "Added menu item " << mi << " before " << bi << " at " << idx;
 }
 
 void QGtkMenu::removeMenuItem(QPlatformMenuItem *menuItem)
 {
     QGtkMenuItem *mi = static_cast<QGtkMenuItem*>(menuItem);
 
-    m_items.removeAll(mi);
-
-    disconnect(mi, &QGtkMenuItem::changed, this, &QGtkMenu::regenerate);
-    regenerate();
+    int idx = m_items.indexOf(mi);
+    m_items.removeAt(idx);
+    gtk_container_remove(GTK_CONTAINER(m_menu), m_gtkItems.takeAt(idx));
 }
 
 void QGtkMenu::syncMenuItem(QPlatformMenuItem *menuItem)
 {
     Q_UNUSED(menuItem);
-    qWarning() << "Stub";
+    QGtkMenuItem *mi = static_cast<QGtkMenuItem*>(menuItem);
+    GtkWidget *oldItem = mi->gtkMenuItem();
+    GtkWidget *newItem = mi->sync();
+
+    if (oldItem != newItem) {
+        Q_ASSERT(oldItem);
+        Q_ASSERT(newItem);
+        int oldIdx = m_gtkItems.indexOf(oldItem);
+        qCDebug(lcMenu) << "Sync removing item " << oldItem << " for new " << newItem << " at pos " << oldIdx;
+        Q_ASSERT(oldIdx != -1);
+        gtk_container_remove(GTK_CONTAINER(m_menu), m_gtkItems.at(oldIdx));
+        gtk_menu_shell_insert(GTK_MENU_SHELL(m_menu), newItem, oldIdx);
+        m_gtkItems[oldIdx] = newItem;
+    }
 }
 
 void QGtkMenu::syncSeparatorsCollapsible(bool enable)
@@ -108,20 +125,21 @@ quintptr QGtkMenu::tag()const
 
 void QGtkMenu::setText(const QString &text)
 {
-    m_text = qt_convertToGtkMnemonics(text);
-    regenerate();
+    QString gtkText = qt_convertToGtkMnemonics(text);
+
+    GtkWidget *child = gtk_bin_get_child(GTK_BIN(m_menuItem));
+    gtk_label_set_markup_with_mnemonic(GTK_LABEL(child), gtkText.toUtf8().constData());
 }
 
 void QGtkMenu::setIcon(const QIcon &icon)
 {
     Q_UNUSED(icon);
-    qWarning() << "Stub";
 }
 
 void QGtkMenu::setEnabled(bool enabled)
 {
     m_enabled = enabled;
-    regenerate();
+    gtk_widget_set_sensitive(GTK_WIDGET(m_menuItem), m_enabled);
 }
 
 bool QGtkMenu::isEnabled() const
@@ -133,7 +151,7 @@ void QGtkMenu::setVisible(bool visible)
 {
     //aboutToShow, aboutToHide signals
     Q_UNUSED(visible);
-    qWarning() << "Stub";
+    gtk_widget_set_visible(GTK_WIDGET(m_menuItem), visible);
 }
 
 void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, const QPlatformMenuItem *item)
@@ -156,14 +174,12 @@ void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, c
 
 void QGtkMenu::dismiss()
 {
-    qWarning() << "Stub";
+    qCWarning(lcMenu) << "Stub";
 }
 
 QPlatformMenuItem *QGtkMenu::menuItemAt(int position) const
 {
-    if (position < m_items.size() - 1)
-        return m_items.at(position);
-    return nullptr;
+    return m_items.at(position);
 }
 
 QPlatformMenuItem *QGtkMenu::menuItemForTag(quintptr tag) const
@@ -179,24 +195,6 @@ QPlatformMenuItem *QGtkMenu::menuItemForTag(quintptr tag) const
 
 GtkMenuItem *QGtkMenu::gtkMenuItem() const
 {
-    GtkMenu *menu = GTK_MENU(gtk_menu_new());
-
-    for (const QGtkMenuItem *item : m_items) {
-        GtkWidget *w = item->gtkMenuItem();
-        if (!w)
-            continue;
-        gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(w));
-    }
-
-    GtkMenuItem *mi = GTK_MENU_ITEM(gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData()));
-    gtk_menu_item_set_submenu (GTK_MENU_ITEM (mi), GTK_WIDGET(menu));
-    gtk_widget_set_sensitive(GTK_WIDGET(mi), m_enabled);
-
-    // not what we want; menu appears to be visible when it isn't opened (as
-    // it's a widget whose parent is visible, maybe?)
-    //g_signal_connect(mi, "show", G_CALLBACK(show_cb), const_cast<QGtkMenu*>(this));
-    //g_signal_connect(mi, "hide", G_CALLBACK(hide_cb), const_cast<QGtkMenu*>(this));
-
-    return mi;
+    return m_menuItem;
 }
 

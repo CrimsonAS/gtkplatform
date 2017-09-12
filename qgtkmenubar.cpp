@@ -43,6 +43,9 @@
 #include "qgtkwindow.h"
 
 #include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
+
+Q_LOGGING_CATEGORY(lcMenuBar, "qt.qpa.gtk.menubar");
 
 QGtkMenuBar::QGtkMenuBar()
     : m_menubar(0)
@@ -53,48 +56,38 @@ QGtkMenuBar::~QGtkMenuBar()
 {
 }
 
-void QGtkMenuBar::regenerate()
-{
-    if (!m_menubar) {
-        return;
-    }
-    // ### this is a bit lazy... we shouldn't recreate menus all the time
-    GList *children = gtk_container_get_children(GTK_CONTAINER(m_menubar));
-    for (GList *iter = children; iter != NULL; iter = g_list_next(iter))
-        gtk_widget_destroy(GTK_WIDGET(iter->data));
-    g_list_free(children);
-
-    for (int i = 0; i < m_items.count(); ++i) {
-        GtkMenuItem *it = m_items.at(i)->gtkMenuItem();
-        if (!it)
-            continue;
-        gtk_menu_shell_append(GTK_MENU_SHELL(m_menubar), GTK_WIDGET(it));
-    }
-}
-
 void QGtkMenuBar::insertMenu(QPlatformMenu *menu, QPlatformMenu *before)
 {
     QGtkMenu *m = static_cast<QGtkMenu*>(menu);
     QGtkMenu *b = static_cast<QGtkMenu*>(before);
 
-    int idx = m_items.indexOf(b);
-    if (idx < 0)
-        m_items.append(m);
-    else
-        m_items.insert(idx, m);
+    if (m_items.indexOf(m) != -1) {
+        removeMenu(menu);
+    }
 
-    connect(m, &QGtkMenu::changed, this, &QGtkMenuBar::regenerate);
-    regenerate();
+    int idx = m_items.indexOf(b);
+    GtkMenuItem *mi = m->gtkMenuItem();
+    qCDebug(lcMenuBar) << "Inserting menu " << m << mi << idx;
+    if (idx < 0) {
+        m_items.append(m);
+        m_gtkItems.append(mi);
+        gtk_menu_shell_append(GTK_MENU_SHELL(m_menubar), GTK_WIDGET(mi));
+    } else {
+        m_items.insert(idx, m);
+        m_gtkItems.insert(idx, mi);
+        gtk_menu_shell_insert(GTK_MENU_SHELL(m_menubar), GTK_WIDGET(mi), idx);
+    }
 }
 
 void QGtkMenuBar::removeMenu(QPlatformMenu *menu)
 {
     QGtkMenu *m = static_cast<QGtkMenu*>(menu);
 
-    m_items.removeAll(m);
+    int idx = m_items.indexOf(m);
+    qCDebug(lcMenuBar) << "Removing menu " << m_items.at(idx) << m_gtkItems.at(idx) << idx;
+    m_items.removeAt(idx);
 
-    disconnect(m, &QGtkMenu::changed, this, &QGtkMenuBar::regenerate);
-    regenerate();
+    gtk_container_remove(GTK_CONTAINER(m_menubar), GTK_WIDGET(m_gtkItems.takeAt(idx)));
 }
 
 void QGtkMenuBar::syncMenu(QPlatformMenu *menuItem)
@@ -105,34 +98,35 @@ void QGtkMenuBar::syncMenu(QPlatformMenu *menuItem)
 
 void QGtkMenuBar::handleReparent(QWindow *newParentWindow)
 {
+    GtkMenuBar *oldMenuBar = m_menubar;
+
     if (!newParentWindow) {
         m_menubar = 0;
-        return;
+    } else {
+        QGtkWindow *w = static_cast<QGtkWindow*>(newParentWindow->handle());
+        m_menubar = w->gtkMenuBar();
     }
 
-    // ### remove old menu contents if we are moved
-    QGtkWindow *w = static_cast<QGtkWindow*>(newParentWindow->handle());
-    m_menubar = w->gtkMenuBar();
-    regenerate();
-    qWarning() << "Reparented to " << newParentWindow;
-
-
-/*
-  GtkWidget *fileMenu = gtk_menu_new();
-
-  GtkWidget *fileMi = gtk_menu_item_new_with_label("File");
-  GtkWidget *quitMi = gtk_menu_item_new_with_label("Quit");
-
-  gtk_menu_item_set_submenu(GTK_MENU_ITEM(fileMi), fileMenu);
-  gtk_menu_shell_append(GTK_MENU_SHELL(fileMenu), quitMi);
-  gtk_menu_shell_append(GTK_MENU_SHELL(m_menubar), fileMi);
-  */
+    if (oldMenuBar) {
+        GList *children = gtk_container_get_children(GTK_CONTAINER(oldMenuBar));
+        for (GList *iter = children; iter != NULL; iter = g_list_next(iter)) {
+            GtkWidget *menuChild = (GtkWidget*)iter->data;
+            g_object_ref(menuChild); // temporaray ref, to save it past remove()
+            gtk_container_remove(GTK_CONTAINER(oldMenuBar), menuChild);
+            if (m_menubar) {
+                gtk_container_add(GTK_CONTAINER(m_menubar), menuChild);
+            }
+            g_object_unref(menuChild);
+        }
+        g_list_free(children);
+    }
 }
 
 QPlatformMenu *QGtkMenuBar::menuForTag(quintptr tag) const
 {
     Q_UNUSED(tag);
-    qWarning() << "Stub"; return 0;
+    qWarning() << "Stub";
+    return 0;
 }
 
 QPlatformMenu *QGtkMenuBar::createMenu() const

@@ -77,17 +77,13 @@ public:
 
     GtkMenuItem *gtkMenuItem() const;
 
-private Q_SLOTS:
-    void regenerate();
-
-Q_SIGNALS:
-    void changed();
-
 private:
     QVector<QGtkMenuItem*> m_items;
+    QVector<GtkWidget*> m_gtkItems;
     bool m_enabled = true;
-    QString m_text;
     qintptr m_tag;
+    GtkMenu *m_menu;
+    GtkMenuItem *m_menuItem;
 };
 
 QT_END_NAMESPACE

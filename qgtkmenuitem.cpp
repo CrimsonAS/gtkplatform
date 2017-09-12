@@ -43,6 +43,18 @@
 
 #include <QtCore/qdebug.h>
 
+static void select_cb(GtkMenuItem *, gpointer qgtkMenuItem)
+{
+    QGtkMenuItem *gm = static_cast<QGtkMenuItem*>(qgtkMenuItem);
+    gm->emitSelect();
+}
+
+static void activate_cb(GtkMenuItem *, gpointer qgtkMenuItem)
+{
+    QGtkMenuItem *gm = static_cast<QGtkMenuItem*>(qgtkMenuItem);
+    gm->emitActivate();
+}
+
 QGtkMenuItem::QGtkMenuItem()
     : m_tag((qintptr)this)
 {
@@ -66,7 +78,6 @@ quintptr QGtkMenuItem::tag()const
 void QGtkMenuItem::setText(const QString &text)
 {
     m_text = qt_convertToGtkMnemonics(text);
-    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setIcon(const QIcon &icon)
@@ -76,26 +87,18 @@ void QGtkMenuItem::setIcon(const QIcon &icon)
 
 void QGtkMenuItem::setMenu(QPlatformMenu *pmenu)
 {
-    if (m_childMenu) {
-        disconnect(m_childMenu, &QGtkMenu::changed, this, &QGtkMenuItem::changed);
-    }
-    m_childMenu = static_cast<QGtkMenu*>(pmenu);
-    if (m_childMenu) {
-        connect(m_childMenu, &QGtkMenu::changed, this, &QGtkMenuItem::changed);
-    }
-    Q_EMIT changed();
+    QGtkMenu *childMenu = static_cast<QGtkMenu*>(pmenu);
+    m_childMenu = childMenu;
 }
 
 void QGtkMenuItem::setVisible(bool isVisible)
 {
     m_visible = isVisible;
-    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setIsSeparator(bool isSeparator)
 {
     m_isSeparator = isSeparator;
-    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setFont(const QFont &font)
@@ -111,25 +114,21 @@ void QGtkMenuItem::setRole(MenuRole role)
 void QGtkMenuItem::setCheckable(bool checkable)
 {
     m_checkable = checkable;
-    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setChecked(bool isChecked)
 {
     m_checked = isChecked;
-    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setShortcut(const QKeySequence& shortcut)
 {
     m_shortcut = shortcut;
-    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setEnabled(bool enabled)
 {
     m_enabled = enabled;
-    Q_EMIT changed();
 }
 
 void QGtkMenuItem::setIconSize(int size)
@@ -145,82 +144,71 @@ void QGtkMenuItem::setNativeContents(WId item)
 void QGtkMenuItem::setHasExclusiveGroup(bool hasExclusiveGroup)
 {
     m_hasExclusiveGroup = hasExclusiveGroup;
-    Q_EMIT changed();
-}
-
-static void select_cb(GtkMenuItem *, gpointer qgtkMenuItem)
-{
-    QGtkMenuItem *gm = static_cast<QGtkMenuItem*>(qgtkMenuItem);
-    gm->emitSelect();
-}
-
-static void activate_cb(GtkMenuItem *, gpointer qgtkMenuItem)
-{
-    QGtkMenuItem *gm = static_cast<QGtkMenuItem*>(qgtkMenuItem);
-    gm->emitActivate();
 }
 
 GtkWidget *QGtkMenuItem::gtkMenuItem() const
 {
-    if (!m_visible) {
-        return 0;
-    }
+    return m_gtkMenuItem;
+}
 
+GtkWidget *QGtkMenuItem::sync()
+{
     if (m_isSeparator) {
-        GtkWidget *sep = gtk_separator_menu_item_new();
-        return sep;
-    }
-
-    if (m_childMenu) {
+        m_gtkMenuItem = gtk_separator_menu_item_new();
+    } else if (m_childMenu) {
         GtkMenuItem *mi = m_childMenu->gtkMenuItem();
-        g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
-        g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
+        //g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
+        //g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
 
         // stick our title on it
         GtkWidget *child = gtk_bin_get_child (GTK_BIN (mi));
         gtk_label_set_markup_with_mnemonic(GTK_LABEL(child), m_text.toUtf8().constData());
         gtk_widget_set_sensitive(GTK_WIDGET(mi), m_enabled);
-        return GTK_WIDGET(mi);
-    }
-
-    GtkWidget *mi = nullptr;
-    if (m_checkable) {
-        mi = gtk_check_menu_item_new_with_mnemonic(m_text.toUtf8().constData());
-        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mi), m_checked);
+        m_gtkMenuItem = GTK_WIDGET(mi);
     } else {
-        mi = gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData());
+        GtkWidget *mi = nullptr;
+        if (m_checkable) {
+            mi = gtk_check_menu_item_new_with_mnemonic(m_text.toUtf8().constData());
+            gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mi), m_checked);
+        } else {
+            mi = gtk_menu_item_new_with_mnemonic(m_text.toUtf8().constData());
+        }
+
+        if (GTK_IS_CHECK_MENU_ITEM(mi)) {
+            g_object_set(mi, "draw-as-radio", m_hasExclusiveGroup, NULL);
+        }
+        gtk_widget_set_sensitive(mi, m_enabled);
+        g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
+        g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
+        GtkWidget *label = gtk_bin_get_child(GTK_BIN(mi));
+
+        Qt::KeyboardModifiers qtMods = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+
+        // ### what about the other keys?
+        guint gKey = m_shortcut[0] & ~qtMods;
+        guint gModifiers = 0;
+
+        if (m_shortcut[0] & Qt::ShiftModifier) {
+            gModifiers |= GDK_SHIFT_MASK;
+        }
+        if (m_shortcut[0] & Qt::ControlModifier) {
+            gModifiers |= GDK_CONTROL_MASK;
+        }
+        if (m_shortcut[0] & Qt::AltModifier) {
+            gModifiers |= GDK_MOD1_MASK;
+        }
+        if (m_shortcut[0] & Qt::MetaModifier) {
+            gModifiers |= GDK_META_MASK;
+        }
+
+        gtk_accel_label_set_accel(GTK_ACCEL_LABEL(label), gKey, GdkModifierType(gModifiers));
+
+        m_gtkMenuItem = mi;
     }
 
-    if (GTK_IS_CHECK_MENU_ITEM(mi)) {
-        g_object_set(mi, "draw-as-radio", m_hasExclusiveGroup, NULL);
-    }
-    gtk_widget_set_sensitive(mi, m_enabled);
-    g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
-    g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
-    GtkWidget *label = gtk_bin_get_child(GTK_BIN(mi));
+    gtk_widget_set_visible(m_gtkMenuItem, m_visible);
 
-    Qt::KeyboardModifiers qtMods = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-
-    // ### what about the other keys?
-    guint gKey = m_shortcut[0] & ~qtMods;
-    guint gModifiers = 0;
-
-    if (m_shortcut[0] & Qt::ShiftModifier) {
-        gModifiers |= GDK_SHIFT_MASK;
-    }
-    if (m_shortcut[0] & Qt::ControlModifier) {
-        gModifiers |= GDK_CONTROL_MASK;
-    }
-    if (m_shortcut[0] & Qt::AltModifier) {
-        gModifiers |= GDK_MOD1_MASK;
-    }
-    if (m_shortcut[0] & Qt::MetaModifier) {
-        gModifiers |= GDK_META_MASK;
-    }
-
-    gtk_accel_label_set_accel(GTK_ACCEL_LABEL(label), gKey, GdkModifierType(gModifiers));
-
-    return mi;
+    return m_gtkMenuItem;
 }
 
 void QGtkMenuItem::emitSelect()

@@ -71,23 +71,23 @@ public:
     void setHasExclusiveGroup(bool hasExclusiveGroup) override;
 
     GtkWidget *gtkMenuItem() const;
+    GtkWidget *sync();
 
     void emitSelect();
     void emitActivate();
-Q_SIGNALS:
-    void changed();
 
 private:
     QString m_text;
-    bool m_isSeparator = false;
-    bool m_visible = true;
     bool m_checkable = false;
+    bool m_isSeparator = false;
+    bool m_enabled = false;
+    bool m_visible = false;
     bool m_checked = false;
-    bool m_enabled = true;
     bool m_hasExclusiveGroup = false;
     QGtkMenu *m_childMenu = nullptr;
     QKeySequence m_shortcut;
     qintptr m_tag;
+    GtkWidget *m_gtkMenuItem = nullptr;
 };
 
 #endif // QGTKMENUITEM_H

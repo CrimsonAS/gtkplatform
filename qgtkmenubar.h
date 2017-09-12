@@ -68,6 +68,7 @@ private Q_SLOTS:
 private:
     GtkMenuBar *m_menubar;
     QVector<QGtkMenu*> m_items;
+    QVector<GtkMenuItem*> m_gtkItems;
 };
 
 QT_END_NAMESPACE
