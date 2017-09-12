@@ -213,7 +213,6 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
 
 bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
 {
-    qCDebug(lcContext) << "Start makeCurrent";
     QGtkWindow *win = static_cast<QGtkWindow*>(surface);
     gdk_gl_context_make_current(m_gdkContext);
 
@@ -228,7 +227,6 @@ bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
         qDebug() << "created new context FBO of size" << m_fbo->size();
     }
 
-    qCDebug(lcContext) << "Finish makeCurrent";
     if (!m_fbo->isValid())
         return false;
     m_fbo->bind();
@@ -238,7 +236,6 @@ bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
 void QGtkOpenGLContext::doneCurrent()
 {
     gdk_gl_context_clear_current();
-    qDebug(lcContext) << "Done clearing current";
 }
 
 bool QGtkOpenGLContext::isSharing() const
