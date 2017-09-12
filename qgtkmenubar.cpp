@@ -48,7 +48,6 @@
 Q_LOGGING_CATEGORY(lcMenuBar, "qt.qpa.gtk.menubar");
 
 QGtkMenuBar::QGtkMenuBar()
-    : m_menubar(0)
 {
 }
 
@@ -71,11 +70,11 @@ void QGtkMenuBar::insertMenu(QPlatformMenu *menu, QPlatformMenu *before)
     if (idx < 0) {
         m_items.append(m);
         m_gtkItems.append(mi);
-        gtk_menu_shell_append(GTK_MENU_SHELL(m_menubar), GTK_WIDGET(mi));
+        gtk_menu_shell_append(GTK_MENU_SHELL(m_menubar.get()), GTK_WIDGET(mi));
     } else {
         m_items.insert(idx, m);
         m_gtkItems.insert(idx, mi);
-        gtk_menu_shell_insert(GTK_MENU_SHELL(m_menubar), GTK_WIDGET(mi), idx);
+        gtk_menu_shell_insert(GTK_MENU_SHELL(m_menubar.get()), GTK_WIDGET(mi), idx);
     }
 }
 
@@ -87,7 +86,7 @@ void QGtkMenuBar::removeMenu(QPlatformMenu *menu)
     qCDebug(lcMenuBar) << "Removing menu " << m_items.at(idx) << m_gtkItems.at(idx) << idx;
     m_items.removeAt(idx);
 
-    gtk_container_remove(GTK_CONTAINER(m_menubar), GTK_WIDGET(m_gtkItems.takeAt(idx)));
+    gtk_container_remove(GTK_CONTAINER(m_menubar.get()), GTK_WIDGET(m_gtkItems.takeAt(idx)));
 }
 
 void QGtkMenuBar::syncMenu(QPlatformMenu *menuItem)
@@ -98,23 +97,25 @@ void QGtkMenuBar::syncMenu(QPlatformMenu *menuItem)
 
 void QGtkMenuBar::handleReparent(QWindow *newParentWindow)
 {
-    GtkMenuBar *oldMenuBar = m_menubar;
+    QGtkRefPtr<GtkMenuBar> oldMenuBar = m_menubar;
 
     if (!newParentWindow) {
-        m_menubar = 0;
+        m_menubar.reset(nullptr);
     } else {
         QGtkWindow *w = static_cast<QGtkWindow*>(newParentWindow->handle());
         m_menubar = w->gtkMenuBar();
     }
 
     if (oldMenuBar) {
-        GList *children = gtk_container_get_children(GTK_CONTAINER(oldMenuBar));
+        GtkContainer *omb = GTK_CONTAINER(oldMenuBar.get());
+        GtkContainer *nmb = GTK_CONTAINER(m_menubar.get());
+        GList *children = gtk_container_get_children(omb);
         for (GList *iter = children; iter != NULL; iter = g_list_next(iter)) {
             GtkWidget *menuChild = (GtkWidget*)iter->data;
             g_object_ref(menuChild); // temporaray ref, to save it past remove()
-            gtk_container_remove(GTK_CONTAINER(oldMenuBar), menuChild);
-            if (m_menubar) {
-                gtk_container_add(GTK_CONTAINER(m_menubar), menuChild);
+            gtk_container_remove(nmb, menuChild);
+            if (m_menubar.get()) {
+                gtk_container_add(nmb, menuChild);
             }
             g_object_unref(menuChild);
         }

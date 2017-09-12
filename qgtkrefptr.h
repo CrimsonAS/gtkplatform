@@ -37,43 +37,60 @@
 **
 ****************************************************************************/
 
-#ifndef QGTKMENUBAR_H
-#define QGTKMENUBAR_H
+#ifndef QGTKREFPTR_H
+#define QGTKREFPTR_H
 
-#include "qgtkrefptr.h"
-
-#include <qpa/qplatformmenu.h>
-
+#include <QtCore/qglobal.h>
 #include <gtk/gtk.h>
 
 QT_BEGIN_NAMESPACE
 
-class QGtkMenu;
-
-class QGtkMenuBar : public QPlatformMenuBar
+template<typename T>
+class QGtkRefPtr
 {
 public:
-    QGtkMenuBar();
-    ~QGtkMenuBar();
+    QGtkRefPtr()
+        : m_obj(0)
+    {
 
-    void insertMenu(QPlatformMenu *menu, QPlatformMenu *before) override;
-    void removeMenu(QPlatformMenu *menu) override;
-    void syncMenu(QPlatformMenu *menuItem) override;
-    void handleReparent(QWindow *newParentWindow) override;
+    }
 
-    QPlatformMenu *menuForTag(quintptr tag) const override;
-    QPlatformMenu *createMenu() const override;
+    QGtkRefPtr(gpointer obj)
+        : m_obj(obj)
+    {
+        g_object_ref_sink(m_obj);
+    }
 
-private Q_SLOTS:
-    void regenerate();
+    QGtkRefPtr(const QGtkRefPtr& other)
+        : m_obj(other.m_obj)
+    {
+        if (m_obj)
+            g_object_ref(m_obj);
+    }
+
+    ~QGtkRefPtr()
+    {
+        if (m_obj)
+            g_object_unref(m_obj);
+    }
+
+    T* get() const { return static_cast<T*>(m_obj); }
+
+    operator bool() const { return m_obj != nullptr; }
+
+    void reset(T* newObj)
+    {
+        if (m_obj)
+            g_object_unref(m_obj);
+        m_obj = newObj;
+        if (m_obj)
+            g_object_ref_sink(m_obj);
+    }
 
 private:
-    QGtkRefPtr<GtkMenuBar> m_menubar;
-    QVector<QGtkMenu*> m_items;
-    QVector<GtkMenuItem*> m_gtkItems;
+    gpointer m_obj;
 };
 
 QT_END_NAMESPACE
 
-#endif // QGTKMENUBAR
-
+#endif // QGTKREFPTR_H
