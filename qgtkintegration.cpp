@@ -43,7 +43,6 @@
 #include "qgtkscreen.h"
 #include "qgtktheme.h"
 #include "qgtkopenglcontext.h"
-#include "qgtkstyle.h"
 //#include "qgtkclipboard.h"
 
 #include <QtWidgets/qapplication.h>
@@ -127,9 +126,6 @@ QGtkIntegration::QGtkIntegration(const QStringList &)
     }
 
     g_list_free(slaves);
-
-    // ### not finished at all
-    //QApplication::setStyle(new QGtkStyle);
 }
 
 QGtkIntegration::~QGtkIntegration()

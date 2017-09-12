@@ -22,7 +22,6 @@ SOURCES =   main.cpp \
             qgtkhelpers.cpp \
             qgtk3dialoghelpers.cpp \
             qgtkopenglcontext.cpp \
-            qgtkstyle.cpp
             #qgtkclipboard.cpp
 
 HEADERS =   qgtkintegration.h \
@@ -37,7 +36,6 @@ HEADERS =   qgtkintegration.h \
             qgtkhelpers.h \
             qgtk3dialoghelpers.h \
             qgtkopenglcontext.h \
-            qgtkstyle.h
             #qgtkclipboard.h
 
 CONFIG += qpa/genericunixfontdatabase
