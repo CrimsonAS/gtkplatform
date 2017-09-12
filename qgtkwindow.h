@@ -42,6 +42,7 @@
 
 #include <qpa/qplatformwindow.h>
 #include <qpa/qwindowsysteminterface.h>
+#include <QtGui/private/qopengltextureblitter_p.h>
 
 #include <gtk/gtk.h>
 
@@ -144,6 +145,7 @@ private:
     GdkGLContext *m_gtkContext = nullptr;
     QOpenGLContext *m_gtkContextQt = nullptr;
     QOpenGLTexture *m_surfaceTexture = nullptr;
+    QOpenGLTextureBlitter m_surfaceBlitter;
 };
 
 QT_END_NAMESPACE

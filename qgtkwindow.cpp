@@ -43,7 +43,8 @@
 #include <qpa/qwindowsysteminterface.h>
 #include <QtGui/qopengltexture.h>
 #include <QtGui/qopenglcontext.h>
-#include <QtGui/qopenglextrafunctions.h>
+#include <QtGui/qopenglfunctions.h>
+#include <QtGui/qmatrix4x4.h>
 
 #include <QDebug>
 #include <QLoggingCategory>
@@ -265,23 +266,27 @@ void QGtkWindow::onRender()
     bool isCurrent = m_gtkContextQt->makeCurrent(window());
     Q_ASSERT(isCurrent);
 
-    // XXX If this remains useful, it should be cached
-    QOpenGLExtraFunctions funcs(m_gtkContextQt);
-
+    QOpenGLFunctions funcs(m_gtkContextQt);
     GLint dims[4] = {0};
     funcs.glGetIntegerv(GL_VIEWPORT, dims);
     GLint fbWidth = dims[2];
     GLint fbHeight = dims[3];
 
-    // XXX This is an awful, lazy way to blit a texture
-    GLuint fboId = 0;
-    funcs.glGenFramebuffers(1, &fboId);
-    funcs.glBindFramebuffer(GL_READ_FRAMEBUFFER, fboId);
-    funcs.glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_surfaceTexture->textureId(), 0);
-    funcs.glBlitFramebuffer(0, 0, m_surfaceTexture->width(), m_surfaceTexture->height(),
-                            0, 0, fbWidth, fbHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-    funcs.glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    funcs.glDeleteFramebuffers(1, &fboId);
+    if (!m_surfaceBlitter.isCreated()) {
+        bool blitterCreated = m_surfaceBlitter.create();
+        Q_ASSERT(blitterCreated);
+    }
+
+    // XXX If these values aren't in sync, the window will be stretched; this can
+    // happen briefly during resizes, for example. It should probably be stopped.
+    QRectF target(0, 0, fbWidth, fbHeight);
+    QRect source(0, 0, m_surfaceTexture->width(), m_surfaceTexture->height());
+
+    m_surfaceBlitter.bind();
+    m_surfaceBlitter.blit(m_surfaceTexture->textureId(),
+                          QOpenGLTextureBlitter::targetTransform(target, source),
+                          QOpenGLTextureBlitter::OriginBottomLeft);
+    m_surfaceBlitter.release();
 
     m_gtkContextQt->doneCurrent();
     qCDebug(lcWindowRender) << "Done render";
