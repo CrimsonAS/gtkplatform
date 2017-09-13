@@ -193,7 +193,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
     m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), window_tick_cb, this, NULL);
     gtk_window_resize(GTK_WINDOW(m_window.get()), window()->geometry().width(), window()->geometry().height());
 
-    GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(m_window.get()), vbox);
 
     m_menubar = GTK_MENU_BAR(gtk_menu_bar_new());
