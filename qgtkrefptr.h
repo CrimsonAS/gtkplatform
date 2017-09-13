@@ -58,7 +58,8 @@ public:
     QGtkRefPtr(gpointer obj)
         : m_obj(obj)
     {
-        g_object_ref_sink(m_obj);
+        if (m_obj)
+            g_object_ref_sink(m_obj);
     }
 
     QGtkRefPtr(const QGtkRefPtr& other)
@@ -73,6 +74,34 @@ public:
         if (m_obj)
             g_object_unref(m_obj);
     }
+
+    QGtkRefPtr<T>& operator=(const QGtkRefPtr &other)
+    {
+        reset(other.get());
+        return *this;
+    }
+
+    bool operator==(const QGtkRefPtr &other)
+    {
+        return this->m_obj == other.m_obj;
+    }
+
+    bool operator!=(const QGtkRefPtr &other)
+    {
+        return !(*this == other);
+    }
+
+    bool operator==(gpointer other)
+    {
+        return this->m_obj == other;
+    }
+
+    bool operator!=(gpointer other)
+    {
+        return !(*this == other);
+    }
+
+    // ### consider moves
 
     T* get() const { return static_cast<T*>(m_obj); }
 

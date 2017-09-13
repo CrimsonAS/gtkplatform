@@ -40,6 +40,8 @@
 #ifndef QGTKMENUITEM_H
 #define QGTKMENUITEM_H
 
+#include "qgtkrefptr.h"
+
 #include <qpa/qplatformmenu.h>
 
 #include <gtk/gtk.h>
@@ -70,8 +72,8 @@ public:
     void setNativeContents(WId item) override;
     void setHasExclusiveGroup(bool hasExclusiveGroup) override;
 
-    GtkWidget *gtkMenuItem() const;
-    GtkWidget *sync();
+    QGtkRefPtr<GtkWidget> gtkMenuItem() const;
+    QGtkRefPtr<GtkWidget> sync();
 
     void emitSelect();
     void emitActivate();
@@ -87,7 +89,7 @@ private:
     QGtkMenu *m_childMenu = nullptr;
     QKeySequence m_shortcut;
     qintptr m_tag;
-    GtkWidget *m_gtkMenuItem = nullptr;
+    QGtkRefPtr<GtkWidget> m_gtkMenuItem = nullptr;
 };
 
 #endif // QGTKMENUITEM_H

@@ -146,25 +146,25 @@ void QGtkMenuItem::setHasExclusiveGroup(bool hasExclusiveGroup)
     m_hasExclusiveGroup = hasExclusiveGroup;
 }
 
-GtkWidget *QGtkMenuItem::gtkMenuItem() const
+QGtkRefPtr<GtkWidget> QGtkMenuItem::gtkMenuItem() const
 {
     return m_gtkMenuItem;
 }
 
-GtkWidget *QGtkMenuItem::sync()
+QGtkRefPtr<GtkWidget> QGtkMenuItem::sync()
 {
     if (m_isSeparator) {
         m_gtkMenuItem = gtk_separator_menu_item_new();
     } else if (m_childMenu) {
-        GtkMenuItem *mi = m_childMenu->gtkMenuItem();
+        QGtkRefPtr<GtkMenuItem> mi = m_childMenu->gtkMenuItem();
         //g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
         //g_signal_connect(mi, "activate", G_CALLBACK(activate_cb), const_cast<QGtkMenuItem*>(this));
 
         // stick our title on it
-        GtkWidget *child = gtk_bin_get_child (GTK_BIN (mi));
+        GtkWidget *child = gtk_bin_get_child(GTK_BIN(mi.get()));
         gtk_label_set_markup_with_mnemonic(GTK_LABEL(child), m_text.toUtf8().constData());
-        gtk_widget_set_sensitive(GTK_WIDGET(mi), m_enabled);
-        m_gtkMenuItem = GTK_WIDGET(mi);
+        gtk_widget_set_sensitive(GTK_WIDGET(mi.get()), m_enabled);
+        m_gtkMenuItem = GTK_WIDGET(mi.get());
     } else {
         GtkWidget *mi = nullptr;
         if (m_checkable) {
@@ -206,7 +206,7 @@ GtkWidget *QGtkMenuItem::sync()
         m_gtkMenuItem = mi;
     }
 
-    gtk_widget_set_visible(m_gtkMenuItem, m_visible);
+    gtk_widget_set_visible(m_gtkMenuItem.get(), m_visible);
 
     return m_gtkMenuItem;
 }

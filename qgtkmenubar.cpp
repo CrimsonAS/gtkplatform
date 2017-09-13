@@ -65,16 +65,16 @@ void QGtkMenuBar::insertMenu(QPlatformMenu *menu, QPlatformMenu *before)
     }
 
     int idx = m_items.indexOf(b);
-    GtkMenuItem *mi = m->gtkMenuItem();
+    QGtkRefPtr<GtkMenuItem> mi = m->gtkMenuItem();
     qCDebug(lcMenuBar) << "Inserting menu " << m << mi << idx;
     if (idx < 0) {
         m_items.append(m);
         m_gtkItems.append(mi);
-        gtk_menu_shell_append(GTK_MENU_SHELL(m_menubar.get()), GTK_WIDGET(mi));
+        gtk_menu_shell_append(GTK_MENU_SHELL(m_menubar.get()), GTK_WIDGET(mi.get()));
     } else {
         m_items.insert(idx, m);
         m_gtkItems.insert(idx, mi);
-        gtk_menu_shell_insert(GTK_MENU_SHELL(m_menubar.get()), GTK_WIDGET(mi), idx);
+        gtk_menu_shell_insert(GTK_MENU_SHELL(m_menubar.get()), GTK_WIDGET(mi.get()), idx);
     }
 }
 
@@ -86,7 +86,7 @@ void QGtkMenuBar::removeMenu(QPlatformMenu *menu)
     qCDebug(lcMenuBar) << "Removing menu " << m_items.at(idx) << m_gtkItems.at(idx) << idx;
     m_items.removeAt(idx);
 
-    gtk_container_remove(GTK_CONTAINER(m_menubar.get()), GTK_WIDGET(m_gtkItems.takeAt(idx)));
+    gtk_container_remove(GTK_CONTAINER(m_menubar.get()), GTK_WIDGET(m_gtkItems.takeAt(idx).get()));
 }
 
 void QGtkMenuBar::syncMenu(QPlatformMenu *menuItem)

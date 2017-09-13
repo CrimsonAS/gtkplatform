@@ -36,6 +36,7 @@ HEADERS =   qgtkintegration.h \
             qgtkhelpers.h \
             qgtk3dialoghelpers.h \
             qgtkopenglcontext.h \
+            qgtkrefptr.h \
             #qgtkclipboard.h
 
 CONFIG += qpa/genericunixfontdatabase

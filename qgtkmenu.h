@@ -40,6 +40,8 @@
 #ifndef QGTKMENU_H
 #define QGTKMENU_H
 
+#include "qgtkrefptr.h"
+
 #include <qpa/qplatformmenu.h>
 
 #include <gtk/gtk.h>
@@ -75,15 +77,15 @@ public:
     QPlatformMenuItem *menuItemAt(int position) const override;
     QPlatformMenuItem *menuItemForTag(quintptr tag) const override;
 
-    GtkMenuItem *gtkMenuItem() const;
+    QGtkRefPtr<GtkMenuItem> gtkMenuItem() const;
 
 private:
     QVector<QGtkMenuItem*> m_items;
-    QVector<GtkWidget*> m_gtkItems;
+    QVector<QGtkRefPtr<GtkWidget>> m_gtkItems;
     bool m_enabled = true;
     qintptr m_tag;
-    GtkMenu *m_menu;
-    GtkMenuItem *m_menuItem;
+    QGtkRefPtr<GtkMenu> m_menu;
+    QGtkRefPtr<GtkMenuItem> m_menuItem;
 };
 
 QT_END_NAMESPACE

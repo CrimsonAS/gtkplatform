@@ -70,7 +70,7 @@ private Q_SLOTS:
 private:
     QGtkRefPtr<GtkMenuBar> m_menubar;
     QVector<QGtkMenu*> m_items;
-    QVector<GtkMenuItem*> m_gtkItems;
+    QVector<QGtkRefPtr<GtkMenuItem>> m_gtkItems;
 };
 
 QT_END_NAMESPACE
