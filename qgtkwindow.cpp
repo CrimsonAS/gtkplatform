@@ -512,21 +512,41 @@ void QGtkWindow::propagateSizeHints()
     QSize baseSize = windowBaseSize();
     QSize sizeIncrement = windowSizeIncrement();
 
+    int activeHints = GdkWindowHints(0);
     GdkGeometry hints;
-    hints.min_width = minSize.width();
-    hints.min_height = minSize.height();
-    hints.max_width = maxSize.width();
-    hints.max_height = maxSize.height();
-    hints.base_width = baseSize.width();
-    hints.base_height = baseSize.height();
-    hints.width_inc = sizeIncrement.width();
-    hints.height_inc = sizeIncrement.height();
+    if (!minSize.isNull()) {
+        hints.min_width = minSize.width();
+        hints.min_height = minSize.height();
+        activeHints |= GDK_HINT_MIN_SIZE;
+        qWarning() << "Set min size " << minSize;
+    }
+
+    if (!maxSize.isNull()) {
+        hints.max_width = maxSize.width();
+        hints.max_height = maxSize.height();
+        activeHints |= GDK_HINT_MAX_SIZE;
+        qWarning() << "Set max size " << maxSize;
+    }
+
+    if (!baseSize.isNull()) {
+        hints.base_width = baseSize.width();
+        hints.base_height = baseSize.height();
+        activeHints |= GDK_HINT_BASE_SIZE;
+        qWarning() << "Set base size " << baseSize;
+    }
+
+    if (sizeIncrement.isNull()) {
+        hints.width_inc = sizeIncrement.width();
+        hints.height_inc = sizeIncrement.height();
+        activeHints |= GDK_HINT_RESIZE_INC;
+        qWarning() << "Set size increment " << sizeIncrement;
+    }
 
     gtk_window_set_geometry_hints(
         GTK_WINDOW(m_window.get()),
         m_window.get(),
         &hints,
-        GdkWindowHints(GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE | GDK_HINT_BASE_SIZE | GDK_HINT_RESIZE_INC)
+        GdkWindowHints(activeHints)
     );
 }
 
