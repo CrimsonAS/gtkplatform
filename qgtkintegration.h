@@ -84,9 +84,6 @@ public:
     void onMonitorAdded(GdkMonitor *monitor);
     void onMonitorRemoved(GdkMonitor *monitor);
 
-    void onDeviceAdded(GdkDevice *device);
-    void onDeviceRemoved(GdkDevice *device);
-
     GtkApplication *application() const;
 
 private:
@@ -95,14 +92,6 @@ private:
     GdkDisplay *m_display;
     QVector<const char*> m_arguments; /* must remain allocated for gdk's sake */
     QVector<QGtkScreen*> m_screens;
-
-    struct QGdkDevice
-    {
-        GdkDevice *m_gdkDevice;
-        QTouchDevice *m_qTouchDevice;
-    };
-
-    QVector<QGdkDevice> m_devices;
 };
 
 QT_END_NAMESPACE

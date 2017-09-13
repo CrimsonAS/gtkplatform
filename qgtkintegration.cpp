@@ -71,18 +71,6 @@ void monitor_removed(GdkDisplay *, GdkMonitor *monitor, gpointer integration)
     ig->onMonitorRemoved(monitor);
 }
 
-void device_added(GdkSeat *, GdkDevice *device, gpointer integration)
-{
-    QGtkIntegration *ig = static_cast<QGtkIntegration*>(integration);
-    ig->onDeviceAdded(device);
-}
-
-void device_removed(GdkSeat *, GdkDevice *device, gpointer integration)
-{
-    QGtkIntegration *ig = static_cast<QGtkIntegration*>(integration);
-    ig->onDeviceRemoved(device);
-}
-
 void activate_cb(GApplication *, gpointer)
 {
     qDebug() << "Activate callback";
@@ -105,29 +93,10 @@ QGtkIntegration::QGtkIntegration(const QStringList &)
         GdkMonitor *monitor = gdk_display_get_monitor(m_display, i);
         monitor_added(m_display, monitor, this);
     }
-
-    // And input devices
-    GdkSeat *seat = gdk_display_get_default_seat(m_display);
-    g_signal_connect(seat, "device-added", G_CALLBACK(device_added), this);
-    g_signal_connect(seat, "device-removed", G_CALLBACK(device_added), this);
-
-    GList *slaves = gdk_seat_get_slaves(seat, GDK_SEAT_CAPABILITY_ALL);
-    GList *l;
-
-    for (l = slaves; l != NULL; l = l->next)
-    {
-        device_added(seat, (GdkDevice*)l->data, this);
-    }
-
-    g_list_free(slaves);
 }
 
 QGtkIntegration::~QGtkIntegration()
 {
-    for (int i = 0; i < m_devices.count(); ++i) {
-        delete m_devices.at(i).m_qTouchDevice;
-    }
-    m_devices.clear();
 }
 
 void QGtkIntegration::onMonitorAdded(GdkMonitor *monitor)
@@ -148,86 +117,6 @@ void QGtkIntegration::onMonitorRemoved(GdkMonitor *monitor)
         }
     }
 
-}
-
-void QGtkIntegration::onDeviceAdded(GdkDevice *device)
-{
-    qDebug() << "Added " << device;
-
-    // ### does any of this make sense?
-    return;
-#if 0
-    GdkInputSource source = gdk_device_get_source(device);
-    const gchar *name = gdk_device_get_name(device);
-    const gchar *type = "";
-    bool isTouch = false;
-    QTouchDevice::DeviceType touchType = QTouchDevice::TouchScreen;
-
-    switch (source) {
-    case GDK_SOURCE_MOUSE:
-        type = "mouse";
-        break;
-    case GDK_SOURCE_PEN:
-        type = "pen";
-        break;
-    case GDK_SOURCE_ERASER:
-        type = "eraser";
-        break;
-    case GDK_SOURCE_CURSOR:
-        type = "cursor";
-        break;
-    case GDK_SOURCE_KEYBOARD:
-        type = "keyboard";
-        break;
-    case GDK_SOURCE_TOUCHSCREEN:
-        type = "touchscreen";
-        isTouch = true;
-        touchType = QTouchDevice::TouchScreen;
-        break;
-    case GDK_SOURCE_TOUCHPAD:
-        type = "touchpad";
-        isTouch = true;
-        touchType = QTouchDevice::TouchPad;
-        break;
-    case GDK_SOURCE_TRACKPOINT:
-        type = "trackpoint";
-        break;
-    case GDK_SOURCE_TABLET_PAD:
-        type = "tablet pad";
-        break;
-    }
-
-    qDebug() << "Device added: " << name << type;
-
-    if (isTouch) {
-        QTouchDevice::Capabilities caps = QTouchDevice::Position;
-        GdkAxisFlags axes = gdk_device_get_axes(device);
-
-        if (axes & GDK_AXIS_FLAG_PRESSURE)
-            caps |= QTouchDevice::Pressure;
-
-        QTouchDevice *d = new QTouchDevice;
-        d->setType(touchType);
-        d->setCapabilities(caps);
-        QWindowSystemInterface::registerTouchDevice(d);
-        m_devices.append(QGdkDevice{device, d});
-    }
-#endif
-}
-
-void QGtkIntegration::onDeviceRemoved(GdkDevice *device)
-{
-    qDebug() << "Removed " << device;
-
-    for (int i = 0; i < m_devices.length(); ++i) {
-        const QGdkDevice &d = m_devices.at(i);
-        if (d.m_gdkDevice == device) {
-            QWindowSystemInterface::unregisterTouchDevice(d.m_qTouchDevice);
-            delete d.m_qTouchDevice;
-            m_devices.removeAt(i);
-            break;
-        }
-    }
 }
 
 QPlatformOpenGLContext *QGtkIntegration::createPlatformOpenGLContext(QOpenGLContext *context) const
