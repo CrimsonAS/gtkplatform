@@ -64,7 +64,7 @@ static QImage qt_getBiggestImageForIcon(const QIcon &icon)
     }
 
     QPixmap p = icon.pixmap(sz, QIcon::Normal, st);
-    QImage i = p.toImage().convertToFormat(QImage::Format_RGB32);
+    QImage i = p.toImage().convertToFormat(QImage::Format_RGBA8888);
     return i;
 }
 
@@ -79,7 +79,7 @@ GdkPixbuf *qt_iconToPixbuf(const QIcon &icon)
     GdkPixbuf *gpb = gdk_pixbuf_new_from_data(
         i.constBits(),
         GDK_COLORSPACE_RGB,
-        false,
+        true,
         8,
         i.width(),
         i.height(),
