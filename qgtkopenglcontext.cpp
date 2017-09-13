@@ -198,7 +198,7 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
     // Download rendered frame, slowly, so slowly.
     QImage image(m_fbo->width(), m_fbo->height(), QImage::Format_ARGB32);
     QOpenGLFunctions funcs(QOpenGLContext::currentContext());
-    funcs.glReadPixels(0, 0, image.width(), image.height(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, image.bits());
+    funcs.glReadPixels(0, 0, image.width(), image.height(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image.bits());
     image = image.mirrored(false, true);
     win->setWindowContents(image, QRegion(), QPoint());
 
