@@ -177,6 +177,15 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
     QOpenGLFunctions funcs(QOpenGLContext::currentContext());
     funcs.glReadPixels(0, 0, image.width(), image.height(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image.bits());
     image = image.mirrored(false, true);
+
+    // XXX In singlethreaded rendering, we can't really block swapBuffers because
+    // this would also block the GTK loop, and any workaround to that seems insane.
+    // This is probably okay in that case anyway, because a singlethreaded renderer
+    // can't run on a swapBuffers loop.
+    //
+    // But in multithreaded rendering, having a nonblocking swapBuffers seems likely
+    // to cause runaway rendering. This should probably block until the image has
+    // been drawn onto the surface to properly throttle the rendering thread.
     win->setWindowContents(image, QRegion(), QPoint());
 
     qDebug(lcContext) << "Done swapping";

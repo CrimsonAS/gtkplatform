@@ -42,6 +42,8 @@
 
 #include <qpa/qwindowsysteminterface.h>
 #include <QtGui/private/qwindow_p.h>
+#include <QtCore/qthread.h>
+#include <QtCore/qcoreapplication.h>
 
 #include <QDebug>
 #include <QLoggingCategory>
@@ -152,6 +154,28 @@ gboolean window_tick_cb(GtkWidget*, GdkFrameClock *, gpointer platformWindow)
     return G_SOURCE_CONTINUE;
 }
 
+class QGtkCourierObject : public QObject
+{
+    Q_OBJECT
+
+public:
+    static QGtkCourierObject *instance;
+
+    QGtkCourierObject(QObject *parent = nullptr)
+        : QObject(parent)
+    {
+        qRegisterMetaType<QGtkWindow*>("QGtkWindow*");
+    }
+
+    Q_INVOKABLE void requestUpdate(QGtkWindow *win)
+    {
+        win->requestUpdate();
+    }
+};
+
+QGtkCourierObject *QGtkCourierObject::instance;
+
+
 void QGtkWindow::onUpdateFrameClock()
 {
     if (m_wantsUpdate) {
@@ -169,6 +193,9 @@ QGtkWindow::QGtkWindow(QWindow *window)
     , m_buttons(Qt::NoButton)
 {
     create(Qt::Window);
+
+    if (!QGtkCourierObject::instance)
+        QGtkCourierObject::instance = new QGtkCourierObject(QCoreApplication::instance());
 }
 
 void QGtkWindow::create(Qt::WindowType windowType)
@@ -256,23 +283,22 @@ void QGtkWindow::onDraw(cairo_t *cr)
     GdkRGBA color;
     gtk_style_context_get_color(ctx, GTK_STATE_FLAG_NORMAL, &color);
 
-    gdk_cairo_set_source_rgba(cr, &color);
-    cairo_set_line_width(cr, 2);
-    cairo_move_to(cr, 0, 0);
-    cairo_line_to(cr, alloc.width, alloc.height);
-    cairo_stroke(cr);
+    QSharedPointer<QImage> image(m_image);
+    if (!image)
+        return;
 
     cairo_surface_t *surf = cairo_image_surface_create_for_data(
-            const_cast<uchar*>(m_image.constBits()),
+            const_cast<uchar*>(image->constBits()),
             CAIRO_FORMAT_ARGB32,
-            m_image.width(),
-            m_image.height(),
-            m_image.bytesPerLine()
+            image->width(),
+            image->height(),
+            image->bytesPerLine()
     );
     // ### highdpi
     //int sf = gtk_widget_get_scale_factor(m_window.get());
     //cairo_surface_set_device_scale(surf, sf, sf);
     cairo_set_source_surface(cr, surf, 0, 0);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     cairo_paint(cr);
     cairo_surface_destroy(surf);
 }
@@ -619,7 +645,9 @@ void QGtkWindow::setWindowContents(const QImage &image, const QRegion &region, c
 {
     Q_UNUSED(region);
     Q_UNUSED(offset);
-    m_image = image;
+
+    // Atomic replacement of m_image
+    m_image.reset(new QImage(image));
 
 #if 0
     // ### could use queue_draw_region instead, tho might not be worth it
@@ -634,7 +662,15 @@ void QGtkWindow::setWindowContents(const QImage &image, const QRegion &region, c
     // ### this is wrong somehow, maybe need a gtk_widget_translate_coordinates?
     gtk_widget_queue_draw_area(m_content.get(), x, y, dx, dy);
 #endif
-    gtk_widget_queue_draw(m_content.get());
+
+    // XXX Should avoid sending these repeatedly when they've already been sent
+    auto courier = QGtkCourierObject::instance;
+    Q_ASSERT(courier);
+    if (courier->thread() == QThread::currentThread()) {
+        requestUpdate();
+    } else {
+        courier->metaObject()->invokeMethod(courier, "requestUpdate", Qt::QueuedConnection, Q_ARG(QGtkWindow*, this));
+    }
 }
 
 QGtkRefPtr<GtkWidget> QGtkWindow::gtkWindow() const
@@ -646,3 +682,5 @@ QGtkRefPtr<GtkMenuBar> QGtkWindow::gtkMenuBar() const
 {
     return m_menubar;
 }
+
+#include "qgtkwindow.moc"

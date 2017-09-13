@@ -42,6 +42,7 @@
 
 #include "qgtkrefptr.h"
 
+#include <QtCore/qsharedpointer.h>
 #include <qpa/qplatformwindow.h>
 #include <qpa/qwindowsysteminterface.h>
 
@@ -137,7 +138,8 @@ private:
     QGtkRefPtr<GtkWidget> m_window;
     QGtkRefPtr<GtkMenuBar> m_menubar;
     QGtkRefPtr<GtkWidget> m_content;
-    QImage m_image;
+    // Copy the QSharedPointer to take a ref before use for atomic access
+    QSharedPointer<QImage> m_image;
     QTouchDevice *m_touchDevice = nullptr;
     QList<QWindowSystemInterface::TouchPoint> m_activeTouchPoints;
     Qt::MouseButtons m_buttons;
