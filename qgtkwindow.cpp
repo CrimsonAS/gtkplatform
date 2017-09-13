@@ -41,6 +41,7 @@
 #include "qgtkhelpers.h"
 
 #include <qpa/qwindowsysteminterface.h>
+#include <QtGui/private/qwindow_p.h>
 #include <QtGui/qopengltexture.h>
 #include <QtGui/qopenglcontext.h>
 #include <QtGui/qopenglfunctions.h>
@@ -157,6 +158,30 @@ gboolean window_state_event_cb(GtkWidget *, GdkEvent *event, gpointer platformWi
     return FALSE;
 }
 
+// not in use yet, breaks rendering of a large window somehow
+// #define USE_GTK_FRAME_TICK
+
+#if defined(USE_GTK_FRAME_TICK)
+gboolean window_tick_cb(GtkWidget*, GdkFrameClock *, gpointer platformWindow)
+{
+    QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindow) << "window_tick_cb" << pw;
+    pw->onUpdateFrameClock();
+    return G_SOURCE_CONTINUE;
+}
+#endif
+
+void QGtkWindow::onUpdateFrameClock()
+{
+#if defined(USE_GTK_FRAME_TICK)
+    qWarning() << "deliverUpdateRequest" << m_wantsUpdate;
+    if (m_wantsUpdate) {
+        m_wantsUpdate = false;
+        QWindowPrivate::get(window())->deliverUpdateRequest();
+    }
+#endif
+}
+
 // window
 //  -> vbox
 //      -> menubar
@@ -173,6 +198,9 @@ QGtkWindow::QGtkWindow(QWindow *window)
     g_signal_connect(m_window, "key-press-event", G_CALLBACK(key_press_cb), this);
     g_signal_connect(m_window, "key-release-event", G_CALLBACK(key_release_cb), this);
     g_signal_connect(m_window, "scroll-event", G_CALLBACK(scroll_cb), this);
+#if defined(USE_GTK_FRAME_TICK)
+    m_tick_callback = gtk_widget_add_tick_callback(m_window, window_tick_cb, this, NULL);
+#endif
     gtk_window_resize(GTK_WINDOW(m_window), window->geometry().width(), window->geometry().height());
 
     GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
@@ -230,6 +258,9 @@ QGtkWindow::~QGtkWindow()
 {
     // ### destroy the window?
 
+#if defined(USE_GTK_FRAME_TICK)
+    gtk_widget_remove_tick_callback(m_window, m_tick_callback);
+#endif
     QWindowSystemInterface::unregisterTouchDevice(m_touchDevice);
     delete m_surfaceTexture;
     delete m_gtkContextQt;
@@ -617,18 +648,17 @@ bool QGtkWindow::isAlertState() const
 
 /*
 void QGtkWindow::invalidateSurface(){}
+*/
 void QGtkWindow::requestUpdate()
 {
+#if defined(USE_GTK_FRAME_TICK)
+    qWarning() << "requestUpdate";
+    m_wantsUpdate = true;
+    gtk_widget_queue_draw(m_content);
+#else
     QPlatformWindow::requestUpdate();
-    // ###
-    // If you are displaying animated content and want to continually request
-    // the GDK_FRAME_CLOCK_PHASE_UPDATE phase for a period of time, you should
-    // use gdk_frame_clock_begin_updating() instead, since this allows GTK+ to
-    // adjust system parameters to get maximally smooth animations.
-    GdkFrameClock *clock = gdk_window_get_frame_clock(m_window);
-    gdk_frame_clock_request_phase(clock, GDK_FRAME_CLOCK_PHASE_UPDATE);
+#endif
 }
-*/
 
 void QGtkWindow::setWindowContents(const QImage &image, const QRegion &region, const QPoint &offset)
 {
@@ -672,4 +702,5 @@ void QGtkWindow::updateRenderBuffer(const QByteArray &buffer, const QSize &size)
     m_renderBuffer = buffer;
     m_renderBufferSize = size;
     gtk_widget_queue_draw(m_content);
+    qWarning() << "updateRenderBuffer";
 }

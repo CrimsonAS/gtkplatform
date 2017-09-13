@@ -40,6 +40,8 @@
 #ifndef QGTKWINDOW_H
 #define QGTKWINDOW_H
 
+#include "qgtkrefptr.h"
+
 #include <qpa/qplatformwindow.h>
 #include <qpa/qwindowsysteminterface.h>
 #include <QtGui/private/qopengltextureblitter_p.h>
@@ -105,8 +107,8 @@ public:
     bool isAlertState() const override;
 /*
     void invalidateSurface() override;
-    void requestUpdate() override;
 */
+    void requestUpdate() override;
 
     // End API, start implementation.
     void onDraw(cairo_t *cr);
@@ -123,6 +125,7 @@ public:
     bool onTouchEvent(GdkEvent *event);
     bool onScrollEvent(GdkEvent *event);
     void onWindowStateEvent(GdkEvent *event);
+    void onUpdateFrameClock();
     void setWindowContents(const QImage &image, const QRegion &region, const QPoint &offset);
 
     GtkMenuBar *gtkMenuBar() const;
@@ -148,6 +151,8 @@ private:
     QByteArray m_renderBuffer;
     QSize m_renderBufferSize;
     Qt::WindowState m_state = Qt::WindowNoState;
+    bool m_wantsUpdate = false;
+    guint m_tick_callback = 0;
 };
 
 QT_END_NAMESPACE
