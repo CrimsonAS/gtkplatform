@@ -40,6 +40,7 @@
 #ifndef QGTKTHEME_H
 #define QGTKTHEME_H
 
+#include <QtGui/qfont.h>
 #include <qpa/qplatformtheme.h>
 
 class QGtkTheme : public QPlatformTheme
@@ -70,6 +71,9 @@ public:
     QString standardButtonText(int button) const override;
 
     static const char *name;
+    mutable QFont m_systemFont;
+    mutable QFont m_monoFont;
+    mutable bool m_fontConfigured = false;
 };
 
 #endif // QGTKTHEME_H

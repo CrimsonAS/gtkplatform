@@ -117,7 +117,35 @@ const QPalette *QGtkTheme::palette(Palette type) const
 
 const QFont *QGtkTheme::font(Font type) const
 {
-    return QPlatformTheme::font(type);
+    if (type == QPlatformTheme::FixedFont)
+        return QPlatformTheme::font(type);
+
+    if (!m_fontConfigured) {
+        m_fontConfigured = true;
+
+        GtkSettings *s = gtk_settings_get_default();
+        gchararray value;
+        g_object_get(s, "gtk-font-name", &value, NULL);
+        QString qtVal = QString::fromUtf8(value);
+        g_free(value);
+
+        if (qtVal.isNull()) {
+            m_systemFont = QFont("Sans Serif", 11);
+            m_monoFont = QFont("Monospace", m_systemFont.pointSize());
+        } else {
+            int lastSpace = qtVal.lastIndexOf(' ');
+            int pointSize = qtVal.midRef(lastSpace+1).toInt();
+            m_systemFont = QFont(qtVal.left(lastSpace), pointSize);
+            // ### dconf also has monospace fonts, document fonts... how can we get these?
+            // this is a bit of a hack...
+            m_monoFont = QFont("Monospace", m_systemFont.pointSize());
+        }
+    }
+
+    if (type == QPlatformTheme::FixedFont) {
+        return &m_monoFont;
+    }
+    return &m_systemFont;
 }
 
 QPixmap QGtkTheme::standardPixmap(StandardPixmap sp, const QSizeF &size) const
