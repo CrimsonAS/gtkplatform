@@ -42,17 +42,17 @@
 
 #include <QtGui/qopenglframebufferobject.h>
 #include <qpa/qplatformopenglcontext.h>
-#include <gdk/gdk.h>
+
+typedef void *EGLContext;
+typedef void *EGLDisplay;
 
 QT_BEGIN_NAMESPACE
 
 class QGtkOpenGLContext : public QPlatformOpenGLContext
 {
 public:
-    QGtkOpenGLContext(const QSurfaceFormat &format);
+    QGtkOpenGLContext(const QSurfaceFormat &format, QGtkOpenGLContext *shareContext);
     ~QGtkOpenGLContext();
-
-    void initialize() override;
 
     GLuint defaultFramebufferObject(QPlatformSurface *surface) const override;
     QSurfaceFormat format() const override;
@@ -68,21 +68,12 @@ public:
 
 protected:
     QSurfaceFormat m_format;
-    GdkGLContext *m_gdkContext;
+    EGLContext m_eglContext;
+    EGLDisplay m_eglDisplay;
+    QGtkOpenGLContext *m_shareContext;
     QOpenGLFramebufferObject *m_fbo;
 
     QGtkOpenGLContext();
-};
-
-class QGtkOpenGLInternalContext : public QGtkOpenGLContext
-{
-public:
-    QGtkOpenGLInternalContext(GdkGLContext *nativeContext);
-    ~QGtkOpenGLInternalContext();
-
-    GLuint defaultFramebufferObject(QPlatformSurface *surface) const override;
-    bool makeCurrent(QPlatformSurface *surface) override;
-    void swapBuffers(QPlatformSurface *surface) override;
 };
 
 QT_END_NAMESPACE

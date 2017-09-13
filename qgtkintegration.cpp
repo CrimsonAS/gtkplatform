@@ -116,15 +116,7 @@ void QGtkIntegration::onMonitorRemoved(GdkMonitor *monitor)
 
 QPlatformOpenGLContext *QGtkIntegration::createPlatformOpenGLContext(QOpenGLContext *context) const
 {
-    if (!context->nativeHandle().isNull()) {
-        GdkGLContext *nativeContext = reinterpret_cast<GdkGLContext*>(context->nativeHandle().value<void*>());
-        if (!nativeContext) {
-            return nullptr;
-        }
-
-        return new QGtkOpenGLInternalContext(nativeContext);
-    }
-    return new QGtkOpenGLContext(context->format());
+    return new QGtkOpenGLContext(context->format(), static_cast<QGtkOpenGLContext*>(context->shareHandle()));
 }
 
 bool QGtkIntegration::hasCapability(QPlatformIntegration::Capability cap) const
