@@ -547,6 +547,10 @@ Qt::Key keyvalToQtKey(int keyval)
         return Qt::Key_ClearGrab;
     }
 
+    if (keyval < 256) {
+        if (isprint(keyval))
+            keyval = toupper(keyval);
+    }
     return Qt::Key(keyval);
 }
 
@@ -554,13 +558,9 @@ bool QGtkWindow::onKeyPress(GdkEvent *event)
 {
     GdkEventKey *ev = (GdkEventKey*)event;
 
-    QString text = QChar(ev->keyval);
+    const QString text = QString::fromUtf8(ev->string, ev->length);
     Qt::KeyboardModifiers qtMods = convertGdkKeyboardModsToQtKeyboardMods(ev->state);
     Qt::Key qtKey = keyvalToQtKey(ev->keyval);
-
-    if (qtMods != Qt::NoModifier) {
-        text = QString();
-    }
 
     return QWindowSystemInterface::handleExtendedKeyEvent(
         window(),
@@ -579,13 +579,9 @@ bool QGtkWindow::onKeyRelease(GdkEvent *event)
 {
     GdkEventKey *ev = (GdkEventKey*)event;
 
-    QString text = QChar(ev->keyval);
+    const QString text = QString::fromUtf8(ev->string, ev->length);
     Qt::KeyboardModifiers qtMods = convertGdkKeyboardModsToQtKeyboardMods(ev->state);
     Qt::Key qtKey = keyvalToQtKey(ev->keyval);
-
-    if (qtMods != Qt::NoModifier) {
-        text = QString();
-    }
 
     return QWindowSystemInterface::handleExtendedKeyEvent(
         window(),
