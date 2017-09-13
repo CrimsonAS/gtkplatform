@@ -122,6 +122,7 @@ public:
     bool onMotionNotify(GdkEvent *event);
     bool onTouchEvent(GdkEvent *event);
     bool onScrollEvent(GdkEvent *event);
+    void onWindowStateEvent(GdkEvent *event);
     void setWindowContents(const QImage &image, const QRegion &region, const QPoint &offset);
 
     GtkMenuBar *gtkMenuBar() const;
@@ -146,6 +147,7 @@ private:
     QOpenGLTextureBlitter m_surfaceBlitter;
     QByteArray m_renderBuffer;
     QSize m_renderBufferSize;
+    Qt::WindowState m_state = Qt::WindowNoState;
 };
 
 QT_END_NAMESPACE

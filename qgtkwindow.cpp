@@ -149,6 +149,14 @@ gboolean scroll_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
     return pw->onScrollEvent(event) ? TRUE : FALSE;
 }
 
+gboolean window_state_event_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+{
+    QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindow) << "window_state_event_cb" << pw;
+    pw->onWindowStateEvent(event);
+    return FALSE;
+}
+
 // window
 //  -> vbox
 //      -> menubar
@@ -410,7 +418,80 @@ void QGtkWindow::setWindowFlags(Qt::WindowFlags flags)
 
 void QGtkWindow::setWindowState(Qt::WindowState state)
 {
-    qWarning() << "setWindowState: Not implemented: " << state;
+    if (state == m_state) {
+        return;
+    }
+
+    switch (m_state) {
+    case Qt::WindowMinimized:
+        gtk_window_deiconify(GTK_WINDOW(m_window));
+        break;
+    case Qt::WindowMaximized:
+        gtk_window_unmaximize(GTK_WINDOW(m_window));
+        break;
+    case Qt::WindowFullScreen:
+        gtk_window_unfullscreen(GTK_WINDOW(m_window));
+        break;
+    case Qt::WindowNoState:
+    case Qt::WindowActive:
+        break;
+    }
+
+    switch (state) {
+    case Qt::WindowMinimized:
+        gtk_window_iconify(GTK_WINDOW(m_window));
+        break;
+    case Qt::WindowMaximized:
+        gtk_window_maximize(GTK_WINDOW(m_window));
+        break;
+    case Qt::WindowFullScreen:
+        gtk_window_fullscreen(GTK_WINDOW(m_window));
+        break;
+    case Qt::WindowNoState:
+    case Qt::WindowActive:
+        break;
+    }
+
+    m_state = state;
+}
+
+void QGtkWindow::onWindowStateEvent(GdkEvent *event)
+{
+    GdkEventWindowState *ev = (GdkEventWindowState*)event;
+    Qt::WindowState newState = Qt::WindowNoState;
+
+    if (ev->new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
+        newState = Qt::WindowMinimized;
+    }
+    if (ev->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) {
+        newState = Qt::WindowMaximized;
+    }
+    if (ev->new_window_state & GDK_WINDOW_STATE_FULLSCREEN) {
+        newState = Qt::WindowFullScreen;
+    }
+
+    if (newState != m_state) {
+        m_state = newState;
+        QWindowSystemInterface::handleWindowStateChanged(window(), newState);
+    }
+
+    if (ev->changed_mask & GDK_WINDOW_STATE_FOCUSED) {
+        if (ev->new_window_state & GDK_WINDOW_STATE_FOCUSED) {
+            QWindowSystemInterface::handleWindowActivated(window(), Qt::ActiveWindowFocusReason);
+        } else {
+            // ### it would be nicer if we could specify where the focus went
+            // to, rather than setting it to nullptr. this may be a race in a
+            // multiwindow application, too, depending on how event delivery is
+            // ordered...
+            QWindowSystemInterface::handleWindowActivated(nullptr, Qt::ActiveWindowFocusReason);
+        }
+    }
+
+    // GDK_WINDOW_STATE_TILED not handled.
+    // GDK_WINDOW_STATE_STICKY not handled.
+    // GDK_WINDOW_STATE_ABOVE not handled.
+    // GDK_WINDOW_STATE_BELOW not handled.
+    // GDK_WINDOW_STATE_WITHDRAWN not handled.
 }
 
 WId QGtkWindow::winId() const
@@ -469,8 +550,7 @@ bool QGtkWindow::isExposed() const
 
 bool QGtkWindow::isActive() const
 {
-    //qWarning() << "isActive: Not implemented";
-    return true;
+    return gtk_widget_has_focus(m_window);
 }
 
 void QGtkWindow::propagateSizeHints()
