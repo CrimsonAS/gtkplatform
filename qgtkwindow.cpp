@@ -323,13 +323,11 @@ void QGtkWindow::onRender()
 
 void QGtkWindow::onMap()
 {
-    qDebug() << "map" << this;
     QWindowSystemInterface::handleExposeEvent(window(), QRect(QPoint(), geometry().size()));
 }
 
 void QGtkWindow::onUnmap()
 {
-    qDebug() << "unmap" << this;
     QWindowSystemInterface::handleExposeEvent(window(), QRegion());
 }
 
@@ -337,7 +335,6 @@ void QGtkWindow::onConfigure(GdkEvent *event)
 {
     GdkEventConfigure *ev = (GdkEventConfigure*)event;
     QRect geom(ev->x, ev->y, ev->width, ev->height);
-    qDebug() << "Configure: " << geom;
     QWindowSystemInterface::handleGeometryChange(window(), geom);
 }
 
@@ -356,9 +353,7 @@ QSurfaceFormat QGtkWindow::format() const
 
 void QGtkWindow::setGeometry(const QRect &rect)
 {
-    qDebug() << "setGeometry" << rect;
     gtk_window_resize(GTK_WINDOW(m_window), rect.width(), rect.height());
-    qDebug() << "Done geometry";
 }
 
 QRect QGtkWindow::geometry() const
@@ -401,13 +396,9 @@ QMargins QGtkWindow::frameMargins() const
 void QGtkWindow::setVisible(bool visible)
 {
     if (visible) {
-        qDebug() << "Showing" << m_window;
         gtk_widget_show_all(m_window);
-        qDebug() << "Showed" << m_window;
     } else {
-        qDebug() << "Showing" << m_window;
         gtk_widget_hide(m_window);
-        qDebug() << "Showed" << m_window;
     }
 }
 
