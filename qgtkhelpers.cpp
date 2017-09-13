@@ -42,10 +42,15 @@
 // Returns the largest image for this icon, in RGB32 format.
 static QImage qt_getBiggestImageForIcon(const QIcon &icon)
 {
-    QList<QSize> sizes = icon.availableSizes(QIcon::Normal, QIcon::On);
+    QIcon::State st = QIcon::On;
+    QList<QSize> sizes = icon.availableSizes(QIcon::Normal, st);
     if (!sizes.length()) {
-        qWarning() << "No available icons for icon?" << icon;
-        return QImage();
+        st = QIcon::Off;
+        sizes = icon.availableSizes(QIcon::Normal, st);
+        if (!sizes.length()) {
+            qWarning() << "No available icons for icon?" << icon;
+            return QImage();
+        }
     }
 
     // Find the largest size, hopefully it's the best looking.
@@ -58,7 +63,7 @@ static QImage qt_getBiggestImageForIcon(const QIcon &icon)
         }
     }
 
-    QPixmap p = icon.pixmap(sz, QIcon::Normal, QIcon::On);
+    QPixmap p = icon.pixmap(sz, QIcon::Normal, st);
     QImage i = p.toImage().convertToFormat(QImage::Format_RGB32);
     return i;
 }
