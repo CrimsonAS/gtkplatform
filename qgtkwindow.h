@@ -44,14 +44,12 @@
 
 #include <qpa/qplatformwindow.h>
 #include <qpa/qwindowsysteminterface.h>
-#include <QtGui/private/qopengltextureblitter_p.h>
 
 #include <gtk/gtk.h>
 
 QT_BEGIN_NAMESPACE
 
 class QTouchDevice;
-class QOpenGLTexture;
 
 class QGtkWindow : public QPlatformWindow
 {
@@ -130,9 +128,6 @@ public:
 
     QGtkRefPtr<GtkMenuBar> gtkMenuBar() const;
     QGtkRefPtr<GtkWidget> gtkWindow() const;
-    QGtkRefPtr<GdkGLContext> gdkGLContext() const;
-
-    void updateRenderBuffer(const QByteArray &buffer, const QSize &size);
 
 private:
     static Qt::KeyboardModifiers convertGdkKeyboardModsToQtKeyboardMods(guint mask);
@@ -144,12 +139,6 @@ private:
     QTouchDevice *m_touchDevice = nullptr;
     QList<QWindowSystemInterface::TouchPoint> m_activeTouchPoints;
     Qt::MouseButtons m_buttons;
-    QGtkRefPtr<GdkGLContext> m_gtkContext;
-    QOpenGLContext *m_gtkContextQt = nullptr;
-    QOpenGLTexture *m_surfaceTexture = nullptr;
-    QOpenGLTextureBlitter m_surfaceBlitter;
-    QByteArray m_renderBuffer;
-    QSize m_renderBufferSize;
     Qt::WindowState m_state = Qt::WindowNoState;
     bool m_wantsUpdate = false;
     guint m_tick_callback = 0;

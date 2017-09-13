@@ -42,7 +42,6 @@
 
 #include <QtCore/qdebug.h>
 #include <QtGui/qopenglcontext.h>
-#include <QtGui/qopengltexture.h>
 #include <QtGui/qopenglfunctions.h>
 
 #include <gtk/gtk.h>
@@ -197,12 +196,12 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
     QGtkWindow *win = static_cast<QGtkWindow*>(surface);
 
     // Download rendered frame, slowly, so slowly.
-    QByteArray frameData;
-    frameData.resize(m_fbo->width() * m_fbo->height() * 4);
+    QImage image(m_fbo->width(), m_fbo->height(), QImage::Format_ARGB32);
     QOpenGLFunctions funcs(QOpenGLContext::currentContext());
-    funcs.glReadPixels(0, 0, m_fbo->width(), m_fbo->height(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, frameData.data());
+    funcs.glReadPixels(0, 0, image.width(), image.height(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, image.bits());
+    image = image.mirrored(false, true);
+    win->setWindowContents(image, QRegion(), QPoint());
 
-    win->updateRenderBuffer(frameData, m_fbo->size());
     qDebug(lcContext) << "Done swapping";
 }
 

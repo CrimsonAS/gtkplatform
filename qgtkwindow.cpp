@@ -42,10 +42,6 @@
 
 #include <qpa/qwindowsysteminterface.h>
 #include <QtGui/private/qwindow_p.h>
-#include <QtGui/qopengltexture.h>
-#include <QtGui/qopenglcontext.h>
-#include <QtGui/qopenglfunctions.h>
-#include <QtGui/qmatrix4x4.h>
 
 #include <QDebug>
 #include <QLoggingCategory>
@@ -53,16 +49,6 @@
 Q_LOGGING_CATEGORY(lcWindow, "qt.qpa.gtk.window");
 Q_LOGGING_CATEGORY(lcWindowRender, "qt.qpa.gtk.window.render");
 
-// GL
-gboolean render_cb(GtkGLArea *, GdkGLContext *, gpointer platformWindow)
-{
-    QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindowRender) << "render_cb" << pw;
-    pw->onRender();
-    return TRUE;
-}
-
-// raster
 void draw_cb(GtkWidget *, cairo_t *cr, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
@@ -209,13 +195,8 @@ QGtkWindow::QGtkWindow(QWindow *window)
     m_menubar = GTK_MENU_BAR(gtk_menu_bar_new());
     gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(m_menubar.get()), FALSE, FALSE, 0);
 
-    if (window->supportsOpenGL()) {
-        m_content = gtk_gl_area_new();
-        g_signal_connect(m_content.get(), "render", G_CALLBACK(render_cb), this);
-    } else {
-        m_content = gtk_drawing_area_new();
-        g_signal_connect(m_content.get(), "draw", G_CALLBACK(draw_cb), this);
-    }
+    m_content = gtk_drawing_area_new();
+    g_signal_connect(m_content.get(), "draw", G_CALLBACK(draw_cb), this);
 
     gtk_box_pack_end(GTK_BOX(vbox), m_content.get(), TRUE, TRUE, 0);
 
@@ -236,18 +217,6 @@ QGtkWindow::QGtkWindow(QWindow *window)
     g_signal_connect(m_content.get(), "touch-event", G_CALLBACK(touch_event_cb), this);
     g_signal_connect(m_content.get(), "motion-notify-event", G_CALLBACK(motion_notify_cb), this);
 
-    if (window->supportsOpenGL()) {
-        // this has to wait until everything is set up.
-        gtk_widget_realize(m_content.get());
-        m_gtkContext = gtk_gl_area_get_context(GTK_GL_AREA(m_content.get()));
-        m_gtkContextQt = new QOpenGLContext;
-        m_gtkContextQt->setNativeHandle(QVariant::fromValue<void*>(m_gtkContext.get()));
-        if (!m_gtkContextQt->create()) {
-            Q_ASSERT_X(false, "QGtkWindow", "failed to create wrapper context for GTK contexT");
-        }
-        m_surfaceTexture = new QOpenGLTexture(QOpenGLTexture::Target2D);
-    }
-
     m_touchDevice = new QTouchDevice;
     m_touchDevice->setType(QTouchDevice::TouchScreen); // ### use GdkDevice or not?
     m_touchDevice->setCapabilities(QTouchDevice::Position | QTouchDevice::MouseEmulation);
@@ -262,8 +231,6 @@ QGtkWindow::~QGtkWindow()
     gtk_widget_remove_tick_callback(m_window.get(), m_tick_callback);
 #endif
     QWindowSystemInterface::unregisterTouchDevice(m_touchDevice);
-    delete m_surfaceTexture;
-    delete m_gtkContextQt;
     gtk_widget_destroy(m_window.get());
 }
 
@@ -294,63 +261,6 @@ void QGtkWindow::onDraw(cairo_t *cr)
     cairo_set_source_surface(cr, surf, 0, 0);
     cairo_paint(cr);
     cairo_surface_destroy(surf);
-}
-
-void QGtkWindow::onRender()
-{
-    qCDebug(lcWindowRender) << "Start render";
-
-    // m_gtkContextQt is a QOpenGLContext wrapping the GtkGLArea's rendering
-    // context. It cannot be used to swap, but it is possible to call makeCurrent
-    // and enable the use of Qt's OpenGL functions during rendering here.
-    bool isCurrent = m_gtkContextQt->makeCurrent(window());
-    Q_ASSERT(isCurrent);
-
-    QOpenGLFunctions funcs(m_gtkContextQt);
-    GLint dims[4] = {0};
-    funcs.glGetIntegerv(GL_VIEWPORT, dims);
-    GLint fbWidth = dims[2];
-    GLint fbHeight = dims[3];
-
-    // Upload renderBuffer to the texture, if it has changed
-    if (!m_renderBuffer.isEmpty()) {
-        if (m_surfaceTexture->isStorageAllocated() &&
-            (m_surfaceTexture->width() != m_renderBufferSize.width() ||
-             m_surfaceTexture->height() != m_renderBufferSize.height()))
-        {
-            m_surfaceTexture->destroy();
-        }
-        if (!m_surfaceTexture->isStorageAllocated()) {
-            m_surfaceTexture->setSize(m_renderBufferSize.width(), m_renderBufferSize.height());
-            m_surfaceTexture->setFormat(QOpenGLTexture::RGBA8_UNorm);
-            m_surfaceTexture->allocateStorage();
-        }
-        m_surfaceTexture->setData(QOpenGLTexture::RGBA, QOpenGLTexture::UInt32_RGBA8_Rev, m_renderBuffer.constData());
-        qCDebug(lcWindowRender) << "updated texture" << m_surfaceTexture->width() << m_surfaceTexture->height();
-    }
-
-    if (!m_surfaceBlitter.isCreated()) {
-        bool blitterCreated = m_surfaceBlitter.create();
-        Q_ASSERT(blitterCreated);
-    }
-
-    // XXX If these values aren't in sync, the window will be stretched; this can
-    // happen briefly during resizes, for example. It should probably be stopped.
-    QRectF target(0, 0, fbWidth, fbHeight);
-    QRect source(0, 0, m_surfaceTexture->width(), m_surfaceTexture->height());
-
-    if (target.size() != source.size()) {
-        qCDebug(lcWindowRender) << "rendered surface size" << source.size() << "doesn't match output FBO size" << target.size() << "-- this will stretch window content";
-    }
-
-    m_surfaceBlitter.bind();
-    m_surfaceBlitter.blit(m_surfaceTexture->textureId(),
-                          QOpenGLTextureBlitter::targetTransform(target, source),
-                          QOpenGLTextureBlitter::OriginBottomLeft);
-    m_surfaceBlitter.release();
-
-    m_gtkContextQt->doneCurrent();
-    qCDebug(lcWindowRender) << "Done render";
 }
 
 void QGtkWindow::onMap()
@@ -594,9 +504,9 @@ void QGtkWindow::propagateSizeHints()
     hints.height_inc = sizeIncrement.height();
 
     gtk_window_set_geometry_hints(
-        GTK_WINDOW(m_window.get()), 
+        GTK_WINDOW(m_window.get()),
         m_window.get(),
-        &hints, 
+        &hints,
         GdkWindowHints(GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE | GDK_HINT_BASE_SIZE | GDK_HINT_RESIZE_INC)
     );
 }
@@ -691,17 +601,4 @@ QGtkRefPtr<GtkWidget> QGtkWindow::gtkWindow() const
 QGtkRefPtr<GtkMenuBar> QGtkWindow::gtkMenuBar() const
 {
     return m_menubar;
-}
-
-QGtkRefPtr<GdkGLContext> QGtkWindow::gdkGLContext() const
-{
-    return m_gtkContext;
-}
-
-void QGtkWindow::updateRenderBuffer(const QByteArray &buffer, const QSize &size)
-{
-    m_renderBuffer = buffer;
-    m_renderBufferSize = size;
-    gtk_widget_queue_draw(m_content.get());
-    qWarning() << "updateRenderBuffer";
 }
