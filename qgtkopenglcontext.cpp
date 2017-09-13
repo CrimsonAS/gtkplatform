@@ -192,7 +192,7 @@ GLuint QGtkOpenGLContext::defaultFramebufferObject(QPlatformSurface *surface) co
 
 void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
 {
-    qDebug(lcContext) << "Swapping";
+    qCDebug(lcContext) << "Swapping";
     QGtkWindow *win = static_cast<QGtkWindow*>(surface);
 
     // Download rendered frame, slowly, so slowly.
@@ -212,13 +212,13 @@ bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
 
     QSize sz = win->geometry().size() * win->devicePixelRatio();
     if (m_fbo && m_fbo->size() != sz) {
-        qDebug() << "clearing old context FBO of size" << m_fbo->size();
+        qCDebug(lcContext) << "clearing old context FBO of size" << m_fbo->size();
         delete m_fbo;
         m_fbo = nullptr;
     }
     if (!m_fbo) {
         m_fbo = new QOpenGLFramebufferObject(sz, QOpenGLFramebufferObject::CombinedDepthStencil);
-        qDebug() << "created new context FBO of size" << m_fbo->size();
+        qCDebug(lcContext) << "created new context FBO of size" << m_fbo->size();
     }
 
     if (!m_fbo->isValid())

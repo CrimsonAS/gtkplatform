@@ -75,6 +75,7 @@ QSizeF QGtkScreen::physicalSize() const
 {
     return QPlatformScreen::physicalSize();
 
+    // ### highdpi
     // for some reason, this makes fonts bizarrely huge ???
     //return QSizeF(gdk_monitor_get_width_mm(m_monitor), gdk_monitor_get_height_mm(m_monitor));
 }
@@ -85,7 +86,9 @@ QSizeF QGtkScreen::physicalSize() const
 
 qreal QGtkScreen::devicePixelRatio() const
 {
-    return gdk_monitor_get_scale_factor(m_monitor);
+    // ### highdpi
+    return 1.0;
+    // return gdk_monitor_get_scale_factor(m_monitor);
 }
 
 qreal QGtkScreen::refreshRate() const

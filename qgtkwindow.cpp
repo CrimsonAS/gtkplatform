@@ -269,6 +269,9 @@ void QGtkWindow::onDraw(cairo_t *cr)
             m_image.height(),
             m_image.bytesPerLine()
     );
+    // ### highdpi
+    //int sf = gtk_widget_get_scale_factor(m_window.get());
+    //cairo_surface_set_device_scale(surf, sf, sf);
     cairo_set_source_surface(cr, surf, 0, 0);
     cairo_paint(cr);
     cairo_surface_destroy(surf);
@@ -325,7 +328,9 @@ QRect QGtkWindow::normalGeometry() const
 qreal QGtkWindow::devicePixelRatio() const
 {
     // ### may change on configure event
-    return gtk_widget_get_scale_factor(m_window.get());
+    // ### highdpi
+    return 1.0;
+    //return gtk_widget_get_scale_factor(m_window.get());
 }
 
 QMargins QGtkWindow::frameMargins() const
