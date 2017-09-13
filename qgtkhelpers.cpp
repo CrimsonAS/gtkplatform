@@ -69,14 +69,12 @@ static QImage qt_getBiggestImageForIcon(const QIcon &icon)
 }
 
 // Convert a QIcon to a GdkPixbuf for use elsewhere.
-// The GdkPixbuf is started with an initial refcount, so it must be
-// unreffed by the caller.
-GdkPixbuf *qt_iconToPixbuf(const QIcon &icon)
+QGtkRefPtr<GdkPixbuf> qt_iconToPixbuf(const QIcon &icon)
 {
     QImage i = qt_getBiggestImageForIcon(icon);
     if (i.isNull())
         return 0;
-    GdkPixbuf *gpb = gdk_pixbuf_new_from_data(
+    QGtkRefPtr<GdkPixbuf> gpb = gdk_pixbuf_new_from_data(
         i.constBits(),
         GDK_COLORSPACE_RGB,
         true,
@@ -92,14 +90,11 @@ GdkPixbuf *qt_iconToPixbuf(const QIcon &icon)
 }
 
 // Convert a QIcon to a GIcon for use elsewhere.
-// The GIcon is started with an initial refcount, so it must be unreffed by the
-// caller.
-GIcon *qt_iconToIcon(const QIcon &icon)
+QGtkRefPtr<GIcon> qt_iconToIcon(const QIcon &icon)
 {
     QImage i = qt_getBiggestImageForIcon(icon);
-    GBytes *bytes = g_bytes_new_take(const_cast<uchar*>(i.constBits()), i.byteCount());
-    GIcon *ico = g_bytes_icon_new(bytes);
-    g_bytes_unref(bytes);
+    QGtkRefPtr<GBytes> bytes = g_bytes_new_take(const_cast<uchar*>(i.constBits()), i.byteCount());
+    QGtkRefPtr<GIcon> ico = g_bytes_icon_new(bytes.get());
     return ico;
 }
 

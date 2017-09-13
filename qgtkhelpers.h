@@ -38,6 +38,7 @@
 ****************************************************************************/
 
 #include "qgtkmenuitem.h"
+#include "qgtkrefptr.h"
 
 #include <QtCore/qdebug.h>
 
@@ -46,8 +47,8 @@
 
 QT_BEGIN_NAMESPACE
 
-GdkPixbuf *qt_iconToPixbuf(const QIcon &icon);
-GIcon *qt_iconToIcon(const QIcon &icon);
+QGtkRefPtr<GdkPixbuf> qt_iconToPixbuf(const QIcon &icon);
+QGtkRefPtr<GIcon> qt_iconToIcon(const QIcon &icon);
 QString qt_convertToGtkMnemonics(const QString &text);
 
 QT_END_NAMESPACE

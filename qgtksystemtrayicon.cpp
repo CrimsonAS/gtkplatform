@@ -95,9 +95,8 @@ void QGtkSystemTrayIcon::showMessage(const QString &title, const QString &msg,
     m_notification.reset(n);
 
     if (!icon.isNull()) {
-        GdkPixbuf *ico = qt_iconToPixbuf(icon);
-        notify_notification_set_icon_from_pixbuf(n, ico);
-        g_object_unref(ico);
+        QGtkRefPtr<GdkPixbuf> ico = qt_iconToPixbuf(icon);
+        notify_notification_set_icon_from_pixbuf(n, ico.get());
     }
 
     switch (iconType) {

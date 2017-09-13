@@ -478,10 +478,10 @@ void QGtkWindow::setWindowIcon(const QIcon &icon)
         return;
     }
 
-    GdkPixbuf *pb = qt_iconToPixbuf(icon);
+    QGtkRefPtr<GdkPixbuf> pb = qt_iconToPixbuf(icon);
 
     // ### consider gtk_window_set_icon_list
-    gtk_window_set_icon(GTK_WINDOW(m_window.get()), pb);
+    gtk_window_set_icon(GTK_WINDOW(m_window.get()), pb.get());
 }
 
 void QGtkWindow::raise()
