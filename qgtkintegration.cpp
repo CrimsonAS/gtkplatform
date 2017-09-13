@@ -224,7 +224,6 @@ QPlatformWindow *QGtkIntegration::createPlatformWindow(QWindow *window) const
 
 QPlatformBackingStore *QGtkIntegration::createPlatformBackingStore(QWindow *window) const
 {
-    qDebug() << "Creating backing store for window " << window;
     return new QGtkBackingStore(window);
 }
 
