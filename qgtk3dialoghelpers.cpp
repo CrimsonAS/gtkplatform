@@ -87,7 +87,7 @@ void QGtk3Dialog::exec()
         QWindow *focusWin = QGuiApplication::focusWindow();
         if (focusWin) {
             QGtkWindow *parentWin = static_cast<QGtkWindow*>(focusWin->handle());
-            gtk_window_set_transient_for(GTK_WINDOW(gtkWidget), GTK_WINDOW(parentWin->gtkWindow()));
+            gtk_window_set_transient_for(GTK_WINDOW(gtkWidget), GTK_WINDOW(parentWin->gtkWindow().get()));
         }
         // block input to the whole app, including other GTK dialogs
         // 
@@ -116,7 +116,7 @@ bool QGtk3Dialog::show(Qt::WindowFlags flags, Qt::WindowModality modality, QWind
     GdkWindow *gdkWindow = gtk_widget_get_window(gtkWidget);
     if (parent)  {
         QGtkWindow *parentWin = static_cast<QGtkWindow*>(parent->handle());
-        gtk_window_set_transient_for(GTK_WINDOW(gtkWidget), GTK_WINDOW(parentWin->gtkWindow()));
+        gtk_window_set_transient_for(GTK_WINDOW(gtkWidget), GTK_WINDOW(parentWin->gtkWindow().get()));
     }
 
     if (modality != Qt::NonModal) {

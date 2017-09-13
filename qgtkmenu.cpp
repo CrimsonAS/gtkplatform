@@ -162,7 +162,7 @@ void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, c
     GdkRectangle gRect { targetRect.x(), targetRect.y(), targetRect.width(), targetRect.height() };
     gtk_menu_popup_at_rect(
         GTK_MENU(menu),
-        GDK_WINDOW(static_cast<QGtkWindow*>(parentWindow->handle())->gtkWindow()),
+        GDK_WINDOW(static_cast<QGtkWindow*>(parentWindow->handle())->gtkWindow().get()),
         &gRect,
         GdkGravity(GDK_GRAVITY_NORTH_WEST),
         GdkGravity(GDK_GRAVITY_NORTH_WEST),

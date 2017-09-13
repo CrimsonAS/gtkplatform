@@ -128,23 +128,23 @@ public:
     void onUpdateFrameClock();
     void setWindowContents(const QImage &image, const QRegion &region, const QPoint &offset);
 
-    GtkMenuBar *gtkMenuBar() const;
-    GtkWidget *gtkWindow() const;
-    GdkGLContext *gdkGLContext() const;
+    QGtkRefPtr<GtkMenuBar> gtkMenuBar() const;
+    QGtkRefPtr<GtkWidget> gtkWindow() const;
+    QGtkRefPtr<GdkGLContext> gdkGLContext() const;
 
     void updateRenderBuffer(const QByteArray &buffer, const QSize &size);
 
 private:
     static Qt::KeyboardModifiers convertGdkKeyboardModsToQtKeyboardMods(guint mask);
 
-    GtkWidget *m_window = nullptr;
-    GtkMenuBar *m_menubar = nullptr;
-    GtkWidget *m_content = nullptr;
+    QGtkRefPtr<GtkWidget> m_window;
+    QGtkRefPtr<GtkMenuBar> m_menubar;
+    QGtkRefPtr<GtkWidget> m_content;
     QImage m_image;
     QTouchDevice *m_touchDevice = nullptr;
     QList<QWindowSystemInterface::TouchPoint> m_activeTouchPoints;
     Qt::MouseButtons m_buttons;
-    GdkGLContext *m_gtkContext = nullptr;
+    QGtkRefPtr<GdkGLContext> m_gtkContext;
     QOpenGLContext *m_gtkContextQt = nullptr;
     QOpenGLTexture *m_surfaceTexture = nullptr;
     QOpenGLTextureBlitter m_surfaceBlitter;
