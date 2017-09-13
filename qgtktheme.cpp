@@ -133,6 +133,9 @@ QPixmap QGtkTheme::fileIconPixmap(const QFileInfo &fileInfo,
 
 QVariant QGtkTheme::themeHint(ThemeHint hint) const
 {
+    if (hint == QPlatformTheme::StyleNames) {
+        return QStringList() << "Fusion";
+    }
     return QPlatformTheme::themeHint(hint);
 }
 
