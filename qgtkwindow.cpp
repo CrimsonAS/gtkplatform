@@ -473,9 +473,31 @@ bool QGtkWindow::isActive() const
     return true;
 }
 
-/*
-void QGtkWindow::propagateSizeHints(){}
-*/
+void QGtkWindow::propagateSizeHints()
+{
+    QSize minSize = windowMinimumSize();
+    QSize maxSize = windowMaximumSize();
+    QSize baseSize = windowBaseSize();
+    QSize sizeIncrement = windowSizeIncrement();
+
+    GdkGeometry hints;
+    hints.min_width = minSize.width();
+    hints.min_height = minSize.height();
+    hints.max_width = maxSize.width();
+    hints.max_height = maxSize.height();
+    hints.base_width = baseSize.width();
+    hints.base_height = baseSize.height();
+    hints.width_inc = sizeIncrement.width();
+    hints.height_inc = sizeIncrement.height();
+
+    gtk_window_set_geometry_hints(
+        GTK_WINDOW(m_window), 
+        m_window,
+        &hints, 
+        GdkWindowHints(GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE | GDK_HINT_BASE_SIZE | GDK_HINT_RESIZE_INC)
+    );
+}
+
 void QGtkWindow::setOpacity(qreal level)
 {
     gtk_widget_set_opacity(m_window, level);

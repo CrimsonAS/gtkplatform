@@ -81,9 +81,7 @@ public:
 
     bool isExposed() const override;
     bool isActive() const override;
-/*
     void propagateSizeHints() override;
-*/
     void setOpacity(qreal level) override;
 /*
     void setMask(const QRegion &region) override;
