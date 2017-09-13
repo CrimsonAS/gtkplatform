@@ -176,7 +176,21 @@ QGtkWindow::QGtkWindow(QWindow *window)
     : QPlatformWindow(window)
     , m_buttons(Qt::NoButton)
 {
-    m_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    create(Qt::Window);
+}
+
+void QGtkWindow::create(Qt::WindowType windowType)
+{
+    if (m_window) {
+        gtk_widget_destroy(m_window.get());
+    }
+
+    GtkWindowType gtkWindowType = GTK_WINDOW_TOPLEVEL;
+    if (windowType == Qt::ToolTip) {
+        gtkWindowType = GTK_WINDOW_POPUP;
+    }
+
+    m_window = gtk_window_new(gtkWindowType);
     g_signal_connect(m_window.get(), "map", G_CALLBACK(map_cb), this);
     g_signal_connect(m_window.get(), "unmap", G_CALLBACK(unmap_cb), this);
     g_signal_connect(m_window.get(), "configure-event", G_CALLBACK(configure_cb), this);
@@ -187,7 +201,7 @@ QGtkWindow::QGtkWindow(QWindow *window)
 #if defined(USE_GTK_FRAME_TICK)
     m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), window_tick_cb, this, NULL);
 #endif
-    gtk_window_resize(GTK_WINDOW(m_window.get()), window->geometry().width(), window->geometry().height());
+    gtk_window_resize(GTK_WINDOW(m_window.get()), window()->geometry().width(), window()->geometry().height());
 
     GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
     gtk_container_add(GTK_CONTAINER(m_window.get()), vbox);
@@ -221,6 +235,17 @@ QGtkWindow::QGtkWindow(QWindow *window)
     m_touchDevice->setType(QTouchDevice::TouchScreen); // ### use GdkDevice or not?
     m_touchDevice->setCapabilities(QTouchDevice::Position | QTouchDevice::MouseEmulation);
     QWindowSystemInterface::registerTouchDevice(m_touchDevice);
+
+    setWindowState(window()->windowState());
+    setWindowFlags(window()->flags());
+    setWindowTitle(window()->title());
+
+    if (!qFuzzyCompare(QWindowPrivate::get(window())->opacity, qreal(1.0))) {
+        setOpacity(QWindowPrivate::get(window())->opacity);
+    }
+    if (window()->isTopLevel()) {
+        setWindowIcon(window()->icon());
+    }
 }
 
 QGtkWindow::~QGtkWindow()
@@ -346,7 +371,10 @@ void QGtkWindow::setVisible(bool visible)
 
 void QGtkWindow::setWindowFlags(Qt::WindowFlags flags)
 {
-    qWarning() << "setWindowFlags: Not implemented: " << flags;
+    // ### recreate the window if the type changes, but be careful, we may
+    // recurse.
+    gtk_window_set_decorated(GTK_WINDOW(m_window.get()), !(flags & Qt::FramelessWindowHint));
+    gtk_window_set_deletable(GTK_WINDOW(m_window.get()), flags & Qt::WindowCloseButtonHint);
 }
 
 void QGtkWindow::setWindowState(Qt::WindowState state)

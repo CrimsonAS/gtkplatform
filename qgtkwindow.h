@@ -57,6 +57,8 @@ public:
     QGtkWindow(QWindow *window);
     ~QGtkWindow();
 
+    void create(Qt::WindowType windowType);
+
     QSurfaceFormat format() const override;
 
     void setGeometry(const QRect &rect) override;
