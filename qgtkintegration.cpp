@@ -55,6 +55,8 @@
 
 #include <gtk/gtk.h>
 
+#include <libnotify/notify.h>
+
 QT_BEGIN_NAMESPACE
 
 class QCoreTextFontEngine;
@@ -76,6 +78,7 @@ QGtkIntegration::QGtkIntegration(const QStringList &)
     , m_fontDatabase(new QGenericUnixFontDatabase)
 {
     gtk_init(NULL, NULL);
+    notify_init(qApp->applicationName().toUtf8().constData());
 
     // Set up screens
     m_display = gdk_display_get_default();
@@ -92,6 +95,7 @@ QGtkIntegration::QGtkIntegration(const QStringList &)
 
 QGtkIntegration::~QGtkIntegration()
 {
+    notify_uninit();
 }
 
 void QGtkIntegration::onMonitorAdded(GdkMonitor *monitor)

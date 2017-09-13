@@ -105,38 +105,45 @@ QRect QGtkSystemTrayIcon::geometry() const
     return QRect(0, 0, sz, sz);
 }
 
-void QGtkSystemTrayIcon::showMessage(const QString &title, const QString &msg,
-                 const QIcon& icon, MessageIcon iconType, int secs)
+void action_cb(NotifyNotification*, gchar *, gpointer)
 {
-    Q_UNUSED(secs);
-    qDebug() << title << msg;
-    return; // broken for now
+    if (qApp->focusWindow()) {
+        qApp->focusWindow()->raise();
+    }
+}
 
-    GNotification *n = g_notification_new(title.toUtf8().constData());
-    g_notification_set_body(n, msg.toUtf8().constData());
+void QGtkSystemTrayIcon::showMessage(const QString &title, const QString &msg,
+                 const QIcon& icon, MessageIcon iconType, int msecs)
+{
+    NotifyNotification *n = notify_notification_new(title.toUtf8().constData(), msg.toUtf8().constData(), nullptr);
+
+    // ### technically, we could delete this after 'msecs'. we need to keep it
+    // around to fire action_cb.
+    m_notification.reset(n);
 
     if (!icon.isNull()) {
-        GIcon *ico = qt_iconToIcon(icon);
-        g_notification_set_icon(n, ico);
+        GdkPixbuf *ico = qt_iconToPixbuf(icon);
+        notify_notification_set_icon_from_pixbuf(n, ico);
         g_object_unref(ico);
     }
 
     switch (iconType) {
     case QPlatformSystemTrayIcon::NoIcon:
     case QPlatformSystemTrayIcon::Information:
-        g_notification_set_priority(n, G_NOTIFICATION_PRIORITY_NORMAL);
+        notify_notification_set_urgency(n, NOTIFY_URGENCY_LOW);
         break;
     case QPlatformSystemTrayIcon::Warning:
-        g_notification_set_priority(n, G_NOTIFICATION_PRIORITY_HIGH);
+        notify_notification_set_urgency(n, NOTIFY_URGENCY_NORMAL);
         break;
     case QPlatformSystemTrayIcon::Critical:
-        g_notification_set_priority(n, G_NOTIFICATION_PRIORITY_URGENT);
+        notify_notification_set_urgency(n, NOTIFY_URGENCY_CRITICAL);
         break;
     }
 
-    GtkApplication *app = static_cast<QGtkIntegration*>(QGuiApplicationPrivate::platformIntegration())->application();
-    g_application_send_notification(G_APPLICATION(app), "qt-notification", n);
-    g_object_unref(n);
+    notify_notification_set_timeout(n, msecs);
+    notify_notification_add_action(n, "default", "default", action_cb, NULL, NULL);
+
+    notify_notification_show(n, NULL);
 }
 
 bool QGtkSystemTrayIcon::isSystemTrayAvailable() const

@@ -47,6 +47,8 @@
 
 #include <gtk/gtk.h>
 
+#include <libnotify/notification.h>
+
  QT_BEGIN_NAMESPACE
 
  class Q_GUI_EXPORT QGtkSystemTrayIcon : public QPlatformSystemTrayIcon
@@ -62,13 +64,14 @@
      void updateMenu(QPlatformMenu *menu) override;
      QRect geometry() const override;
      void showMessage(const QString &title, const QString &msg,
-                      const QIcon& icon, MessageIcon iconType, int secs) override;
+                      const QIcon& icon, MessageIcon iconType, int msecs) override;
 
      bool isSystemTrayAvailable() const override;
      bool supportsMessages() const override;
 
  private:
      GtkStatusIcon *m_icon;
+     QGtkRefPtr<NotifyNotification> m_notification;
  };
 
  QT_END_NAMESPACE

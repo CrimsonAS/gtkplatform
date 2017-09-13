@@ -42,7 +42,7 @@ HEADERS =   qgtkintegration.h \
 CONFIG += qpa/genericunixfontdatabase
 
 CONFIG += link_pkgconfig
-PKGCONFIG_PRIVATE += gdk-3.0 gtk+-3.0
+PKGCONFIG_PRIVATE += gdk-3.0 gtk+-3.0 libnotify
 
 # for GL
 PKGCONFIG_PRIVATE += egl
