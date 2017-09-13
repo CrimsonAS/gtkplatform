@@ -45,64 +45,37 @@
 #include <QtGui/qicon.h>
 #include <QtGui/private/qguiapplication_p.h>
 
-// Status icons are deprecated in GTK+.
-QT_WARNING_PUSH
-QT_WARNING_DISABLE_GCC("-Wdeprecated-declarations")
-
 QGtkSystemTrayIcon::QGtkSystemTrayIcon()
 {
-    m_icon = gtk_status_icon_new();
-    qDebug() << "ctor" << m_icon;
 }
 
 QGtkSystemTrayIcon::~QGtkSystemTrayIcon()
 {
-    qDebug() << "dtor" << m_icon;
-    g_object_unref(m_icon);
-    m_icon = 0;
 }
 
 void QGtkSystemTrayIcon::init()
 {
-    qDebug() << "init" << m_icon;
 }
 
 void QGtkSystemTrayIcon::cleanup()
 {
-    qDebug() << "cleanup" << m_icon;
-    g_object_unref(m_icon);
-    m_icon = 0;
-    m_icon = gtk_status_icon_new();
-    qDebug() << "cleanup 2" << m_icon;
 }
 
-void QGtkSystemTrayIcon::updateIcon(const QIcon &icon)
+void QGtkSystemTrayIcon::updateIcon(const QIcon &)
 {
-    qDebug() << "updateIcon" << m_icon << icon;
-    GdkPixbuf *gpb = qt_iconToPixbuf(icon);
-    if (gpb) {
-        gtk_status_icon_set_from_pixbuf(m_icon, gpb);
-        g_object_unref(gpb);
-    }
 }
 
-void QGtkSystemTrayIcon::updateToolTip(const QString &toolTip)
+void QGtkSystemTrayIcon::updateToolTip(const QString &)
 {
-    qDebug() << "updateToolTip" << m_icon << toolTip;
-    gtk_status_icon_set_tooltip_text(m_icon, toolTip.toUtf8().constData());
 }
 
-void QGtkSystemTrayIcon::updateMenu(QPlatformMenu *menu)
+void QGtkSystemTrayIcon::updateMenu(QPlatformMenu *)
 {
-    // ### todo
-    Q_UNUSED(menu);
-    return;
 }
 
 QRect QGtkSystemTrayIcon::geometry() const
 {
-    int sz = gtk_status_icon_get_size(m_icon);
-    return QRect(0, 0, sz, sz);
+    return QRect();
 }
 
 void action_cb(NotifyNotification*, gchar *, gpointer)
@@ -156,4 +129,3 @@ bool QGtkSystemTrayIcon::supportsMessages() const
     return true;
 }
 
-QT_WARNING_POP

@@ -70,7 +70,7 @@
      bool supportsMessages() const override;
 
  private:
-     GtkStatusIcon *m_icon;
+     QGtkRefPtr<GtkStatusIcon> m_icon;
      QGtkRefPtr<NotifyNotification> m_notification;
  };
 
