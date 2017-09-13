@@ -44,6 +44,7 @@
 #include "qgtktheme.h"
 #include "qgtksystemtrayicon.h"
 
+#include <QtCore/qdebug.h>
 #include <QtCore/qvariant.h>
 #include <QtGui/qpixmap.h>
 
@@ -133,9 +134,17 @@ QPixmap QGtkTheme::fileIconPixmap(const QFileInfo &fileInfo,
 
 QVariant QGtkTheme::themeHint(ThemeHint hint) const
 {
-    if (hint == QPlatformTheme::StyleNames) {
+    switch (hint) {
+    case QPlatformTheme::SystemIconThemeName:
+        return QVariant("Adwaita");
+    case QPlatformTheme::StyleNames:
         return QStringList() << "Fusion";
+    case QPlatformTheme::PasswordMaskCharacter:
+        return QVariant(QChar(0x2022));
+    default:
+        break;
     }
+
     return QPlatformTheme::themeHint(hint);
 }
 
