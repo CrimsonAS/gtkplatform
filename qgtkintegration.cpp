@@ -71,11 +71,6 @@ void monitor_removed(GdkDisplay *, GdkMonitor *monitor, gpointer integration)
     ig->onMonitorRemoved(monitor);
 }
 
-void activate_cb(GApplication *, gpointer)
-{
-    qDebug() << "Activate callback";
-}
-
 QGtkIntegration::QGtkIntegration(const QStringList &)
     : m_services(new QGenericUnixServices)
     , m_fontDatabase(new QGenericUnixFontDatabase)
