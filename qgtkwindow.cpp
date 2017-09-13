@@ -144,10 +144,6 @@ gboolean window_state_event_cb(GtkWidget *, GdkEvent *event, gpointer platformWi
     return FALSE;
 }
 
-// not in use yet, breaks rendering of a large window somehow
-// #define USE_GTK_FRAME_TICK
-
-#if defined(USE_GTK_FRAME_TICK)
 gboolean window_tick_cb(GtkWidget*, GdkFrameClock *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
@@ -155,17 +151,13 @@ gboolean window_tick_cb(GtkWidget*, GdkFrameClock *, gpointer platformWindow)
     pw->onUpdateFrameClock();
     return G_SOURCE_CONTINUE;
 }
-#endif
 
 void QGtkWindow::onUpdateFrameClock()
 {
-#if defined(USE_GTK_FRAME_TICK)
-    qWarning() << "deliverUpdateRequest" << m_wantsUpdate;
     if (m_wantsUpdate) {
         m_wantsUpdate = false;
         QWindowPrivate::get(window())->deliverUpdateRequest();
     }
-#endif
 }
 
 // window
@@ -198,9 +190,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_window.get(), "key-press-event", G_CALLBACK(key_press_cb), this);
     g_signal_connect(m_window.get(), "key-release-event", G_CALLBACK(key_release_cb), this);
     g_signal_connect(m_window.get(), "scroll-event", G_CALLBACK(scroll_cb), this);
-#if defined(USE_GTK_FRAME_TICK)
     m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), window_tick_cb, this, NULL);
-#endif
     gtk_window_resize(GTK_WINDOW(m_window.get()), window()->geometry().width(), window()->geometry().height());
 
     GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
@@ -250,11 +240,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
 
 QGtkWindow::~QGtkWindow()
 {
-    // ### destroy the window?
-
-#if defined(USE_GTK_FRAME_TICK)
     gtk_widget_remove_tick_callback(m_window.get(), m_tick_callback);
-#endif
     QWindowSystemInterface::unregisterTouchDevice(m_touchDevice);
     gtk_widget_destroy(m_window.get());
 }
@@ -590,13 +576,8 @@ void QGtkWindow::invalidateSurface(){}
 */
 void QGtkWindow::requestUpdate()
 {
-#if defined(USE_GTK_FRAME_TICK)
-    qWarning() << "requestUpdate";
     m_wantsUpdate = true;
     gtk_widget_queue_draw(m_content.get());
-#else
-    QPlatformWindow::requestUpdate();
-#endif
 }
 
 void QGtkWindow::setWindowContents(const QImage &image, const QRegion &region, const QPoint &offset)
