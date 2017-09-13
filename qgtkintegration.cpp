@@ -92,12 +92,6 @@ QGtkIntegration::QGtkIntegration(const QStringList &)
     : m_services(new QGenericUnixServices)
     , m_fontDatabase(new QGenericUnixFontDatabase)
 {
-    // ### we need this for notifications, but it isn't working right.
-    // need to write an event dispatcher I think.
-    //m_application = gtk_application_new("org.qt-project.app", G_APPLICATION_FLAGS_NONE);
-    //g_application_register(G_APPLICATION(m_application), NULL, NULL);
-    //g_signal_connect(m_application, "activate", G_CALLBACK(activate_cb), this);
-    //g_signal_connect(m_application, "startup", G_CALLBACK(startup_cb), this);
     gtk_init(NULL, NULL);
 
     // Set up screens
@@ -134,8 +128,6 @@ QGtkIntegration::~QGtkIntegration()
         delete m_devices.at(i).m_qTouchDevice;
     }
     m_devices.clear();
-
-    //g_object_unref(m_application);
 }
 
 void QGtkIntegration::onMonitorAdded(GdkMonitor *monitor)
@@ -236,11 +228,6 @@ void QGtkIntegration::onDeviceRemoved(GdkDevice *device)
             break;
         }
     }
-}
-
-GtkApplication *QGtkIntegration::application() const
-{
-    return m_application;
 }
 
 QPlatformOpenGLContext *QGtkIntegration::createPlatformOpenGLContext(QOpenGLContext *context) const

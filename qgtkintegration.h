@@ -103,7 +103,6 @@ private:
     };
 
     QVector<QGdkDevice> m_devices;
-    GtkApplication *m_application;
 };
 
 QT_END_NAMESPACE
