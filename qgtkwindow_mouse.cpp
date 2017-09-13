@@ -206,7 +206,7 @@ bool QGtkWindow::onScrollEvent(GdkEvent *event)
     if (ev->direction == GDK_SCROLL_SMOOTH) {
         // ### I have literally no idea what I'm doing here
         const int pixelsToDegrees = 50;
-        angleDelta.setX(ev->delta_x * pixelsToDegrees);
+        angleDelta.setX(-ev->delta_x * pixelsToDegrees);
         angleDelta.setY(-ev->delta_y * pixelsToDegrees);
         source = Qt::MouseEventSynthesizedBySystem;
 
