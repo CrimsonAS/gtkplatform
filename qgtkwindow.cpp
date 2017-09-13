@@ -542,6 +542,16 @@ void QGtkWindow::propagateSizeHints()
         qWarning() << "Set size increment " << sizeIncrement;
     }
 
+    if ((activeHints & GDK_HINT_MIN_SIZE) && (activeHints & GDK_HINT_MAX_SIZE)) {
+        if (minSize == maxSize) {
+            gtk_window_set_resizable(GTK_WINDOW(m_window.get()), false);
+        } else {
+            gtk_window_set_resizable(GTK_WINDOW(m_window.get()), true);
+        }
+    } else {
+        gtk_window_set_resizable(GTK_WINDOW(m_window.get()), true);
+    }
+
     gtk_window_set_geometry_hints(
         GTK_WINDOW(m_window.get()),
         m_window.get(),
