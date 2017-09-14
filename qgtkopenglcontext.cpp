@@ -145,6 +145,7 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
         image->format() != QImage::Format_ARGB32)
     {
         *image = QImage(m_fbo->width(), m_fbo->height(), QImage::Format_ARGB32);
+        image->setDevicePixelRatio(win->devicePixelRatio());
     }
     QOpenGLFunctions funcs(QOpenGLContext::currentContext());
     funcs.glReadPixels(0, 0, image->width(), image->height(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image->bits());
