@@ -396,6 +396,12 @@ void QGtkWindow::setVisible(bool visible)
 
 void QGtkWindow::setWindowFlags(Qt::WindowFlags flags)
 {
+    Qt::WindowType type = static_cast<Qt::WindowType>(int(flags & Qt::WindowType_Mask));
+
+    if (type == Qt::Popup) {
+        flags |= Qt::FramelessWindowHint;
+    }
+
     // ### recreate the window if the type changes, but be careful, we may
     // recurse.
     gtk_window_set_decorated(GTK_WINDOW(m_window.get()), !(flags & Qt::FramelessWindowHint));
