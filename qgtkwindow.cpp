@@ -353,6 +353,18 @@ QRect QGtkWindow::geometry() const
     int width;
     int height;
     gtk_window_get_size(GTK_WINDOW(m_window.get()), &width, &height);
+
+    // ### we subtract menu height here because it needs to be calculated in
+    // window size somehow, otherwise we end up with content being positioned
+    // outside the real bounds of the window.
+    //
+    // ideally, we do this by subtracting it from frameMargins. we then probably
+    // need to listen to allocation changes on m_menubar, and send geometry
+    // changes when the menubar size changes.
+    int menu_height = gtk_widget_get_allocated_height(GTK_WIDGET(m_menubar.get()));
+    if (height > menu_height) {
+        height -= menu_height;
+    }
     return QRect(x, y, width, height);
 }
 
