@@ -388,6 +388,18 @@ QMargins QGtkWindow::frameMargins() const
 void QGtkWindow::setVisible(bool visible)
 {
     if (visible) {
+        const QWindow *transientParent = window()->transientParent();
+        if (transientParent && transientParent->handle()) {
+            QGtkWindow *transientParentPlatform = static_cast<QGtkWindow*>(transientParent->handle());
+            switch (window()->type()) {
+                case Qt::Popup:
+                case Qt::Dialog:
+                    gtk_window_set_transient_for(GTK_WINDOW(m_window.get()), GTK_WINDOW(transientParentPlatform->gtkWindow().get()));
+                    break;
+                default:
+                    break;
+            }
+        }
         gtk_widget_show_all(m_window.get());
     } else {
         gtk_widget_hide(m_window.get());
