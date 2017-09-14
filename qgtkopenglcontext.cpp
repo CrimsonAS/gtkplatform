@@ -149,8 +149,7 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
     }
     QOpenGLFunctions funcs(QOpenGLContext::currentContext());
     funcs.glReadPixels(0, 0, image->width(), image->height(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image->bits());
-    // This unfortunately causes a copy
-    *image = image->mirrored(false, true);
+    *image = std::move(*image).mirrored(false, true);
 
     // XXX In singlethreaded rendering, we can't really block swapBuffers because
     // this would also block the GTK loop, and any workaround to that seems insane.
