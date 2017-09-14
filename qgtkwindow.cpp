@@ -51,14 +51,14 @@
 Q_LOGGING_CATEGORY(lcWindow, "qt.qpa.gtk.window");
 Q_LOGGING_CATEGORY(lcWindowRender, "qt.qpa.gtk.window.render");
 
-void draw_cb(GtkWidget *, cairo_t *cr, gpointer platformWindow)
+static void draw_cb(GtkWidget *, cairo_t *cr, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindowRender) << "draw_cb" << pw;
     pw->onDraw(cr);
 }
 
-gboolean map_cb(GtkWidget *, gpointer platformWindow)
+static gboolean map_cb(GtkWidget *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindowRender) << "map_cb" << pw;
@@ -66,7 +66,7 @@ gboolean map_cb(GtkWidget *, gpointer platformWindow)
     return FALSE;
 }
 
-gboolean unmap_cb(GtkWidget *, gpointer platformWindow)
+static gboolean unmap_cb(GtkWidget *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindowRender) << "unmap_cb" << pw;
@@ -74,7 +74,7 @@ gboolean unmap_cb(GtkWidget *, gpointer platformWindow)
     return FALSE;
 }
 
-gboolean configure_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+static gboolean configure_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindowRender) << "configure_cb" << pw;
@@ -82,63 +82,63 @@ gboolean configure_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
     return FALSE;
 }
 
-gboolean delete_cb(GtkWidget *, GdkEvent *, gpointer platformWindow)
+static gboolean delete_cb(GtkWidget *, GdkEvent *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindowRender) << "delete_cb" << pw;
     return pw->onDelete() ? TRUE : FALSE;
 }
 
-gboolean key_press_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+static gboolean key_press_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindow) << "key_press_cb" << pw;
     return pw->onKeyPress(event) ? TRUE : FALSE;
 }
 
-gboolean key_release_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+static gboolean key_release_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindow) << "key_release_cb" << pw;
     return pw->onKeyRelease(event) ? TRUE : FALSE;
 }
 
-gboolean button_press_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+static gboolean button_press_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindow) << "button_press_cb" << pw;
     return pw->onButtonPress(event) ? TRUE : FALSE;
 }
 
-gboolean button_release_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+static gboolean button_release_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindow) << "button_release_cb" << pw;
     return pw->onButtonRelease(event) ? TRUE : FALSE;
 }
 
-gboolean touch_event_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+static gboolean touch_event_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindow) << "touch_event_cb" << pw;
     return pw->onTouchEvent(event) ? TRUE : FALSE;
 }
 
-gboolean motion_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+static gboolean motion_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindow) << "motion_notify_cb" << pw;
     return pw->onMotionNotify(event) ? TRUE : FALSE;
 }
 
-gboolean scroll_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+static gboolean scroll_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindow) << "scroll_cb" << pw;
     return pw->onScrollEvent(event) ? TRUE : FALSE;
 }
 
-gboolean window_state_event_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+static gboolean window_state_event_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindow) << "window_state_event_cb" << pw;
@@ -146,7 +146,7 @@ gboolean window_state_event_cb(GtkWidget *, GdkEvent *event, gpointer platformWi
     return FALSE;
 }
 
-gboolean window_tick_cb(GtkWidget*, GdkFrameClock *, gpointer platformWindow)
+static gboolean window_tick_cb(GtkWidget*, GdkFrameClock *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindow) << "window_tick_cb" << pw;
@@ -217,6 +217,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_window.get(), "key-press-event", G_CALLBACK(key_press_cb), this);
     g_signal_connect(m_window.get(), "key-release-event", G_CALLBACK(key_release_cb), this);
     g_signal_connect(m_window.get(), "scroll-event", G_CALLBACK(scroll_cb), this);
+    g_signal_connect(m_window.get(), "window-state-event", G_CALLBACK(window_state_event_cb), this);
     m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), window_tick_cb, this, NULL);
     setGeometry(window()->geometry());
 
