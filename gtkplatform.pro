@@ -4,7 +4,8 @@ CONFIG -= release
 CONFIG += debug
 QT += core-private gui-private platformsupport-private widgets
 
-DEFINES += QT_NO_FOREACH
+# qhighdpi has some bugs with this in 5.7.
+# DEFINES += QT_NO_FOREACH
 
 SOURCES =   main.cpp \
             qgtkintegration.cpp \

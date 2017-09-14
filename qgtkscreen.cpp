@@ -86,9 +86,7 @@ QSizeF QGtkScreen::physicalSize() const
 
 qreal QGtkScreen::devicePixelRatio() const
 {
-    // ### highdpi
-    return 1.0;
-    // return gdk_monitor_get_scale_factor(m_monitor);
+    return gdk_monitor_get_scale_factor(m_monitor);
 }
 
 qreal QGtkScreen::refreshRate() const

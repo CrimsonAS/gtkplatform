@@ -46,6 +46,11 @@
 #include <qpa/qplatformscreen.h>
 #include <private/qguiapplication_p.h>
 
+// we have no_keywords, but this header uses one.
+#define foreach Q_FOREACH
+#include <private/qhighdpiscaling_p.h>
+#undef foreach
+
 QT_BEGIN_NAMESPACE
 
 QGtkBackingStore::QGtkBackingStore(QWindow *window)
@@ -76,9 +81,14 @@ void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoin
 
 void QGtkBackingStore::resize(const QSize &size, const QRegion &)
 {
+    qreal dpr = window()->devicePixelRatio() / QHighDpiScaling::factor(window());
+    QSize realSize = size * dpr;
     QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != size)
-        mImage = QImage(size, format);
+    if (mImage.size() != realSize) {
+        mImage = QImage(realSize, format);
+        mImage.setDevicePixelRatio(dpr);
+        mImage.fill(Qt::red);
+    }
 }
 
 QT_END_NAMESPACE
