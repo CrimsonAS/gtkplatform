@@ -127,7 +127,9 @@ public:
     void onWindowStateEvent(GdkEvent *event);
     void onUpdateFrameClock();
     QImage *beginUpdateFrame();
-    void endUpdateFrame(const QRegion &region);
+    void endUpdateFrame();
+    void invalidateRegion(const QRegion &region);
+    QImage currentFrameImage() const;
 
     QGtkRefPtr<GtkMenuBar> gtkMenuBar() const;
     QGtkRefPtr<GtkWidget> gtkWindow() const;

@@ -159,7 +159,8 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
     // But in multithreaded rendering, having a nonblocking swapBuffers seems likely
     // to cause runaway rendering. This should probably block until the image has
     // been drawn onto the surface to properly throttle the rendering thread.
-    win->endUpdateFrame(QRegion());
+    win->endUpdateFrame();
+    win->invalidateRegion(QRegion());
 
     qDebug(lcContext) << "Done swapping";
 }

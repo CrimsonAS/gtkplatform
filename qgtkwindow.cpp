@@ -664,32 +664,30 @@ static cairo_region_t *cairo_region_from_region(const QRegion &region)
     return r;
 }
 
-void QGtkWindow::endUpdateFrame(const QRegion &iregion)
+void QGtkWindow::endUpdateFrame()
 {
-    QRegion region = iregion.isNull() ? QRegion(m_frame.rect()) : iregion;
+    m_frameMutex.unlock();
+}
 
-    // XXX For multithreaded rendering, there's a problem here: draw could
-    // technically happen at any moment after unlock, but gtk won't be told
-    // to update this latest region until some later point. That could result
-    // in partially drawing content if previous damaged regions and this one
-    // intersect.
-    //
-    // The only meaningful fix to that seems to be a blocking swapBuffers,
-    // but in practice it shouldn't really be happening now because only GL
-    // is multithreaded and GL invalidates the entire region every time.
-
+void QGtkWindow::invalidateRegion(const QRegion &region)
+{
     auto courier = QGtkCourierObject::instance;
     Q_ASSERT(courier);
-    if (courier->thread() == QThread::currentThread()) {
-        cairo_region_t *cairoRegion = cairo_region_from_region(region);
-        gtk_widget_queue_draw_region(m_content.get(), cairoRegion);
-        cairo_region_destroy(cairoRegion);
-    } else {
+    if (courier->thread() != QThread::currentThread()) {
         // In the multithreaded case, always signal a full screen update for now
         courier->metaObject()->invokeMethod(courier, "queueDraw", Qt::QueuedConnection, Q_ARG(QGtkWindow*, this));
+        return;
     }
 
-    m_frameMutex.unlock();
+    QRegion realRegion = region.isNull() ? QRegion(m_frame.rect()) : region;
+    cairo_region_t *cairoRegion = cairo_region_from_region(realRegion);
+    gtk_widget_queue_draw_region(m_content.get(), cairoRegion);
+    cairo_region_destroy(cairoRegion);
+}
+
+QImage QGtkWindow::currentFrameImage() const
+{
+    return m_frame;
 }
 
 QGtkRefPtr<GtkWidget> QGtkWindow::gtkWindow() const

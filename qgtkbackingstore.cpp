@@ -69,10 +69,10 @@ QPaintDevice *QGtkBackingStore::paintDevice()
     return m_paintImage;
 }
 
-// beginPaint locks QGtkWindow::m_frame and exposes it for painting. The surface
-// will remain locked until flushed -- it is _not_ released at endPaint. It's
-// unclear if this is safe, but it allows us to safely update the changed region
-// as well.
+QImage QGtkBackingStore::toImage() const
+{
+    return static_cast<QGtkWindow*>(window()->handle())->currentFrameImage();
+}
 
 void QGtkBackingStore::beginPaint(const QRegion &region)
 {
@@ -84,13 +84,13 @@ void QGtkBackingStore::beginPaint(const QRegion &region)
 void QGtkBackingStore::endPaint()
 {
     Q_ASSERT(m_paintImage);
+    static_cast<QGtkWindow*>(window()->handle())->endUpdateFrame();
+    m_paintImage = nullptr;
 }
 
 void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
 {
-    Q_ASSERT(m_paintImage);
-    static_cast<QGtkWindow*>(window->handle())->endUpdateFrame(region.translated(offset));
-    m_paintImage = nullptr;
+    static_cast<QGtkWindow*>(window->handle())->invalidateRegion(region.translated(offset));
 }
 
 void QGtkBackingStore::resize(const QSize &size, const QRegion &)
@@ -105,7 +105,7 @@ void QGtkBackingStore::resize(const QSize &size, const QRegion &)
         *image = QImage(realSize, format);
         image->setDevicePixelRatio(dpr);
     }
-    qgwin->endUpdateFrame(QRegion());
+    qgwin->endUpdateFrame();
 }
 
 QT_END_NAMESPACE
