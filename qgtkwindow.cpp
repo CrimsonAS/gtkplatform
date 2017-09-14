@@ -44,9 +44,9 @@
 #include <QtGui/private/qwindow_p.h>
 #include <QtCore/qthread.h>
 #include <QtCore/qcoreapplication.h>
-
-#include <QDebug>
-#include <QLoggingCategory>
+#include <QtCore/qtimer.h>
+#include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
 
 Q_LOGGING_CATEGORY(lcWindow, "qt.qpa.gtk.window");
 Q_LOGGING_CATEGORY(lcWindowRender, "qt.qpa.gtk.window.render");
@@ -492,15 +492,27 @@ void QGtkWindow::onWindowStateEvent(GdkEvent *event)
     }
 
     if (ev->changed_mask & GDK_WINDOW_STATE_FOCUSED) {
+        static QWindow *newActiveWindow = nullptr;
         if (ev->new_window_state & GDK_WINDOW_STATE_FOCUSED) {
-            QWindowSystemInterface::handleWindowActivated(window(), Qt::ActiveWindowFocusReason);
-        } else {
-            // ### it would be nicer if we could specify where the focus went
-            // to, rather than setting it to nullptr. this may be a race in a
-            // multiwindow application, too, depending on how event delivery is
-            // ordered...
-            QWindowSystemInterface::handleWindowActivated(nullptr, Qt::ActiveWindowFocusReason);
+            newActiveWindow = window();
         }
+
+        // We need a timer here to debounce the focus changes. Reason being that
+        // one window appearing results in two GDK_WINDOW_STATE_FOCUSED changes:
+        // one for the old window to remove it, one for the new window to add
+        // it.
+        //
+        // Without a debounce, we set the active window like this:
+        // old
+        // nullptr
+        // new
+        //
+        // ... which, in the case of say, popups, may result in their being
+        // dismissed (since a combo box shouldn't be kept open if its parent
+        // window loses focus to something other than the combo).
+        QTimer::singleShot(0, [=]() {
+            QWindowSystemInterface::handleWindowActivated(newActiveWindow, Qt::ActiveWindowFocusReason);
+        });
     }
 
     // GDK_WINDOW_STATE_TILED not handled.
