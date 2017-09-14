@@ -40,8 +40,11 @@
 #include "qgtkwindow.h"
 
 #include <qpa/qwindowsysteminterface.h>
+#include <QtCore/qloggingcategory.h>
+#include <QtCore/qdebug.h>
 
-#include <QDebug>
+Q_LOGGING_CATEGORY(lcMouse, "qt.qpa.gtk.mouse");
+Q_LOGGING_CATEGORY(lcMouseMotion, "qt.qpa.gtk.mouse.motion");
 
 static Qt::MouseButton convert_g_button_to_q_button(guint button)
 {
@@ -144,6 +147,7 @@ bool QGtkWindow::onButtonPress(GdkEvent *event)
 
     Qt::MouseButton b = convert_g_button_to_q_button(ev->button);
     m_buttons |= b;
+    qCDebug(lcMouse) << "Pressed " << b << " at " << ev->x << ev->y << ev->x_root << ev->y_root << " total pressed " << m_buttons;
 
     bool isTabletEvent = false;
     QWindowSystemInterface::handleMouseEvent(
@@ -164,6 +168,7 @@ bool QGtkWindow::onButtonRelease(GdkEvent *event)
 
     Qt::MouseButton b = convert_g_button_to_q_button(ev->button);
     m_buttons &= ~b;
+    qCDebug(lcMouse) << "Released " << b << " at " << ev->x << ev->y << ev->x_root << ev->y_root << " total pressed " << m_buttons;
 
     bool isTabletEvent = false;
     QWindowSystemInterface::handleMouseEvent(
@@ -181,6 +186,7 @@ bool QGtkWindow::onButtonRelease(GdkEvent *event)
 bool QGtkWindow::onMotionNotify(GdkEvent *event)
 {
     GdkEventButton *ev = (GdkEventButton*)event;
+    qCDebug(lcMouseMotion) << "Moved mouse at " << ev->x << ev->y << ev->x_root << ev->y_root;
 
     bool isTabletEvent = false;
     QWindowSystemInterface::handleMouseEvent(
@@ -222,8 +228,8 @@ bool QGtkWindow::onScrollEvent(GdkEvent *event)
         Q_UNREACHABLE();
     }
 
+    qCDebug(lcMouseMotion) << "Scrolled mouse at " << ev->x << ev->y << ev->x_root << ev->y_root << " angle delta " << angleDelta << " pixelDelta " << pixelDelta << " original deltas " << ev->delta_x << ev->delta_y;
 
-    qDebug() << "Scroll " << ev->x << ev->y << pixelDelta << angleDelta;
     QWindowSystemInterface::handleWheelEvent(
         window(),
         ev->time,
