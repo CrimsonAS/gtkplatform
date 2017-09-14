@@ -646,7 +646,6 @@ void QGtkWindow::invalidateSurface(){}
 void QGtkWindow::requestUpdate()
 {
     m_wantsUpdate = true;
-    gtk_widget_queue_draw(m_content.get());
 }
 
 QImage *QGtkWindow::beginUpdateFrame()
