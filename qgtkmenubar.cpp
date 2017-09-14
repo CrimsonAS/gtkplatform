@@ -125,9 +125,13 @@ void QGtkMenuBar::handleReparent(QWindow *newParentWindow)
 
 QPlatformMenu *QGtkMenuBar::menuForTag(quintptr tag) const
 {
-    Q_UNUSED(tag);
-    qWarning() << "Stub";
-    return 0;
+    for (QGtkMenu *menu : qAsConst(m_items)) {
+        if (menu->tag() == tag) {
+            return menu;
+        }
+    }
+
+    return nullptr;
 }
 
 QPlatformMenu *QGtkMenuBar::createMenu() const
