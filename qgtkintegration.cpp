@@ -57,6 +57,12 @@
 
 #include <libnotify/notify.h>
 
+#ifdef GDK_WINDOWING_WAYLAND
+#include <EGL/egl.h>
+#include <gdk/gdkwayland.h>
+static EGLDisplay createWaylandEGLDisplay(wl_display *display);
+#endif
+
 QT_BEGIN_NAMESPACE
 
 class QCoreTextFontEngine;
@@ -76,6 +82,7 @@ void monitor_removed(GdkDisplay *, GdkMonitor *monitor, gpointer integration)
 QGtkIntegration::QGtkIntegration(const QStringList &)
     : m_services(new QGenericUnixServices)
     , m_fontDatabase(new QGenericUnixFontDatabase)
+    , m_eglDisplay(nullptr)
 {
     gtk_init(NULL, NULL);
     notify_init(qApp->applicationName().toUtf8().constData());
@@ -91,11 +98,26 @@ QGtkIntegration::QGtkIntegration(const QStringList &)
         GdkMonitor *monitor = gdk_display_get_monitor(m_display, i);
         monitor_added(m_display, monitor, this);
     }
+
+#ifdef GDK_WINDOWING_WAYLAND
+    if (GDK_IS_WAYLAND_DISPLAY(m_display)) {
+        wl_display *wldisplay = gdk_wayland_display_get_wl_display(GDK_WAYLAND_DISPLAY(m_display));
+        m_eglDisplay = createWaylandEGLDisplay(wldisplay);
+        Q_ASSERT(m_eglDisplay);
+    }
+    else
+#endif
+        qWarning("GTK platform does not support this display backend; GL contexts will fail");
 }
 
 QGtkIntegration::~QGtkIntegration()
 {
     notify_uninit();
+#ifdef GDK_WINDOWING_WAYLAND
+    if (m_eglDisplay) {
+        eglTerminate(m_eglDisplay);
+    }
+#endif
 }
 
 void QGtkIntegration::onMonitorAdded(GdkMonitor *monitor)
@@ -173,7 +195,13 @@ QPlatformNativeInterface *QGtkIntegration::nativeInterface() const
 void *QGtkIntegration::nativeResourceForIntegration(const QByteArray &resource)
 {
     void *result = 0;
-    qWarning() << "Unimplemented request for " << resource;
+
+    if (resource == "egldisplay") {
+        result = reinterpret_cast<void*>(m_eglDisplay);
+    } else {
+        qWarning() << "Unimplemented request for " << resource;
+    }
+
     return result;
 }
 
@@ -194,7 +222,22 @@ void *QGtkIntegration::nativeResourceForWindow(const QByteArray &resource, QWind
 void *QGtkIntegration::nativeResourceForContext(const QByteArray &resource, QOpenGLContext *context)
 {
     void *result = 0;
-    qWarning() << "Unimplemented request for " << resource << " on " << context;
+
+    if (!context->handle()) {
+        return result;
+    }
+    auto qgtkContext = static_cast<QGtkOpenGLContext*>(context->handle());
+
+    if (resource == "eglcontext") {
+        result = qgtkContext->eglContext();
+    } else if (resource == "eglconfig") {
+        result = qgtkContext->eglConfig();
+    } else if (resource == "egldisplay") {
+        result = qgtkContext->eglDisplay();
+    } else {
+        qWarning() << "Unimplemented request for " << resource << " on " << context;
+    }
+
     return result;
 }
 
@@ -225,6 +268,31 @@ QAbstractEventDispatcher *QGtkIntegration::createEventDispatcher() const
 QGtkIntegration *QGtkIntegration::instance()
 {
     return static_cast<QGtkIntegration *>(QGuiApplicationPrivate::platformIntegration());
+}
+
+#ifdef GDK_WINDOWING_WAYLAND
+static EGLDisplay createWaylandEGLDisplay(wl_display *display)
+{
+    eglBindAPI(EGL_OPENGL_API);
+
+    EGLDisplay dpy = eglGetDisplay((EGLNativeDisplayType)display);
+    if (dpy == EGL_NO_DISPLAY) {
+        qWarning() << "eglGetDisplay failed";
+        return dpy;
+    }
+
+    if (!eglInitialize(dpy, NULL, NULL)) {
+        qWarning() << "eglInitialize failed";
+        return EGL_NO_DISPLAY;
+    }
+
+    return dpy;
+}
+#endif
+
+EGLDisplay QGtkIntegration::eglDisplay() const
+{
+    return m_eglDisplay;
 }
 
 QT_END_NAMESPACE

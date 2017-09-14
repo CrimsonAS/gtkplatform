@@ -39,6 +39,7 @@
 
 #include "qgtkopenglcontext.h"
 #include "qgtkwindow.h"
+#include "qgtkintegration.h"
 
 #include <QtCore/qdebug.h>
 #include <QtGui/qopenglcontext.h>
@@ -52,8 +53,6 @@
 #ifdef GDK_WINDOWING_WAYLAND
 #include <QtPlatformSupport/private/qeglconvenience_p.h>
 #include <gdk/gdkwayland.h>
-static EGLDisplay createWaylandEGLDisplay(wl_display *display);
-static EGLContext createWaylandContext(EGLDisplay display, QSurfaceFormat &format, EGLContext shareContext);
 #endif
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
@@ -86,33 +85,27 @@ QGtkOpenGLContext::QGtkOpenGLContext(const QSurfaceFormat &format, QGtkOpenGLCon
     m_format = format;
     m_shareContext = shareContext;
 
-    GdkDisplay *display = gdk_display_get_default();
-    Q_ASSERT(display);
-
+    QGtkIntegration *integration = QGtkIntegration::instance();
 #ifdef GDK_WINDOWING_WAYLAND
-    if (GDK_IS_WAYLAND_DISPLAY(display)) {
-        wl_display *wldisplay = gdk_wayland_display_get_wl_display(GDK_WAYLAND_DISPLAY(display));
-        m_eglDisplay = createWaylandEGLDisplay(wldisplay);
-        Q_ASSERT(m_eglDisplay);
-        m_eglContext = createWaylandContext(m_eglDisplay, m_format,
-                                            shareContext ? shareContext->m_eglContext : nullptr);
+    if ((m_eglDisplay = integration->eglDisplay())) {
+        m_eglConfig = q_configFromGLFormat(m_eglDisplay, format);
+        m_format = q_glFormatFromConfig(m_eglDisplay, m_eglConfig, m_format);
+        m_eglContext = eglCreateContext(m_eglDisplay, m_eglConfig,
+                                        shareContext ? shareContext->m_eglContext : NULL,
+                                        NULL);
         Q_ASSERT(m_eglContext);
     }
     else
 #endif
-#ifdef GDK_WINDOWING_X11
-    if (GDK_IS_X11_DISPLAY(display)) {
-        // TODO :)
-        qFatal("GTK platform does not support X11 GL contexts yet");
+    {
+        qWarning("GTK platform does not support this display backend for GL contexts");
     }
-    else
-#endif
-        qFatal("GTK display is not supported for GL contexts");
 }
 
 QGtkOpenGLContext::QGtkOpenGLContext()
     : m_eglContext(nullptr)
     , m_eglDisplay(nullptr)
+    , m_eglConfig(nullptr)
     , m_shareContext(nullptr)
     , m_fbo(nullptr)
 {
@@ -120,37 +113,11 @@ QGtkOpenGLContext::QGtkOpenGLContext()
 
 QGtkOpenGLContext::~QGtkOpenGLContext()
 {
-    // XXX leaking context
     delete m_fbo;
-    qWarning() << "Stub";
-}
-
-#ifdef GDK_WINDOWING_WAYLAND
-static EGLDisplay createWaylandEGLDisplay(wl_display *display)
-{
-    eglBindAPI(EGL_OPENGL_API);
-
-    EGLDisplay dpy = eglGetDisplay((EGLNativeDisplayType)display);
-    if (dpy == EGL_NO_DISPLAY) {
-        qWarning() << "eglGetDisplay failed";
-        return dpy;
+    if (m_eglContext) {
+        eglDestroyContext(m_eglDisplay, m_eglContext);
     }
-
-    if (!eglInitialize(dpy, NULL, NULL)) {
-        qWarning() << "eglInitialize failed";
-        return EGL_NO_DISPLAY;
-    }
-
-    return dpy;
 }
-
-static EGLContext createWaylandContext(EGLDisplay display, QSurfaceFormat &format, EGLContext shareContext)
-{
-    EGLConfig config = q_configFromGLFormat(display, format);
-    format = q_glFormatFromConfig(display, config, format);
-    return eglCreateContext(display, config, shareContext, NULL);
-}
-#endif
 
 QSurfaceFormat QGtkOpenGLContext::format() const
 {
@@ -249,3 +216,17 @@ QFunctionPointer QGtkOpenGLContext::getProcAddress(const char *procName)
     return proc;
 }
 
+EGLContext QGtkOpenGLContext::eglContext() const
+{
+    return m_eglContext;
+}
+
+EGLDisplay QGtkOpenGLContext::eglDisplay() const
+{
+    return m_eglDisplay;
+}
+
+EGLConfig QGtkOpenGLContext::eglConfig() const
+{
+    return m_eglConfig;
+}

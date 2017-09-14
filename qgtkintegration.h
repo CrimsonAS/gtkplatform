@@ -48,6 +48,8 @@
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
+typedef void *EGLDisplay;
+
 QT_BEGIN_NAMESPACE
 
 class QTouchDevice;
@@ -86,12 +88,16 @@ public:
 
     GtkApplication *application() const;
 
+    EGLDisplay eglDisplay() const;
+
 private:
     QScopedPointer<QPlatformServices> m_services;
     QScopedPointer<QPlatformFontDatabase> m_fontDatabase;
     GdkDisplay *m_display;
     QVector<const char*> m_arguments; /* must remain allocated for gdk's sake */
     QVector<QGtkScreen*> m_screens;
+
+    EGLDisplay m_eglDisplay; // non-null for wayland platforms
 };
 
 QT_END_NAMESPACE

@@ -45,6 +45,7 @@
 
 typedef void *EGLContext;
 typedef void *EGLDisplay;
+typedef void *EGLConfig;
 
 QT_BEGIN_NAMESPACE
 
@@ -66,10 +67,15 @@ public:
 
     QFunctionPointer getProcAddress(const char *procName) override;
 
+    EGLContext eglContext() const;
+    EGLDisplay eglDisplay() const;
+    EGLConfig eglConfig() const;
+
 protected:
     QSurfaceFormat m_format;
     EGLContext m_eglContext;
     EGLDisplay m_eglDisplay;
+    EGLConfig m_eglConfig;
     QGtkOpenGLContext *m_shareContext;
     QOpenGLFramebufferObject *m_fbo;
 
