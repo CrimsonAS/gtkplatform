@@ -60,9 +60,8 @@ void QGtkMenuBar::insertMenu(QPlatformMenu *menu, QPlatformMenu *before)
     QGtkMenu *m = static_cast<QGtkMenu*>(menu);
     QGtkMenu *b = static_cast<QGtkMenu*>(before);
 
-    if (m_items.indexOf(m) != -1) {
-        removeMenu(menu);
-    }
+    Q_ASSERT(m && !m_items.contains(m));
+    Q_ASSERT(!b || m_items.contains(b));
 
     int idx = m_items.indexOf(b);
     QGtkRefPtr<GtkMenuItem> mi = m->gtkMenuItem();
@@ -83,6 +82,7 @@ void QGtkMenuBar::removeMenu(QPlatformMenu *menu)
     QGtkMenu *m = static_cast<QGtkMenu*>(menu);
 
     int idx = m_items.indexOf(m);
+    Q_ASSERT(idx >= 0);
     qCDebug(lcMenuBar) << "Removing menu " << m_items.at(idx) << m_gtkItems.at(idx) << idx;
     m_items.removeAt(idx);
 
