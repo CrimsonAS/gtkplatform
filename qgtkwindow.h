@@ -42,7 +42,6 @@
 
 #include "qgtkrefptr.h"
 
-#include <QtCore/qsharedpointer.h>
 #include <qpa/qplatformwindow.h>
 #include <qpa/qwindowsysteminterface.h>
 
@@ -127,7 +126,8 @@ public:
     bool onScrollEvent(GdkEvent *event);
     void onWindowStateEvent(GdkEvent *event);
     void onUpdateFrameClock();
-    void setWindowContents(const QImage &image, const QRegion &region, const QPoint &offset);
+    QImage *beginUpdateFrame();
+    void endUpdateFrame(const QRegion &region);
 
     QGtkRefPtr<GtkMenuBar> gtkMenuBar() const;
     QGtkRefPtr<GtkWidget> gtkWindow() const;
@@ -138,8 +138,8 @@ private:
     QGtkRefPtr<GtkWidget> m_window;
     QGtkRefPtr<GtkMenuBar> m_menubar;
     QGtkRefPtr<GtkWidget> m_content;
-    // Copy the QSharedPointer to take a ref before use for atomic access
-    QSharedPointer<QImage> m_image;
+    QMutex m_frameMutex;
+    QImage m_frame;
     QTouchDevice *m_touchDevice = nullptr;
     QList<QWindowSystemInterface::TouchPoint> m_activeTouchPoints;
     Qt::MouseButtons m_buttons;

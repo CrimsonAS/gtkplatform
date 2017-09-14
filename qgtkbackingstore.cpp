@@ -55,6 +55,7 @@ QT_BEGIN_NAMESPACE
 
 QGtkBackingStore::QGtkBackingStore(QWindow *window)
     : QPlatformBackingStore(window)
+    , m_paintImage(nullptr)
 {
     qDebug() << "QGtkBackingStore";
 }
@@ -65,30 +66,46 @@ QGtkBackingStore::~QGtkBackingStore()
 
 QPaintDevice *QGtkBackingStore::paintDevice()
 {
-    return &mImage;
+    return m_paintImage;
+}
+
+// beginPaint locks QGtkWindow::m_frame and exposes it for painting. The surface
+// will remain locked until flushed -- it is _not_ released at endPaint. It's
+// unclear if this is safe, but it allows us to safely update the changed region
+// as well.
+
+void QGtkBackingStore::beginPaint(const QRegion &region)
+{
+    Q_UNUSED(region);
+    if (!m_paintImage)
+        m_paintImage = static_cast<QGtkWindow*>(window()->handle())->beginUpdateFrame();
+}
+
+void QGtkBackingStore::endPaint()
+{
+    Q_ASSERT(m_paintImage);
 }
 
 void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
 {
-    Q_UNUSED(window);
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
-
-    //qDebug() << "flush: " << window << region << offset;
-    // ### todo can we somehow use the cairo surface directly?
-    static_cast<QGtkWindow*>(window->handle())->setWindowContents(mImage, region, offset);
+    Q_ASSERT(m_paintImage);
+    static_cast<QGtkWindow*>(window->handle())->endUpdateFrame(region.translated(offset));
+    m_paintImage = nullptr;
 }
 
 void QGtkBackingStore::resize(const QSize &size, const QRegion &)
 {
+    QGtkWindow *qgwin = static_cast<QGtkWindow*>(window()->handle());
+
+    QImage *image = qgwin->beginUpdateFrame();
     qreal dpr = window()->devicePixelRatio() / QHighDpiScaling::factor(window());
     QSize realSize = size * dpr;
     QImage::Format format = QGuiApplication::primaryScreen()->handle()->format();
-    if (mImage.size() != realSize) {
-        mImage = QImage(realSize, format);
-        mImage.setDevicePixelRatio(dpr);
-        mImage.fill(Qt::red);
+    if (image->size() != realSize) {
+        *image = QImage(realSize, format);
+        image->setDevicePixelRatio(dpr);
     }
+    qgwin->endUpdateFrame(QRegion());
 }
 
 QT_END_NAMESPACE

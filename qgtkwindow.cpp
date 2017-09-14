@@ -167,9 +167,9 @@ public:
         qRegisterMetaType<QGtkWindow*>("QGtkWindow*");
     }
 
-    Q_INVOKABLE void requestUpdate(QGtkWindow *win)
+    Q_INVOKABLE void queueDraw(QGtkWindow *win)
     {
-        win->requestUpdate();
+        gtk_widget_queue_draw(win->gtkWindow().get());
     }
 };
 
@@ -275,30 +275,35 @@ QGtkWindow::~QGtkWindow()
 
 void QGtkWindow::onDraw(cairo_t *cr)
 {
-    GtkAllocation alloc;
-    gtk_widget_get_allocation(m_content.get(), &alloc);
-
-    GtkStyleContext *ctx = gtk_widget_get_style_context(m_content.get());
-    gtk_render_background(ctx, cr, 0, 0, alloc.width, alloc.height);
-
-    GdkRGBA color;
-    gtk_style_context_get_color(ctx, GTK_STATE_FLAG_NORMAL, &color);
-
-    QSharedPointer<QImage> image(m_image);
-    if (!image)
+    // Hold frameMutex during blit to cairo to prevent changes
+    QMutexLocker lock(&m_frameMutex);
+    if (m_frame.isNull())
         return;
 
+#if 0
+    QString clipString;
+    cairo_rectangle_list_t *clip = cairo_copy_clip_rectangle_list(cr);
+    for (int i = 0; i < clip->num_rectangles; i++) {
+        auto r = clip->rectangles[i];
+        clipString += QString("%1,%2@%3x%4  ").arg(r.x).arg(r.y).arg(r.width).arg(r.height);
+    }
+    qDebug(lcWindow) << "onDraw with clip:" << clipString;
+#endif
+
     cairo_surface_t *surf = cairo_image_surface_create_for_data(
-            const_cast<uchar*>(image->constBits()),
+            const_cast<uchar*>(m_frame.constBits()),
             CAIRO_FORMAT_ARGB32,
-            image->width(),
-            image->height(),
-            image->bytesPerLine()
+            m_frame.width(),
+            m_frame.height(),
+            m_frame.bytesPerLine()
     );
     int sf = gtk_widget_get_scale_factor(m_window.get());
     cairo_surface_set_device_scale(surf, sf, sf);
     cairo_set_source_surface(cr, surf, 0, 0);
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    // cairo_paint respects the current clip, which GTK sets based on
+    // updated regions of the window, so we don't need to do anything
+    // other than include the updated regions in queue_draw calls.
     cairo_paint(cr);
     cairo_surface_destroy(surf);
 }
@@ -643,36 +648,48 @@ void QGtkWindow::requestUpdate()
     gtk_widget_queue_draw(m_content.get());
 }
 
-void QGtkWindow::setWindowContents(const QImage &image, const QRegion &region, const QPoint &offset)
+QImage *QGtkWindow::beginUpdateFrame()
 {
-    Q_UNUSED(region);
-    Q_UNUSED(offset);
+    m_frameMutex.lock();
+    return &m_frame;
+}
 
-    // Atomic replacement of m_image
-    m_image.reset(new QImage(image));
+static cairo_region_t *cairo_region_from_region(const QRegion &region)
+{
+    cairo_region_t *r = cairo_region_create();
+    for (const QRect &qrect : region.rects()) {
+        cairo_rectangle_int_t rect = { qrect.x(), qrect.y(), qrect.width(), qrect.height() };
+        cairo_region_union_rectangle(r, &rect);
+    }
+    return r;
+}
 
-#if 0
-    // ### could use queue_draw_region instead, tho might not be worth it
-    QRect br = region.boundingRect();
+void QGtkWindow::endUpdateFrame(const QRegion &iregion)
+{
+    QRegion region = iregion.isNull() ? QRegion(m_frame.rect()) : iregion;
 
-    int x = offset.x();
-    int y = offset.y();
-    int dx = br.width();
-    int dy = br.height();
-    qDebug() << "Before converting: " << x << y << dx << dy;
+    // XXX For multithreaded rendering, there's a problem here: draw could
+    // technically happen at any moment after unlock, but gtk won't be told
+    // to update this latest region until some later point. That could result
+    // in partially drawing content if previous damaged regions and this one
+    // intersect.
+    //
+    // The only meaningful fix to that seems to be a blocking swapBuffers,
+    // but in practice it shouldn't really be happening now because only GL
+    // is multithreaded and GL invalidates the entire region every time.
 
-    // ### this is wrong somehow, maybe need a gtk_widget_translate_coordinates?
-    gtk_widget_queue_draw_area(m_content.get(), x, y, dx, dy);
-#endif
-
-    // XXX Should avoid sending these repeatedly when they've already been sent
     auto courier = QGtkCourierObject::instance;
     Q_ASSERT(courier);
     if (courier->thread() == QThread::currentThread()) {
-        requestUpdate();
+        cairo_region_t *cairoRegion = cairo_region_from_region(region);
+        gtk_widget_queue_draw_region(m_content.get(), cairoRegion);
+        cairo_region_destroy(cairoRegion);
     } else {
-        courier->metaObject()->invokeMethod(courier, "requestUpdate", Qt::QueuedConnection, Q_ARG(QGtkWindow*, this));
+        // In the multithreaded case, always signal a full screen update for now
+        courier->metaObject()->invokeMethod(courier, "queueDraw", Qt::QueuedConnection, Q_ARG(QGtkWindow*, this));
     }
+
+    m_frameMutex.unlock();
 }
 
 QGtkRefPtr<GtkWidget> QGtkWindow::gtkWindow() const

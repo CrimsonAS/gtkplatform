@@ -53,11 +53,13 @@ public:
     ~QGtkBackingStore();
 
     QPaintDevice *paintDevice() Q_DECL_OVERRIDE;
+    void beginPaint(const QRegion &region) Q_DECL_OVERRIDE;
+    void endPaint() Q_DECL_OVERRIDE;
     void flush(QWindow *window, const QRegion &region, const QPoint &offset) Q_DECL_OVERRIDE;
     void resize(const QSize &size, const QRegion &staticContents) Q_DECL_OVERRIDE;
 
 private:
-    QImage mImage;
+    QImage *m_paintImage;
 };
 
 QT_END_NAMESPACE
