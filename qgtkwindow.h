@@ -148,6 +148,7 @@ private:
     Qt::WindowState m_state = Qt::WindowNoState;
     bool m_wantsUpdate = false;
     guint m_tick_callback = 0;
+    Qt::WindowFlags m_flags = Qt::Widget;
 };
 
 QT_END_NAMESPACE

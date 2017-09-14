@@ -192,7 +192,7 @@ QGtkWindow::QGtkWindow(QWindow *window)
     : QPlatformWindow(window)
     , m_buttons(Qt::NoButton)
 {
-    create(Qt::Window);
+    create(window->type());
 
     if (!QGtkCourierObject::instance)
         QGtkCourierObject::instance = new QGtkCourierObject(QCoreApplication::instance());
@@ -205,7 +205,8 @@ void QGtkWindow::create(Qt::WindowType windowType)
     }
 
     GtkWindowType gtkWindowType = GTK_WINDOW_TOPLEVEL;
-    if (windowType == Qt::ToolTip) {
+    if (windowType == Qt::ToolTip ||
+        windowType == Qt::Popup) {
         gtkWindowType = GTK_WINDOW_POPUP;
     }
 
@@ -220,6 +221,22 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_window.get(), "window-state-event", G_CALLBACK(window_state_event_cb), this);
     m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), window_tick_cb, this, NULL);
     setGeometry(window()->geometry());
+
+    if (windowType == Qt::ToolTip ||
+        windowType == Qt::Popup) {
+        const QWindow *transientParent = window()->transientParent();
+        if (transientParent && transientParent->handle()) {
+            QGtkWindow *transientParentPlatform = static_cast<QGtkWindow*>(transientParent->handle());
+            switch (window()->type()) {
+                case Qt::Popup:
+                case Qt::Dialog:
+                    gtk_window_set_transient_for(GTK_WINDOW(m_window.get()), GTK_WINDOW(transientParentPlatform->gtkWindow().get()));
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(m_window.get()), vbox);
@@ -400,18 +417,6 @@ QMargins QGtkWindow::frameMargins() const
 void QGtkWindow::setVisible(bool visible)
 {
     if (visible) {
-        const QWindow *transientParent = window()->transientParent();
-        if (transientParent && transientParent->handle()) {
-            QGtkWindow *transientParentPlatform = static_cast<QGtkWindow*>(transientParent->handle());
-            switch (window()->type()) {
-                case Qt::Popup:
-                case Qt::Dialog:
-                    gtk_window_set_transient_for(GTK_WINDOW(m_window.get()), GTK_WINDOW(transientParentPlatform->gtkWindow().get()));
-                    break;
-                default:
-                    break;
-            }
-        }
         gtk_widget_show_all(m_window.get());
     } else {
         gtk_widget_hide(m_window.get());
@@ -420,10 +425,26 @@ void QGtkWindow::setVisible(bool visible)
 
 void QGtkWindow::setWindowFlags(Qt::WindowFlags flags)
 {
+    if (flags == m_flags) {
+        // probably means we're being called from create(), do our best to make
+        // it harmless.
+        return;
+    }
+
+    Qt::WindowType oldType = static_cast<Qt::WindowType>(int(m_flags & Qt::WindowType_Mask));
     Qt::WindowType type = static_cast<Qt::WindowType>(int(flags & Qt::WindowType_Mask));
+    m_flags = flags;
 
     if (type == Qt::Popup) {
         flags |= Qt::FramelessWindowHint;
+    }
+
+    if (type != oldType) {
+        if (type == Qt::Popup) {
+            // ### do we really support changing to other types of windows at
+            // runtime? this will probably break all sorts of stuff.
+            //create(Qt::Popup);
+        }
     }
 
     // ### recreate the window if the type changes, but be careful, we may
@@ -594,28 +615,24 @@ void QGtkWindow::propagateSizeHints()
         hints.min_width = minSize.width();
         hints.min_height = minSize.height();
         activeHints |= GDK_HINT_MIN_SIZE;
-        qWarning() << "Set min size " << minSize;
     }
 
     if (!maxSize.isNull()) {
         hints.max_width = maxSize.width();
         hints.max_height = maxSize.height();
         activeHints |= GDK_HINT_MAX_SIZE;
-        qWarning() << "Set max size " << maxSize;
     }
 
     if (!baseSize.isNull()) {
         hints.base_width = baseSize.width();
         hints.base_height = baseSize.height();
         activeHints |= GDK_HINT_BASE_SIZE;
-        qWarning() << "Set base size " << baseSize;
     }
 
     if (sizeIncrement.isNull()) {
         hints.width_inc = sizeIncrement.width();
         hints.height_inc = sizeIncrement.height();
         activeHints |= GDK_HINT_RESIZE_INC;
-        qWarning() << "Set size increment " << sizeIncrement;
     }
 
     if ((activeHints & GDK_HINT_MIN_SIZE) && (activeHints & GDK_HINT_MAX_SIZE)) {
