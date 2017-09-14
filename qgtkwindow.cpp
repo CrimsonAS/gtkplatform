@@ -218,7 +218,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_window.get(), "key-release-event", G_CALLBACK(key_release_cb), this);
     g_signal_connect(m_window.get(), "scroll-event", G_CALLBACK(scroll_cb), this);
     m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), window_tick_cb, this, NULL);
-    gtk_window_resize(GTK_WINDOW(m_window.get()), window()->geometry().width(), window()->geometry().height());
+    setGeometry(window()->geometry());
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(m_window.get()), vbox);
@@ -255,7 +255,8 @@ void QGtkWindow::create(Qt::WindowType windowType)
 
     setWindowState(window()->windowState());
     setWindowFlags(window()->flags());
-    setWindowTitle(window()->title());
+    if (!window()->title().isEmpty())
+        setWindowTitle(window()->title());
 
     if (!qFuzzyCompare(QWindowPrivate::get(window())->opacity, qreal(1.0))) {
         setOpacity(QWindowPrivate::get(window())->opacity);
@@ -334,15 +335,19 @@ QSurfaceFormat QGtkWindow::format() const
 
 void QGtkWindow::setGeometry(const QRect &rect)
 {
+    gtk_window_move(GTK_WINDOW(m_window.get()), rect.x(), rect.y());
     gtk_window_resize(GTK_WINDOW(m_window.get()), rect.width(), rect.height());
 }
 
 QRect QGtkWindow::geometry() const
 {
+    int x;
+    int y;
+    gtk_window_get_position(GTK_WINDOW(m_window.get()), &x, &y);
     int width;
     int height;
     gtk_window_get_size(GTK_WINDOW(m_window.get()), &width, &height);
-    return QRect(0, 0, width, height);
+    return QRect(x, y, width, height);
 }
 
 QRect QGtkWindow::normalGeometry() const
