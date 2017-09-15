@@ -40,6 +40,7 @@
 #include "qgtkwindow.h"
 #include "qgtkhelpers.h"
 
+#include <QtGui/qguiapplication.h>
 #include <qpa/qwindowsysteminterface.h>
 #include <QtGui/private/qwindow_p.h>
 #include <QtCore/qthread.h>
@@ -220,6 +221,11 @@ void QGtkWindow::create(Qt::WindowType windowType)
     }
 
     m_window = gtk_window_new(gtkWindowType);
+
+    if (windowType == Qt::ToolTip) {
+        gtk_window_set_type_hint(GTK_WINDOW(m_window.get()), GDK_WINDOW_TYPE_HINT_TOOLTIP);
+    }
+
     g_signal_connect(m_window.get(), "map", G_CALLBACK(map_cb), this);
     g_signal_connect(m_window.get(), "unmap", G_CALLBACK(unmap_cb), this);
     g_signal_connect(m_window.get(), "configure-event", G_CALLBACK(configure_cb), this);
@@ -239,16 +245,11 @@ void QGtkWindow::create(Qt::WindowType windowType)
     if (windowType == Qt::ToolTip ||
         windowType == Qt::Popup) {
         const QWindow *transientParent = window()->transientParent();
+        if (!transientParent)
+            transientParent = qApp->focusWindow();
         if (transientParent && transientParent->handle()) {
             QGtkWindow *transientParentPlatform = static_cast<QGtkWindow*>(transientParent->handle());
-            switch (window()->type()) {
-                case Qt::Popup:
-                case Qt::Dialog:
-                    gtk_window_set_transient_for(GTK_WINDOW(m_window.get()), GTK_WINDOW(transientParentPlatform->gtkWindow().get()));
-                    break;
-                default:
-                    break;
-            }
+            gtk_window_set_transient_for(GTK_WINDOW(m_window.get()), GTK_WINDOW(transientParentPlatform->gtkWindow().get()));
         }
     }
 
