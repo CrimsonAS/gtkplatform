@@ -56,7 +56,7 @@ public:
     int depth() const override;
     QImage::Format format() const override;
     QSizeF physicalSize() const override;
-    //QDpi logicalDpi() const override;
+    QDpi logicalDpi() const override;
     qreal devicePixelRatio() const override;
     qreal refreshRate() const override;
 

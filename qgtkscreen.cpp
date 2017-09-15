@@ -42,6 +42,8 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qloggingcategory.h>
 
+#include <gtk/gtk.h>
+
 Q_LOGGING_CATEGORY(lcScreen, "qt.qpa.gtk.screen");
 
 QGtkScreen::QGtkScreen(GdkMonitor *monitor)
@@ -76,16 +78,21 @@ QImage::Format QGtkScreen::format() const
 
 QSizeF QGtkScreen::physicalSize() const
 {
-    return QPlatformScreen::physicalSize();
-
-    // ### highdpi
-    // for some reason, this makes fonts bizarrely huge ???
-    //return QSizeF(gdk_monitor_get_width_mm(m_monitor), gdk_monitor_get_height_mm(m_monitor));
+    return QSizeF(gdk_monitor_get_width_mm(m_monitor), gdk_monitor_get_height_mm(m_monitor));
 }
 
-//QDpi QGtkScreen::logicalDpi() const
-//{
-//}
+QDpi QGtkScreen::logicalDpi() const
+{
+    // ### notify on change
+    int dpi = -1;
+    g_object_get(gtk_settings_get_default(), "gtk-xft-dpi", &dpi, NULL);
+    if (dpi == -1) {
+        dpi = 96;
+    } else {
+        dpi /= 1024;
+    }
+    return QDpi(dpi, dpi);
+}
 
 qreal QGtkScreen::devicePixelRatio() const
 {
