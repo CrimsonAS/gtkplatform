@@ -529,7 +529,7 @@ void QGtkWindow::onWindowStateEvent(GdkEvent *event)
     }
 
     if (ev->changed_mask & GDK_WINDOW_STATE_FOCUSED) {
-        static QWindow *newActiveWindow = nullptr;
+        static QPointer<QWindow> newActiveWindow = nullptr;
         if (ev->new_window_state & GDK_WINDOW_STATE_FOCUSED) {
             newActiveWindow = window();
         }
@@ -548,7 +548,7 @@ void QGtkWindow::onWindowStateEvent(GdkEvent *event)
         // dismissed (since a combo box shouldn't be kept open if its parent
         // window loses focus to something other than the combo).
         QTimer::singleShot(0, [=]() {
-            QWindowSystemInterface::handleWindowActivated(newActiveWindow, Qt::ActiveWindowFocusReason);
+            QWindowSystemInterface::handleWindowActivated(newActiveWindow.data(), Qt::ActiveWindowFocusReason);
         });
     }
 
