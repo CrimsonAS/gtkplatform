@@ -528,7 +528,11 @@ void QGtkWindow::onWindowStateEvent(GdkEvent *event)
         QWindowSystemInterface::handleWindowStateChanged(window(), newState);
     }
 
-    if (ev->changed_mask & GDK_WINDOW_STATE_FOCUSED) {
+    Qt::WindowType type = static_cast<Qt::WindowType>(int(m_flags & Qt::WindowType_Mask));
+
+    // We must not send window activation changes for tooltip windows, as they
+    // will auto-hide on activation change.
+    if (type != Qt::ToolTip && (ev->changed_mask & GDK_WINDOW_STATE_FOCUSED)) {
         static QPointer<QWindow> newActiveWindow = nullptr;
         if (ev->new_window_state & GDK_WINDOW_STATE_FOCUSED) {
             newActiveWindow = window();
