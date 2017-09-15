@@ -115,7 +115,7 @@ public:
     void onRender();
     void onMap();
     void onUnmap();
-    void onConfigure(GdkEvent *event);
+    void onConfigure();
     bool onDelete();
     bool onKeyPress(GdkEvent *event);
     bool onKeyRelease(GdkEvent *event);
@@ -149,6 +149,7 @@ private:
     bool m_wantsUpdate = false;
     guint m_tick_callback = 0;
     Qt::WindowFlags m_flags = Qt::Widget;
+    QRect m_windowGeometry; // must be cached as it's accessed from multiple threads
 };
 
 QT_END_NAMESPACE

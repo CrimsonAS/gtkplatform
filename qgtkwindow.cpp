@@ -74,11 +74,19 @@ static gboolean unmap_cb(GtkWidget *, gpointer platformWindow)
     return FALSE;
 }
 
-static gboolean configure_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+static gboolean configure_cb(GtkWidget *, GdkEvent *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     qCDebug(lcWindowRender) << "configure_cb" << pw;
-    pw->onConfigure(event);
+    pw->onConfigure();
+    return FALSE;
+}
+
+static gboolean size_allocate_cb(GtkWidget *, GdkRectangle *, gpointer platformWindow)
+{
+    QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindowRender) << "size_allocate_cb" << pw;
+    pw->onConfigure();
     return FALSE;
 }
 
@@ -214,6 +222,11 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_window.get(), "map", G_CALLBACK(map_cb), this);
     g_signal_connect(m_window.get(), "unmap", G_CALLBACK(unmap_cb), this);
     g_signal_connect(m_window.get(), "configure-event", G_CALLBACK(configure_cb), this);
+
+    // for whatever reason, configure-event is not enough. it doesn't seem to
+    // get emitted for popup type windows. so also connect to size-allocate just
+    // to be sure...
+    g_signal_connect(m_window.get(), "size-allocate", G_CALLBACK(size_allocate_cb), this);
     g_signal_connect(m_window.get(), "delete-event", G_CALLBACK(delete_cb), this);
     g_signal_connect(m_window.get(), "key-press-event", G_CALLBACK(key_press_cb), this);
     g_signal_connect(m_window.get(), "key-release-event", G_CALLBACK(key_release_cb), this);
@@ -336,11 +349,30 @@ void QGtkWindow::onUnmap()
     QWindowSystemInterface::handleExposeEvent(window(), QRegion());
 }
 
-void QGtkWindow::onConfigure(GdkEvent *event)
+void QGtkWindow::onConfigure()
 {
-    GdkEventConfigure *ev = (GdkEventConfigure*)event;
-    QRect geom(ev->x, ev->y, ev->width, ev->height);
+    int x;
+    int y;
+    gtk_window_get_position(GTK_WINDOW(m_window.get()), &x, &y);
+    int width;
+    int height;
+    gtk_window_get_size(GTK_WINDOW(m_window.get()), &width, &height);
+
+    // ### we subtract menu height here because it needs to be calculated in
+    // window size somehow, otherwise we end up with content being positioned
+    // outside the real bounds of the window.
+    //
+    // ideally, we do this by subtracting it from frameMargins. we then probably
+    // need to listen to allocation changes on m_menubar, and send geometry
+    // changes when the menubar size changes.
+    int menu_height = gtk_widget_get_allocated_height(GTK_WIDGET(m_menubar.get()));
+    if (height > menu_height) {
+        height -= menu_height;
+    }
+    QRect geom = QRect(x, y, width, height);
+
     QWindowSystemInterface::handleGeometryChange(window(), geom);
+    m_windowGeometry = geom;
 }
 
 bool QGtkWindow::onDelete()
@@ -364,25 +396,7 @@ void QGtkWindow::setGeometry(const QRect &rect)
 
 QRect QGtkWindow::geometry() const
 {
-    int x;
-    int y;
-    gtk_window_get_position(GTK_WINDOW(m_window.get()), &x, &y);
-    int width;
-    int height;
-    gtk_window_get_size(GTK_WINDOW(m_window.get()), &width, &height);
-
-    // ### we subtract menu height here because it needs to be calculated in
-    // window size somehow, otherwise we end up with content being positioned
-    // outside the real bounds of the window.
-    //
-    // ideally, we do this by subtracting it from frameMargins. we then probably
-    // need to listen to allocation changes on m_menubar, and send geometry
-    // changes when the menubar size changes.
-    int menu_height = gtk_widget_get_allocated_height(GTK_WIDGET(m_menubar.get()));
-    if (height > menu_height) {
-        height -= menu_height;
-    }
-    return QRect(x, y, width, height);
+    return m_windowGeometry;
 }
 
 QRect QGtkWindow::normalGeometry() const
