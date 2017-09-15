@@ -126,6 +126,7 @@ public:
     bool onScrollEvent(GdkEvent *event);
     void onWindowStateEvent(GdkEvent *event);
     void onUpdateFrameClock();
+    void onEnterLeave(GdkEvent *event, bool entered);
     QImage *beginUpdateFrame();
     void endUpdateFrame();
     void invalidateRegion(const QRegion &region);

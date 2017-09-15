@@ -163,6 +163,22 @@ static gboolean window_tick_cb(GtkWidget*, GdkFrameClock *, gpointer platformWin
     return G_SOURCE_CONTINUE;
 }
 
+static gboolean enter_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+{
+    QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindow) << "enter_notify_cb" << pw;
+    pw->onEnterLeave(event, true);
+    return false;
+}
+
+static gboolean leave_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+{
+    QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindow) << "enter_notify_cb" << pw;
+    pw->onEnterLeave(event, false);
+    return false;
+}
+
 class QGtkCourierObject : public QObject
 {
     Q_OBJECT
@@ -229,6 +245,8 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_window.get(), "map", G_CALLBACK(map_cb), this);
     g_signal_connect(m_window.get(), "unmap", G_CALLBACK(unmap_cb), this);
     g_signal_connect(m_window.get(), "configure-event", G_CALLBACK(configure_cb), this);
+    g_signal_connect(m_window.get(), "enter-notify-event", G_CALLBACK(enter_notify_cb), this);
+    g_signal_connect(m_window.get(), "leave-notify-event", G_CALLBACK(leave_notify_cb), this);
 
     // for whatever reason, configure-event is not enough. it doesn't seem to
     // get emitted for popup type windows. so also connect to size-allocate just
@@ -561,6 +579,37 @@ void QGtkWindow::onWindowStateEvent(GdkEvent *event)
     // GDK_WINDOW_STATE_ABOVE not handled.
     // GDK_WINDOW_STATE_BELOW not handled.
     // GDK_WINDOW_STATE_WITHDRAWN not handled.
+}
+
+void QGtkWindow::onEnterLeave(GdkEvent *event, bool entered)
+{
+    GdkEventCrossing *ev = (GdkEventCrossing*)event;
+    static QPointer<QWindow> enterWindow;
+    static QPoint enterPos;
+    static QPoint globalEnterPos;
+    static QPointer<QWindow> leaveWindow;
+    static QPoint leavePos;
+    static QPoint globalLeavePos;
+
+    if (entered) {
+        enterWindow = window();
+        enterPos = QPoint(ev->x, ev->y);
+        globalEnterPos = QPoint(ev->x_root, ev->y_root);
+    } else {
+        leaveWindow = window();
+        leavePos = QPoint(ev->x, ev->y);
+        globalLeavePos = QPoint(ev->x_root, ev->y_root);
+    }
+
+    QTimer::singleShot(0, [=]() {
+        if (enterWindow && leaveWindow) {
+            QWindowSystemInterface::handleEnterLeaveEvent(enterWindow.data(), leaveWindow.data(), leavePos, globalLeavePos);
+        } else if (enterWindow) {
+            QWindowSystemInterface::handleEnterEvent(enterWindow.data(), enterPos, globalEnterPos);
+        } else if (leaveWindow) {
+            QWindowSystemInterface::handleLeaveEvent(leaveWindow.data());
+        }
+    });
 }
 
 WId QGtkWindow::winId() const
