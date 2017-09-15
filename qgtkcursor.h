@@ -37,77 +37,32 @@
 **
 ****************************************************************************/
 
-#include "qgtkscreen.h"
-#include "qgtkcursor.h"
+#ifndef QGTKCURSOR_H
+#define QGTKCURSOR_H
 
-#include <QtCore/qdebug.h>
-#include <QtCore/qloggingcategory.h>
+#include <qpa/qplatformcursor.h>
 
-#include <gtk/gtk.h>
+#include <gdk/gdk.h>
 
-Q_LOGGING_CATEGORY(lcScreen, "qt.qpa.gtk.screen");
+QT_BEGIN_NAMESPACE
 
-QGtkScreen::QGtkScreen(GdkMonitor *monitor)
-    : m_monitor(monitor)
-    , m_cursor(new QGtkCursor())
+class QGtkCursor;
+
+class QGtkCursor : public QPlatformCursor
 {
-}
+public:
+    QGtkCursor();
 
-QRect QGtkScreen::availableGeometry() const
-{
-    GdkRectangle geometry;
-    gdk_monitor_get_workarea(m_monitor, &geometry);
-    return QRect(geometry.x, geometry.y, geometry.width, geometry.height);
-}
+    void changeCursor(QCursor *windowCursor, QWindow *window) override;
+    QPoint pos() const override;
+    void setPos(const QPoint &pos) override;
 
-QRect QGtkScreen::geometry() const
-{
-    GdkRectangle geometry;
-    gdk_monitor_get_geometry(m_monitor, &geometry);
-    qCDebug(lcScreen) << QRect(geometry.x, geometry.y, geometry.width, geometry.height);
-    return QRect(geometry.x, geometry.y, geometry.width, geometry.height);
-}
+private:
+    QPoint m_pos;
+};
 
-int QGtkScreen::depth() const
-{
-    return 32;
-}
 
-QImage::Format QGtkScreen::format() const
-{
-    return QImage::Format_ARGB32_Premultiplied;
-}
+QT_END_NAMESPACE
 
-QSizeF QGtkScreen::physicalSize() const
-{
-    return QSizeF(gdk_monitor_get_width_mm(m_monitor), gdk_monitor_get_height_mm(m_monitor));
-}
+#endif // QGTKCURSOR_H
 
-QDpi QGtkScreen::logicalDpi() const
-{
-    // ### notify on change
-    int dpi = -1;
-    g_object_get(gtk_settings_get_default(), "gtk-xft-dpi", &dpi, NULL);
-    if (dpi == -1) {
-        dpi = 96;
-    } else {
-        dpi /= 1024;
-    }
-    return QDpi(dpi, dpi);
-}
-
-qreal QGtkScreen::devicePixelRatio() const
-{
-    return gdk_monitor_get_scale_factor(m_monitor);
-}
-
-qreal QGtkScreen::refreshRate() const
-{
-    // gdk gives us millihz..
-    return gdk_monitor_get_refresh_rate(m_monitor) / 1000;
-}
-
-QPlatformCursor *QGtkScreen::cursor() const
-{
-    return m_cursor.get();
-}

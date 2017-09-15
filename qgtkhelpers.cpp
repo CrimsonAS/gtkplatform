@@ -39,7 +39,26 @@
 
 #include "qgtkhelpers.h"
 
-// Returns the largest image for this icon, in RGB32 format.
+QGtkRefPtr<GdkPixbuf> qt_pixmapToPixbuf(const QPixmap &pixmap)
+{
+    // ### assert pixmap is in RGBA
+    QImage i = pixmap.toImage();
+
+    QGtkRefPtr<GdkPixbuf> gpb = gdk_pixbuf_new_from_data(
+        i.constBits(),
+        GDK_COLORSPACE_RGB,
+        true,
+        8,
+        i.width(),
+        i.height(),
+        i.bytesPerLine(),
+        NULL,
+        NULL
+    );
+    return gpb;
+}
+
+// Returns the largest image for this icon, in RGBA format.
 QImage qt_getBiggestImageForIcon(const QIcon &icon)
 {
     QIcon::State st = QIcon::On;

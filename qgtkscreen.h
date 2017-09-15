@@ -44,7 +44,11 @@
 
 #include <gdk/gdk.h>
 
+#include <memory>
+
 QT_BEGIN_NAMESPACE
+
+class QGtkCursor;
 
 class QGtkScreen : public QPlatformScreen
 {
@@ -59,12 +63,13 @@ public:
     QDpi logicalDpi() const override;
     qreal devicePixelRatio() const override;
     qreal refreshRate() const override;
-
+    QPlatformCursor *cursor() const override;
 
     GdkMonitor *monitor() const { return m_monitor; }
 
 public:
     GdkMonitor *m_monitor;
+    std::unique_ptr<QGtkCursor> m_cursor;
 };
 
 
