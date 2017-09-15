@@ -166,7 +166,7 @@ QVariant QGtkTheme::themeHint(ThemeHint hint) const
     case QPlatformTheme::SystemIconThemeName:
         return QVariant("Adwaita");
     case QPlatformTheme::StyleNames:
-        return QStringList() << "Fusion";
+        return QStringList() << "Adwaita" << "Fusion";
     case QPlatformTheme::PasswordMaskCharacter:
         return QVariant(QChar(0x2022));
     default:
