@@ -199,6 +199,7 @@ void QGtkWindow::onUpdateFrameClock()
 QGtkWindow::QGtkWindow(QWindow *window)
     : QPlatformWindow(window)
     , m_buttons(Qt::NoButton)
+    , m_windowGeometry(0, 0, 1, 1)
 {
     create(window->type());
 
