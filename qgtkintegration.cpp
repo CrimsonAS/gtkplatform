@@ -251,7 +251,6 @@ QPlatformWindow *QGtkIntegration::createPlatformWindow(QWindow *window) const
 {
     Q_UNUSED(window);
     QGtkWindow *w = new QGtkWindow(window);
-    w->requestActivateWindow();
     return w;
 }
 
