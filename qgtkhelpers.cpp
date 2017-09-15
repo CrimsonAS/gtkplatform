@@ -621,6 +621,8 @@ Qt::Key qt_convertToQtKey(int keyval)
 guint qt_convertToGdkKeyval(Qt::Key qKey)
 {
     switch (qKey) {
+    case Qt::Key_Insert:
+        return GDK_KEY_Insert;
     case Qt::Key_Delete:
         return GDK_KEY_Delete;
     case Qt::Key_Left:
