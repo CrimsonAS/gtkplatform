@@ -50,6 +50,11 @@ QT_BEGIN_NAMESPACE
 QGtkRefPtr<GdkPixbuf> qt_iconToPixbuf(const QIcon &icon);
 QGtkRefPtr<GIcon> qt_iconToIcon(const QIcon &icon);
 QString qt_convertToGtkMnemonics(const QString &text);
+Qt::KeyboardModifiers qt_convertToQtKeyboardMods(guint mask);
+Qt::Key qt_convertToQtKey(int keyval);
+guint qt_convertToGdkKeyval(Qt::Key qKey);
+Qt::MouseButton qt_convertGButtonToQButton(guint button);
+Qt::TouchPointState qt_convertToQtTouchPointState(GdkEventType type);
 
 QT_END_NAMESPACE
 

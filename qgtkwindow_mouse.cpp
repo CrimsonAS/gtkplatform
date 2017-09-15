@@ -38,6 +38,7 @@
 ****************************************************************************/
 
 #include "qgtkwindow.h"
+#include "qgtkhelpers.h"
 
 #include <qpa/qwindowsysteminterface.h>
 #include <QtCore/qloggingcategory.h>
@@ -46,98 +47,6 @@
 Q_LOGGING_CATEGORY(lcMouse, "qt.qpa.gtk.mouse");
 Q_LOGGING_CATEGORY(lcMouseMotion, "qt.qpa.gtk.mouse.motion");
 
-static Qt::MouseButton convert_g_button_to_q_button(guint button)
-{
-    Qt::MouseButton b = Qt::NoButton;
-    switch (button) {
-    case 1:
-        b = Qt::LeftButton;
-        break;
-    case 2:
-        b = Qt::RightButton;
-        break;
-    case 3:
-        b = Qt::MiddleButton;
-        break;
-    case 4:
-        b = Qt::ExtraButton1;
-        break;
-    case 5:
-        b = Qt::ExtraButton2;
-        break;
-    case 6:
-        b = Qt::ExtraButton3;
-        break;
-    case 7:
-        b = Qt::ExtraButton4;
-        break;
-    case 8:
-        b = Qt::ExtraButton5;
-        break;
-    case 9:
-        b = Qt::ExtraButton6;
-        break;
-    case 10:
-        b = Qt::ExtraButton7;
-        break;
-    case 11:
-        b = Qt::ExtraButton8;
-        break;
-    case 12:
-        b = Qt::ExtraButton9;
-        break;
-    case 13:
-        b = Qt::ExtraButton10;
-        break;
-    case 14:
-        b = Qt::ExtraButton11;
-        break;
-    case 15:
-        b = Qt::ExtraButton12;
-        break;
-    case 16:
-        b = Qt::ExtraButton13;
-        break;
-    case 17:
-        b = Qt::ExtraButton14;
-        break;
-    case 18:
-        b = Qt::ExtraButton15;
-        break;
-    case 19:
-        b = Qt::ExtraButton16;
-        break;
-    case 20:
-        b = Qt::ExtraButton17;
-        break;
-    case 21:
-        b = Qt::ExtraButton18;
-        break;
-    case 22:
-        b = Qt::ExtraButton19;
-        break;
-    case 23:
-        b = Qt::ExtraButton20;
-        break;
-    case 24:
-        b = Qt::ExtraButton21;
-        break;
-    case 25:
-        b = Qt::ExtraButton22;
-        break;
-    case 26:
-        b = Qt::ExtraButton23;
-        break;
-    case 27:
-        b = Qt::ExtraButton24;
-        break;
-    default:
-        qWarning() << "Unrecognized button" << button;
-    }
-
-    return b;
-}
-
 bool QGtkWindow::onButtonPress(GdkEvent *event)
 {
     GdkEventButton *ev = (GdkEventButton*)event;
@@ -145,7 +54,7 @@ bool QGtkWindow::onButtonPress(GdkEvent *event)
     // ### would be nice if we could support GDK_2BUTTON_PRESS/GDK_3BUTTON_PRESS
     // directly (and not via emulation internally).
 
-    Qt::MouseButton b = convert_g_button_to_q_button(ev->button);
+    Qt::MouseButton b = qt_convertGButtonToQButton(ev->button);
     m_buttons |= b;
     qCDebug(lcMouse) << "Pressed " << b << " at " << ev->x << ev->y << ev->x_root << ev->y_root << " total pressed " << m_buttons;
 
@@ -156,7 +65,7 @@ bool QGtkWindow::onButtonPress(GdkEvent *event)
         QPointF(ev->x, ev->y),
         QPointF(ev->x_root, ev->y_root), // ### _root is probably wrong.
         m_buttons,
-        QGtkWindow::convertGdkKeyboardModsToQtKeyboardMods(ev->state),
+        qt_convertToQtKeyboardMods(ev->state),
         isTabletEvent ? Qt::MouseEventSynthesizedByQt : Qt::MouseEventNotSynthesized
     );
     return true;
@@ -166,7 +75,7 @@ bool QGtkWindow::onButtonRelease(GdkEvent *event)
 {
     GdkEventButton *ev = (GdkEventButton*)event;
 
-    Qt::MouseButton b = convert_g_button_to_q_button(ev->button);
+    Qt::MouseButton b = qt_convertGButtonToQButton(ev->button);
     m_buttons &= ~b;
     qCDebug(lcMouse) << "Released " << b << " at " << ev->x << ev->y << ev->x_root << ev->y_root << " total pressed " << m_buttons;
 
@@ -177,7 +86,7 @@ bool QGtkWindow::onButtonRelease(GdkEvent *event)
         QPointF(ev->x, ev->y),
         QPointF(ev->x_root, ev->y_root),
         m_buttons,
-        QGtkWindow::convertGdkKeyboardModsToQtKeyboardMods(ev->state),
+        qt_convertToQtKeyboardMods(ev->state),
         isTabletEvent ? Qt::MouseEventSynthesizedByQt : Qt::MouseEventNotSynthesized
     );
     return true;
@@ -195,7 +104,7 @@ bool QGtkWindow::onMotionNotify(GdkEvent *event)
         QPointF(ev->x, ev->y),
         QPointF(ev->x_root, ev->y_root),
         m_buttons,
-        QGtkWindow::convertGdkKeyboardModsToQtKeyboardMods(ev->state),
+        qt_convertToQtKeyboardMods(ev->state),
         isTabletEvent ? Qt::MouseEventSynthesizedByQt : Qt::MouseEventNotSynthesized
     );
     return true;
@@ -237,7 +146,7 @@ bool QGtkWindow::onScrollEvent(GdkEvent *event)
         QPointF(ev->x_root, ev->y_root),
         pixelDelta,
         angleDelta,
-        QGtkWindow::convertGdkKeyboardModsToQtKeyboardMods(ev->state),
+        qt_convertToQtKeyboardMods(ev->state),
         Qt::NoScrollPhase,
         source,
         false /* isInverted */

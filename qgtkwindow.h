@@ -136,8 +136,6 @@ public:
     QGtkRefPtr<GtkWidget> gtkWindow() const;
 
 private:
-    static Qt::KeyboardModifiers convertGdkKeyboardModsToQtKeyboardMods(guint mask);
-
     QGtkRefPtr<GtkWidget> m_window;
     QGtkRefPtr<GtkMenuBar> m_menubar;
     QGtkRefPtr<GtkWidget> m_content;

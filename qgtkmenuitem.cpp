@@ -151,70 +151,6 @@ QGtkRefPtr<GtkWidget> QGtkMenuItem::gtkMenuItem() const
     return m_gtkMenuItem;
 }
 
-// ### keyvalToQtKey in reverse, ugh
-// ### finish and move to helpers
-static guint convertQtKeyToGdkKey(Qt::Key qKey)
-{
-    switch (qKey) {
-    case Qt::Key_Delete:
-        return GDK_KEY_Delete;
-    case Qt::Key_Left:
-        return GDK_KEY_Left;
-    case Qt::Key_Right:
-        return GDK_KEY_Right;
-    case Qt::Key_Up:
-        return GDK_KEY_Up;
-    case Qt::Key_Down:
-        return GDK_KEY_Down;
-    case Qt::Key_Tab:
-        return GDK_KEY_Tab;
-    case Qt::Key_F1:
-        return GDK_KEY_F1;
-    case Qt::Key_F2:
-        return GDK_KEY_F2;
-    case Qt::Key_F3:
-        return GDK_KEY_F3;
-    case Qt::Key_F4:
-        return GDK_KEY_F4;
-    case Qt::Key_F5:
-        return GDK_KEY_F5;
-    case Qt::Key_F6:
-        return GDK_KEY_F6;
-    case Qt::Key_F7:
-        return GDK_KEY_F7;
-    case Qt::Key_F8:
-        return GDK_KEY_F8;
-    case Qt::Key_F9:
-        return GDK_KEY_F9;
-    case Qt::Key_F10:
-        return GDK_KEY_F10;
-    case Qt::Key_F11:
-        return GDK_KEY_F11;
-    case Qt::Key_F12:
-        return GDK_KEY_F12;
-    case Qt::Key_F13:
-        return GDK_KEY_F13;
-    case Qt::Key_F14:
-        return GDK_KEY_F14;
-    case Qt::Key_F15:
-        return GDK_KEY_F15;
-    case Qt::Key_F16:
-        return GDK_KEY_F16;
-    case Qt::Key_F17:
-        return GDK_KEY_F17;
-    case Qt::Key_F18:
-        return GDK_KEY_F18;
-    case Qt::Key_F19:
-        return GDK_KEY_F19;
-    case Qt::Key_F20:
-        return GDK_KEY_F20;
-    case Qt::Key_F21:
-        return GDK_KEY_F21;
-    }
-
-    return (guint)qKey;
-}
-
 QGtkRefPtr<GtkWidget> QGtkMenuItem::sync()
 {
     if (m_isSeparator) {
@@ -253,7 +189,7 @@ QGtkRefPtr<GtkWidget> QGtkMenuItem::sync()
         // mismatch, we map the simple key sequences (and their modifiers), but
         // don't even attempt to try map more complex sequences.
         if (m_shortcut[1] == 0 && m_shortcut[2] == 0 && m_shortcut[3] == 0) {
-            guint gKey = convertQtKeyToGdkKey(Qt::Key(m_shortcut[0] & ~qtMods));
+            guint gKey = qt_convertToGdkKeyval(Qt::Key(m_shortcut[0] & ~qtMods));
             guint gModifiers = 0;
 
             if (m_shortcut[0] & Qt::ShiftModifier) {

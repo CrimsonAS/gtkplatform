@@ -38,6 +38,7 @@
 ****************************************************************************/
 
 #include "qgtkwindow.h"
+#include "qgtkhelpers.h"
 
 #include <qpa/qwindowsysteminterface.h>
 
@@ -46,21 +47,6 @@
 
 Q_LOGGING_CATEGORY(lcTouch, "qt.qpa.gtk.touch");
 Q_LOGGING_CATEGORY(lcTouchUpdate, "qt.qpa.gtk.touch.update");
-
-static Qt::TouchPointState gtkTouchStateToQtTouchState(GdkEventType type)
-{
-    switch (type) {
-    case GDK_TOUCH_BEGIN:
-        return Qt::TouchPointPressed;
-    case GDK_TOUCH_UPDATE:
-        return Qt::TouchPointMoved;
-    case GDK_TOUCH_END:
-    case GDK_TOUCH_CANCEL:
-        return Qt::TouchPointReleased;
-    default:
-        Q_UNREACHABLE();
-    }
-}
 
 bool QGtkWindow::onTouchEvent(GdkEvent *event)
 {
@@ -115,7 +101,7 @@ bool QGtkWindow::onTouchEvent(GdkEvent *event)
     if (tp) {
         // Update it
         tp->pressure = 1.0; // ### should be able to read this somehow
-        tp->state = gtkTouchStateToQtTouchState(ev->type);
+        tp->state = qt_convertToQtTouchPointState(ev->type);
 
         // ### touchpoint size?
         // the area is supposed to be centered on the point, hence the - 0.5
@@ -144,7 +130,7 @@ bool QGtkWindow::onTouchEvent(GdkEvent *event)
         ev->time,
         m_touchDevice,
         m_activeTouchPoints,
-        convertGdkKeyboardModsToQtKeyboardMods(ev->state)
+        qt_convertToQtKeyboardMods(ev->state)
     );
 
     switch (ev->type) {
