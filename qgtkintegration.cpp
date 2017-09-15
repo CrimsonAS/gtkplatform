@@ -63,6 +63,8 @@
 static EGLDisplay createWaylandEGLDisplay(wl_display *display);
 #endif
 
+#include "CSystrace.h"
+
 QT_BEGIN_NAMESPACE
 
 class QCoreTextFontEngine;
@@ -84,6 +86,7 @@ QGtkIntegration::QGtkIntegration(const QStringList &)
     , m_fontDatabase(new QGenericUnixFontDatabase)
     , m_eglDisplay(nullptr)
 {
+    systrace_init();
     gtk_init(NULL, NULL);
     notify_init(qApp->applicationName().toUtf8().constData());
 
@@ -118,6 +121,7 @@ QGtkIntegration::~QGtkIntegration()
         eglTerminate(m_eglDisplay);
     }
 #endif
+    systrace_deinit();
 }
 
 void QGtkIntegration::onMonitorAdded(GdkMonitor *monitor)

@@ -42,11 +42,15 @@
 
 #include <qpa/qwindowsysteminterface.h>
 
-#include <QDebug>
+#include <QtCore/qdebug.h>
+
+#include "CSystrace.h"
 
 bool QGtkWindow::onKeyPress(GdkEvent *event)
 {
     GdkEventKey *ev = (GdkEventKey*)event;
+    TRACE_EVENT_ASYNC_BEGIN0("input", "QGtkWindow::keyDown", (void*)ev->hardware_keycode);
+    TRACE_EVENT0("input", "QGtkWindow::onKeyPress");
 
     const QString text = QString::fromUtf8(ev->string, ev->length);
     Qt::KeyboardModifiers qtMods = qt_convertToQtKeyboardMods(ev->state);
@@ -68,6 +72,8 @@ bool QGtkWindow::onKeyPress(GdkEvent *event)
 bool QGtkWindow::onKeyRelease(GdkEvent *event)
 {
     GdkEventKey *ev = (GdkEventKey*)event;
+    TRACE_EVENT_ASYNC_END0("input", "QGtkWindow::keyDown", (void*)ev->hardware_keycode);
+    TRACE_EVENT0("input", "QGtkWindow::onKeyRelease");
 
     const QString text = QString::fromUtf8(ev->string, ev->length);
     Qt::KeyboardModifiers qtMods = qt_convertToQtKeyboardMods(ev->state);

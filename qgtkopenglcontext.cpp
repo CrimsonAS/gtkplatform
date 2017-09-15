@@ -60,6 +60,8 @@
 
 #include <QLoggingCategory>
 
+#include "CSystrace.h"
+
 Q_LOGGING_CATEGORY(lcContext, "qt.qpa.gtk.context");
 
 // GDK creates an internal 'paint context' for each GDKWindow, and exposes
@@ -136,7 +138,7 @@ GLuint QGtkOpenGLContext::defaultFramebufferObject(QPlatformSurface *surface) co
 
 void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
 {
-    qCDebug(lcContext) << "Swapping";
+    TRACE_EVENT0("gfx", "QGtkOpenGLContext::swapBuffers");
     QGtkWindow *win = static_cast<QGtkWindow*>(surface);
 
     // Download rendered frame, slowly, so slowly.
@@ -161,12 +163,11 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
     // been drawn onto the surface to properly throttle the rendering thread.
     win->endUpdateFrame();
     win->invalidateRegion(QRegion());
-
-    qDebug(lcContext) << "Done swapping";
 }
 
 bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
 {
+    TRACE_EVENT0("gfx", "QGtkOpenGLContext::makeCurrent");
     if (m_eglContext) {
         bool ok = eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, m_eglContext);
         if (!ok) {
@@ -198,6 +199,7 @@ bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
 
 void QGtkOpenGLContext::doneCurrent()
 {
+    TRACE_EVENT0("gfx", "QGtkOpenGLContext::doneCurrent");
     if (m_eglContext) {
         eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     }

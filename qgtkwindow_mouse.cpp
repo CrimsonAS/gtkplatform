@@ -44,11 +44,15 @@
 #include <QtCore/qloggingcategory.h>
 #include <QtCore/qdebug.h>
 
+#include "CSystrace.h"
+
 Q_LOGGING_CATEGORY(lcMouse, "qt.qpa.gtk.mouse");
 Q_LOGGING_CATEGORY(lcMouseMotion, "qt.qpa.gtk.mouse.motion");
 
 bool QGtkWindow::onButtonPress(GdkEvent *event)
 {
+    TRACE_EVENT0("input", "QGtkWindow::onButtonPress");
+    TRACE_EVENT_ASYNC_BEGIN0("input", "QGtkWindow::mouseDown", this);
     GdkEventButton *ev = (GdkEventButton*)event;
 
     // ### would be nice if we could support GDK_2BUTTON_PRESS/GDK_3BUTTON_PRESS
@@ -73,6 +77,7 @@ bool QGtkWindow::onButtonPress(GdkEvent *event)
 
 bool QGtkWindow::onButtonRelease(GdkEvent *event)
 {
+    TRACE_EVENT0("input", "QGtkWindow::onButtonRelease");
     GdkEventButton *ev = (GdkEventButton*)event;
 
     Qt::MouseButton b = qt_convertGButtonToQButton(ev->button);
@@ -89,11 +94,13 @@ bool QGtkWindow::onButtonRelease(GdkEvent *event)
         qt_convertToQtKeyboardMods(ev->state),
         isTabletEvent ? Qt::MouseEventSynthesizedByQt : Qt::MouseEventNotSynthesized
     );
+    TRACE_EVENT_ASYNC_END0("input", "QGtkWindow::mouseDown", this);
     return true;
 }
 
 bool QGtkWindow::onMotionNotify(GdkEvent *event)
 {
+    TRACE_EVENT0("input", "QGtkWindow::onMotionNotify");
     GdkEventButton *ev = (GdkEventButton*)event;
     qCDebug(lcMouseMotion) << "Moved mouse at " << ev->x << ev->y << ev->x_root << ev->y_root;
 
@@ -112,6 +119,7 @@ bool QGtkWindow::onMotionNotify(GdkEvent *event)
 
 bool QGtkWindow::onScrollEvent(GdkEvent *event)
 {
+    TRACE_EVENT0("input", "QGtkWindow::onScrollEvent");
     GdkEventScroll *ev = (GdkEventScroll*)event;
 
     QPoint angleDelta;

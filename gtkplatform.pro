@@ -7,6 +7,9 @@ QT += core-private gui-private platformsupport-private widgets
 # qhighdpi has some bugs with this in 5.7.
 # DEFINES += QT_NO_FOREACH
 
+# CSystrace
+LIBS += -lrt
+
 SOURCES =   main.cpp \
             qgtkintegration.cpp \
             qgtkbackingstore.cpp \
@@ -24,6 +27,7 @@ SOURCES =   main.cpp \
             qgtk3dialoghelpers.cpp \
             qgtkopenglcontext.cpp \
             qgtkcursor.cpp \
+            CSystrace.cpp \
             #qgtkclipboard.cpp
 
 HEADERS =   qgtkintegration.h \
@@ -40,6 +44,8 @@ HEADERS =   qgtkintegration.h \
             qgtkopenglcontext.h \
             qgtkrefptr.h \
             qgtkcursor.h \
+            CSystrace.h \
+            CTraceMessages.h \
             #qgtkclipboard.h
 
 CONFIG += qpa/genericunixfontdatabase

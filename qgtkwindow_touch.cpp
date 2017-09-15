@@ -42,14 +42,17 @@
 
 #include <qpa/qwindowsysteminterface.h>
 
-#include <QDebug>
-#include <QLoggingCategory>
+#include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
+
+#include "CSystrace.h"
 
 Q_LOGGING_CATEGORY(lcTouch, "qt.qpa.gtk.touch");
 Q_LOGGING_CATEGORY(lcTouchUpdate, "qt.qpa.gtk.touch.update");
 
 bool QGtkWindow::onTouchEvent(GdkEvent *event)
 {
+    TRACE_EVENT0("input", "QGtkWindow::onTouchEvent");
     GdkEventTouch *ev = (GdkEventTouch*)event;
 
     QWindowSystemInterface::TouchPoint *tp = 0;
@@ -57,6 +60,7 @@ bool QGtkWindow::onTouchEvent(GdkEvent *event)
 
     switch (ev->type) {
     case GDK_TOUCH_BEGIN:
+        TRACE_EVENT_ASYNC_BEGIN0("input", "QGtkWindow::touchDown", (void*)touchpointId);
         qCDebug(lcTouch) << "Begin " << touchpointId;
         m_activeTouchPoints.append(QWindowSystemInterface::TouchPoint());
         tp = &m_activeTouchPoints.last();
@@ -142,6 +146,7 @@ bool QGtkWindow::onTouchEvent(GdkEvent *event)
                 break;
             }
         }
+        TRACE_EVENT_ASYNC_END0("input", "QGtkWindow::touchDown", (void*)touchpointId);
         break;
     default:
         break;

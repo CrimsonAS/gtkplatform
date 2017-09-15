@@ -46,6 +46,8 @@
 #include <qpa/qplatformscreen.h>
 #include <private/qguiapplication_p.h>
 
+#include "CSystrace.h"
+
 // we have no_keywords, but this header uses one.
 #define foreach Q_FOREACH
 #include <private/qhighdpiscaling_p.h>
@@ -76,6 +78,7 @@ QImage QGtkBackingStore::toImage() const
 
 void QGtkBackingStore::beginPaint(const QRegion &region)
 {
+    TRACE_EVENT_ASYNC_BEGIN0("gfx", "QGtkBackingStore::paint", this);
     Q_UNUSED(region);
     if (!m_paintImage)
         m_paintImage = static_cast<QGtkWindow*>(window()->handle())->beginUpdateFrame();
@@ -86,15 +89,18 @@ void QGtkBackingStore::endPaint()
     Q_ASSERT(m_paintImage);
     static_cast<QGtkWindow*>(window()->handle())->endUpdateFrame();
     m_paintImage = nullptr;
+    TRACE_EVENT_ASYNC_END0("gfx", "QGtkBackingStore::paint", this);
 }
 
 void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
 {
+    TRACE_EVENT0("gfx", "QGtkBackingStore::flush");
     static_cast<QGtkWindow*>(window->handle())->invalidateRegion(region.translated(offset));
 }
 
 void QGtkBackingStore::resize(const QSize &size, const QRegion &)
 {
+    TRACE_EVENT0("gfx", "QGtkBackingStore::resize");
     QGtkWindow *qgwin = static_cast<QGtkWindow*>(window()->handle());
 
     QImage *image = qgwin->beginUpdateFrame();

@@ -49,6 +49,8 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qloggingcategory.h>
 
+#include "CSystrace.h"
+
 Q_LOGGING_CATEGORY(lcWindow, "qt.qpa.gtk.window");
 Q_LOGGING_CATEGORY(lcWindowRender, "qt.qpa.gtk.window.render");
 
@@ -203,8 +205,10 @@ QGtkCourierObject *QGtkCourierObject::instance;
 
 void QGtkWindow::onUpdateFrameClock()
 {
+    TRACE_EVENT0("gfx", "QGtkWindow::onUpdateFrameClock");
     if (m_wantsUpdate) {
         m_wantsUpdate = false;
+        TRACE_EVENT_ASYNC_END0("gfx", "QGtkWindow::requestUpdate", this);
         QWindowPrivate::get(window())->deliverUpdateRequest();
     }
 }
@@ -326,6 +330,7 @@ QGtkWindow::~QGtkWindow()
 
 void QGtkWindow::onDraw(cairo_t *cr)
 {
+    TRACE_EVENT0("gfx", "QGtkWindow::onDraw");
     // Hold frameMutex during blit to cairo to prevent changes
     QMutexLocker lock(&m_frameMutex);
     if (m_frame.isNull())
@@ -773,6 +778,7 @@ void QGtkWindow::invalidateSurface(){}
 */
 void QGtkWindow::requestUpdate()
 {
+    TRACE_EVENT_ASYNC_BEGIN0("gfx", "QGtkWindow::requestUpdate", this);
     m_wantsUpdate = true;
 }
 
