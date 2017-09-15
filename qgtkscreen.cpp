@@ -39,7 +39,10 @@
 
 #include "qgtkscreen.h"
 
-#include <QDebug>
+#include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
+
+Q_LOGGING_CATEGORY(lcScreen, "qt.qpa.gtk.screen");
 
 QGtkScreen::QGtkScreen(GdkMonitor *monitor)
     : m_monitor(monitor)
@@ -57,7 +60,7 @@ QRect QGtkScreen::geometry() const
 {
     GdkRectangle geometry;
     gdk_monitor_get_geometry(m_monitor, &geometry);
-    qDebug() << QRect(geometry.x, geometry.y, geometry.width, geometry.height);
+    qCDebug(lcScreen) << QRect(geometry.x, geometry.y, geometry.width, geometry.height);
     return QRect(geometry.x, geometry.y, geometry.width, geometry.height);
 }
 
