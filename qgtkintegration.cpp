@@ -208,7 +208,36 @@ void *QGtkIntegration::nativeResourceForIntegration(const QByteArray &resource)
 void *QGtkIntegration::nativeResourceForScreen(const QByteArray &resource, QScreen *screen)
 {
     void *result = 0;
-    qWarning() << "Unimplemented request for " << resource << " on " << screen;
+    QByteArray res = resource.toLower();
+    // ### notify on change
+    if (res == "antialiasingenabled") {
+        int aa = -1;
+        g_object_get(gtk_settings_get_default(), "gtk-xft-antialias", &aa, NULL);
+        result = reinterpret_cast<void*>(aa + 1);
+    } else if (res == "subpixeltype") {
+        GtkSettings *s = gtk_settings_get_default();
+        gchararray value;
+        g_object_get(s, "gtk-xft-rgba", &value, NULL);
+        QString qtVal = QString::fromUtf8(value);
+        g_free(value);
+
+        QFontEngine::SubpixelAntialiasingType type = QFontEngine::SubpixelAntialiasingType(-1);
+        if (qtVal == "none") {
+            type = QFontEngine::Subpixel_None;
+        } else if (qtVal == "rgb") {
+            type = QFontEngine::Subpixel_RGB;
+        } else if (qtVal == "bgr") {
+            type = QFontEngine::Subpixel_BGR;
+        } else if (qtVal == "vrgb") {
+            type = QFontEngine::Subpixel_VRGB;
+        } else if (qtVal == "vbgr") {
+            type = QFontEngine::Subpixel_VBGR;
+        }
+
+        result = reinterpret_cast<void*>(type + 1);
+    } else {
+        qWarning() << "Unimplemented request for " << resource << " on " << screen;
+    }
     return result;
 }
 
