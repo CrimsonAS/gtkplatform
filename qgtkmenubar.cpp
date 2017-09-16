@@ -75,6 +75,8 @@ void QGtkMenuBar::insertMenu(QPlatformMenu *menu, QPlatformMenu *before)
         m_gtkItems.insert(idx, mi);
         gtk_menu_shell_insert(GTK_MENU_SHELL(m_menubar.get()), GTK_WIDGET(mi.get()), idx);
     }
+
+    syncMenu(menu);
 }
 
 void QGtkMenuBar::removeMenu(QPlatformMenu *menu)
@@ -91,8 +93,10 @@ void QGtkMenuBar::removeMenu(QPlatformMenu *menu)
 
 void QGtkMenuBar::syncMenu(QPlatformMenu *menuItem)
 {
-    Q_UNUSED(menuItem);
-    qWarning() << "Stub";
+    QGtkMenu *menu = static_cast<QGtkMenu*>(menuItem);
+    for (QGtkMenuItem *item : menu->items()) {
+        menu->syncMenuItem(item);
+    }
 }
 
 void QGtkMenuBar::handleReparent(QWindow *newParentWindow)

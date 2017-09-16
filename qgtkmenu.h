@@ -79,6 +79,8 @@ public:
 
     QGtkRefPtr<GtkMenuItem> gtkMenuItem() const;
 
+    QVector<QGtkMenuItem*> items() const;
+
 private:
     QVector<QGtkMenuItem*> m_items;
     QVector<QGtkRefPtr<GtkWidget>> m_gtkItems;

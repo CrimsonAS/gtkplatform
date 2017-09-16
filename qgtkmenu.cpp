@@ -198,3 +198,8 @@ QGtkRefPtr<GtkMenuItem> QGtkMenu::gtkMenuItem() const
     return m_menuItem;
 }
 
+QVector<QGtkMenuItem*> QGtkMenu::items() const
+{
+    return m_items;
+}
+
