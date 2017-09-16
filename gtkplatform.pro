@@ -27,6 +27,7 @@ SOURCES =   main.cpp \
             qgtk3dialoghelpers.cpp \
             qgtkopenglcontext.cpp \
             qgtkcursor.cpp \
+            qgtkeventdispatcher.cpp \
             CSystrace.cpp \
             #qgtkclipboard.cpp
 
@@ -44,6 +45,7 @@ HEADERS =   qgtkintegration.h \
             qgtkopenglcontext.h \
             qgtkrefptr.h \
             qgtkcursor.h \
+            qgtkeventdispatcher.h \
             CSystrace.h \
             CTraceMessages.h \
             #qgtkclipboard.h

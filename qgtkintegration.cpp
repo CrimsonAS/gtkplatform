@@ -43,6 +43,7 @@
 #include "qgtkscreen.h"
 #include "qgtktheme.h"
 #include "qgtkopenglcontext.h"
+#include "qgtkeventdispatcher.h"
 //#include "qgtkclipboard.h"
 
 #include <QtWidgets/qapplication.h>
@@ -50,7 +51,6 @@
 #include <QtGui/private/qguiapplication_p.h>
 
 #include <QtPlatformSupport/private/qgenericunixfontdatabase_p.h>
-#include <QtPlatformSupport/private/qgenericunixeventdispatcher_p.h>
 #include <QtPlatformSupport/private/qgenericunixservices_p.h>
 
 #include <gtk/gtk.h>
@@ -294,7 +294,7 @@ QPlatformBackingStore *QGtkIntegration::createPlatformBackingStore(QWindow *wind
 
 QAbstractEventDispatcher *QGtkIntegration::createEventDispatcher() const
 {
-    return createUnixEventDispatcher();
+    return new QGtkEventDispatcher;
 }
 
 QGtkIntegration *QGtkIntegration::instance()
