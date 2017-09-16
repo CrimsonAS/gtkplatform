@@ -126,6 +126,19 @@ bool QGtkWindow::onScrollEvent(GdkEvent *event)
     QPoint pixelDelta;
     Qt::MouseEventSource source = Qt::MouseEventNotSynthesized;
 
+    // We cache the modifiers as they should not change after the scroll has
+    // started. Doing that means that you'll zoom text in Creator or something,
+    // which is pretty annoying.
+    if (!m_scrollStarted) {
+        m_scrollStarted = true;
+        m_scrollModifiers = qt_convertToQtKeyboardMods(ev->state);
+    }
+
+    if (gdk_event_is_scroll_stop_event(event)) {
+        m_scrollStarted = false;
+        m_scrollModifiers = Qt::NoModifier;
+    }
+
     if (ev->direction == GDK_SCROLL_SMOOTH) {
         // ### I have literally no idea what I'm doing here
         const int pixelsToDegrees = 50;
@@ -154,7 +167,7 @@ bool QGtkWindow::onScrollEvent(GdkEvent *event)
         QPointF(ev->x_root, ev->y_root),
         pixelDelta,
         angleDelta,
-        qt_convertToQtKeyboardMods(ev->state),
+        m_scrollModifiers,
         Qt::NoScrollPhase,
         source,
         false /* isInverted */
