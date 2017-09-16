@@ -97,6 +97,7 @@ struct GPostEventSource;
 struct GSocketNotifierSource;
 struct GTimerSource;
 struct GIdleTimerSource;
+struct GUserEventSource;
 
 class Q_CORE_EXPORT QGtkEventDispatcherPrivate : public QAbstractEventDispatcherPrivate
 {
@@ -108,8 +109,11 @@ public:
     GSocketNotifierSource *socketNotifierSource;
     GTimerSource *timerSource;
     GIdleTimerSource *idleTimerSource;
+    GUserEventSource *userEventSource;
 
     void runTimersOnceWithNormalPriority();
+
+    QEventLoop::ProcessEventsFlags m_flags = QEventLoop::AllEvents;
 };
 
 QT_END_NAMESPACE

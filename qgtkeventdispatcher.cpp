@@ -288,6 +288,41 @@ static GSourceFuncs postEventSourceFuncs = {
     NULL
 };
 
+struct GUserEventSource
+{
+    GSource source;
+    QGtkEventDispatcherPrivate *d;
+};
+
+static gboolean userEventSourcePrepare(GSource *s, gint *timeout)
+{
+    Q_UNUSED(s);
+    Q_UNUSED(timeout);
+
+    return QWindowSystemInterface::windowSystemEventsQueued() > 0;
+}
+
+static gboolean userEventSourceCheck(GSource *source)
+{
+    return userEventSourcePrepare(source, 0);
+}
+
+static gboolean userEventSourceDispatch(GSource *source, GSourceFunc, gpointer)
+{
+    GUserEventSource *userEventSource = reinterpret_cast<GUserEventSource*>(source);
+    QGtkEventDispatcherPrivate *dispatcher = userEventSource->d;
+    QWindowSystemInterface::sendWindowSystemEvents(dispatcher->m_flags);
+    return true;
+}
+
+static GSourceFuncs userEventSourceFuncs = {
+    userEventSourcePrepare,
+    userEventSourceCheck,
+    userEventSourceDispatch,
+    NULL,
+    NULL,
+    NULL
+};
 
 QGtkEventDispatcherPrivate::QGtkEventDispatcherPrivate(GMainContext *context)
     : mainContext(context)
@@ -322,10 +357,18 @@ QGtkEventDispatcherPrivate::QGtkEventDispatcherPrivate(GMainContext *context)
     // might exhaust gtk, meaning that windows won't show etc.
     int QT_BASE_PRIORITY = G_PRIORITY_LOW - 1;
 
+    // user event source
+    userEventSource = reinterpret_cast<GUserEventSource *>(g_source_new(&userEventSourceFuncs,
+                                                                        sizeof(GUserEventSource)));
+    userEventSource->d = this;
+    g_source_set_priority(&userEventSource->source, QT_BASE_PRIORITY - 2);
+    g_source_set_can_recurse(&userEventSource->source, true);
+    g_source_attach(&userEventSource->source, mainContext);
+
     // setup post event source
     postEventSource = reinterpret_cast<GPostEventSource *>(g_source_new(&postEventSourceFuncs,
                                                                         sizeof(GPostEventSource)));
-    g_source_set_priority(&postEventSource->source, QT_BASE_PRIORITY);
+    g_source_set_priority(&postEventSource->source, QT_BASE_PRIORITY - 1);
     postEventSource->serialNumber.store(1);
     postEventSource->d = this;
     g_source_set_can_recurse(&postEventSource->source, true);
@@ -335,7 +378,7 @@ QGtkEventDispatcherPrivate::QGtkEventDispatcherPrivate(GMainContext *context)
     socketNotifierSource =
         reinterpret_cast<GSocketNotifierSource *>(g_source_new(&socketNotifierSourceFuncs,
                                                                sizeof(GSocketNotifierSource)));
-    g_source_set_priority(&socketNotifierSource->source, QT_BASE_PRIORITY - 1);
+    g_source_set_priority(&socketNotifierSource->source, QT_BASE_PRIORITY - 2);
     (void) new (&socketNotifierSource->pollfds) QList<GPollFDWithQSocketNotifier *>();
     g_source_set_can_recurse(&socketNotifierSource->source, true);
     g_source_attach(&socketNotifierSource->source, mainContext);
@@ -343,7 +386,7 @@ QGtkEventDispatcherPrivate::QGtkEventDispatcherPrivate(GMainContext *context)
     // setup normal and idle timer sources
     timerSource = reinterpret_cast<GTimerSource *>(g_source_new(&timerSourceFuncs,
                                                                 sizeof(GTimerSource)));
-    g_source_set_priority(&timerSource->source, QT_BASE_PRIORITY - 1);
+    g_source_set_priority(&timerSource->source, QT_BASE_PRIORITY - 2);
     (void) new (&timerSource->timerList) QTimerInfoList();
     timerSource->processEventsFlags = QEventLoop::AllEvents;
     timerSource->runWithIdlePriority = false;
@@ -352,7 +395,7 @@ QGtkEventDispatcherPrivate::QGtkEventDispatcherPrivate(GMainContext *context)
 
     idleTimerSource = reinterpret_cast<GIdleTimerSource *>(g_source_new(&idleTimerSourceFuncs,
                                                                         sizeof(GIdleTimerSource)));
-    g_source_set_priority(&idleTimerSource->source, QT_BASE_PRIORITY - 2);
+    g_source_set_priority(&idleTimerSource->source, QT_BASE_PRIORITY - 3);
     idleTimerSource->timerSource = timerSource;
     g_source_set_can_recurse(&idleTimerSource->source, true);
     g_source_attach(&idleTimerSource->source, mainContext);
@@ -375,6 +418,11 @@ QGtkEventDispatcher::QGtkEventDispatcher(GMainContext *mainContext, QObject *par
 QGtkEventDispatcher::~QGtkEventDispatcher()
 {
     Q_D(QGtkEventDispatcher);
+
+    // destroy user event source
+    g_source_destroy(&d->userEventSource->source);
+    g_source_unref(&d->userEventSource->source);
+    d->userEventSource = 0;
 
     // destroy all timer sources
     qDeleteAll(d->timerSource->timerList);
@@ -414,7 +462,7 @@ bool QGtkEventDispatcher::processEvents(QEventLoop::ProcessEventsFlags flags)
 {
     Q_D(QGtkEventDispatcher);
 
-    QWindowSystemInterface::sendWindowSystemEvents(flags);
+    d->m_flags = flags;
 
     const bool canWait = (flags & QEventLoop::WaitForMoreEvents);
     if (canWait)
