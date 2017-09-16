@@ -361,7 +361,8 @@ QGtkEventDispatcherPrivate::QGtkEventDispatcherPrivate(GMainContext *context)
     userEventSource = reinterpret_cast<GUserEventSource *>(g_source_new(&userEventSourceFuncs,
                                                                         sizeof(GUserEventSource)));
     userEventSource->d = this;
-    g_source_set_priority(&userEventSource->source, QT_BASE_PRIORITY - 2);
+    // must be above QT_BASE_PRIORITY, and similar to gtk's base priorities, otherwise we will have window flicker on show/resize.
+    g_source_set_priority(&userEventSource->source, G_PRIORITY_DEFAULT);
     g_source_set_can_recurse(&userEventSource->source, true);
     g_source_attach(&userEventSource->source, mainContext);
 
@@ -378,7 +379,7 @@ QGtkEventDispatcherPrivate::QGtkEventDispatcherPrivate(GMainContext *context)
     socketNotifierSource =
         reinterpret_cast<GSocketNotifierSource *>(g_source_new(&socketNotifierSourceFuncs,
                                                                sizeof(GSocketNotifierSource)));
-    g_source_set_priority(&socketNotifierSource->source, QT_BASE_PRIORITY - 2);
+    g_source_set_priority(&socketNotifierSource->source, QT_BASE_PRIORITY - 3);
     (void) new (&socketNotifierSource->pollfds) QList<GPollFDWithQSocketNotifier *>();
     g_source_set_can_recurse(&socketNotifierSource->source, true);
     g_source_attach(&socketNotifierSource->source, mainContext);
@@ -386,7 +387,7 @@ QGtkEventDispatcherPrivate::QGtkEventDispatcherPrivate(GMainContext *context)
     // setup normal and idle timer sources
     timerSource = reinterpret_cast<GTimerSource *>(g_source_new(&timerSourceFuncs,
                                                                 sizeof(GTimerSource)));
-    g_source_set_priority(&timerSource->source, QT_BASE_PRIORITY - 2);
+    g_source_set_priority(&timerSource->source, QT_BASE_PRIORITY - 3);
     (void) new (&timerSource->timerList) QTimerInfoList();
     timerSource->processEventsFlags = QEventLoop::AllEvents;
     timerSource->runWithIdlePriority = false;
@@ -395,7 +396,7 @@ QGtkEventDispatcherPrivate::QGtkEventDispatcherPrivate(GMainContext *context)
 
     idleTimerSource = reinterpret_cast<GIdleTimerSource *>(g_source_new(&idleTimerSourceFuncs,
                                                                         sizeof(GIdleTimerSource)));
-    g_source_set_priority(&idleTimerSource->source, QT_BASE_PRIORITY - 3);
+    g_source_set_priority(&idleTimerSource->source, QT_BASE_PRIORITY - 4);
     idleTimerSource->timerSource = timerSource;
     g_source_set_can_recurse(&idleTimerSource->source, true);
     g_source_attach(&idleTimerSource->source, mainContext);
