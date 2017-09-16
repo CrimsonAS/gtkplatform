@@ -250,7 +250,7 @@ struct GPostEventSource
 
 static gboolean postEventSourcePrepare(GSource *s, gint *timeout)
 {
-    QThreadData *data = reinterpret_cast<QThreadData*>(QObjectPrivate::get(QThread::currentThread()));
+    QThreadData *data = reinterpret_cast<QThreadPrivate*>(QObjectPrivate::get(QThread::currentThread()))->data;
     if (!data)
         return false;
 
