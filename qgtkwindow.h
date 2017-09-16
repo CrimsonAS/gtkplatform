@@ -127,9 +127,10 @@ public:
     void onWindowStateEvent(GdkEvent *event);
     void onUpdateFrameClock();
     void onEnterLeave(GdkEvent *event, bool entered);
-    QImage *beginUpdateFrame();
-    void endUpdateFrame();
+    QImage *beginUpdateFrame(const QString &reason);
+    void endUpdateFrame(const QString &reason);
     void invalidateRegion(const QRegion &region);
+    void invalidateRegionNextTime(const QRegion &region);
     QImage currentFrameImage() const;
 
     QGtkRefPtr<GtkMenuBar> gtkMenuBar() const;
@@ -151,6 +152,7 @@ private:
     QRect m_windowGeometry; // must be cached as it's accessed from multiple threads
     Qt::KeyboardModifiers m_scrollModifiers = Qt::NoModifier;
     bool m_scrollStarted = false;
+    QRegion m_invalidateRegionNextTime;
 };
 
 QT_END_NAMESPACE

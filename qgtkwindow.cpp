@@ -328,11 +328,16 @@ QGtkWindow::~QGtkWindow()
     gtk_widget_destroy(m_window.get());
 }
 
+#undef LOCK_DEBUG
+
 void QGtkWindow::onDraw(cairo_t *cr)
 {
     TRACE_EVENT0("gfx", "QGtkWindow::onDraw");
     // Hold frameMutex during blit to cairo to prevent changes
     QMutexLocker lock(&m_frameMutex);
+#if defined(LOCK_DEBUG)
+    qWarning() << "rendering (LOCKED)" << this;
+#endif
     if (m_frame.isNull())
         return;
 
@@ -362,6 +367,9 @@ void QGtkWindow::onDraw(cairo_t *cr)
     // other than include the updated regions in queue_draw calls.
     cairo_paint(cr);
     cairo_surface_destroy(surf);
+#if defined(LOCK_DEBUG)
+    qWarning() << "rendering (UNLOCKING)" << this;
+#endif
 }
 
 void QGtkWindow::onMap()
@@ -785,9 +793,13 @@ void QGtkWindow::requestUpdate()
     m_wantsUpdate = true;
 }
 
-QImage *QGtkWindow::beginUpdateFrame()
+QImage *QGtkWindow::beginUpdateFrame(const QString &reason)
 {
     m_frameMutex.lock();
+    Q_UNUSED(reason);
+#if defined(LOCK_DEBUG)
+    qWarning() << "beginUpdateFrame " << reason << "(LOCKED)" << this;
+#endif
     return &m_frame;
 }
 
@@ -801,13 +813,28 @@ static cairo_region_t *cairo_region_from_region(const QRegion &region)
     return r;
 }
 
-void QGtkWindow::endUpdateFrame()
+void QGtkWindow::endUpdateFrame(const QString &reason)
 {
     m_frameMutex.unlock();
+    Q_UNUSED(reason);
+#if defined(LOCK_DEBUG)
+    qWarning() << "endUpdateFrame " << reason << "(UNLOCKED)" << this;
+#endif
+}
+
+void QGtkWindow::invalidateRegionNextTime(const QRegion &region)
+{
+    m_invalidateRegionNextTime = region;
 }
 
 void QGtkWindow::invalidateRegion(const QRegion &region)
 {
+    QRegion realInvalidatedRegion = region;
+
+    if (!m_invalidateRegionNextTime.isEmpty()) {
+        realInvalidatedRegion = realInvalidatedRegion.united(m_invalidateRegionNextTime);
+        m_invalidateRegionNextTime = QRegion();
+    }
     auto courier = QGtkCourierObject::instance;
     Q_ASSERT(courier);
     if (courier->thread() != QThread::currentThread()) {
@@ -816,7 +843,7 @@ void QGtkWindow::invalidateRegion(const QRegion &region)
         return;
     }
 
-    QRegion realRegion = region.isNull() ? QRegion(m_frame.rect()) : region;
+    QRegion realRegion = region.isNull() ? QRegion(m_frame.rect()) : realInvalidatedRegion;
     cairo_region_t *cairoRegion = cairo_region_from_region(realRegion);
     gtk_widget_queue_draw_region(m_content.get(), cairoRegion);
     cairo_region_destroy(cairoRegion);
