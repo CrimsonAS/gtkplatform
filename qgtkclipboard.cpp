@@ -161,6 +161,10 @@ QVariant QGtkClipboardMime::retrieveData_sys(const QString &mimeType, QVariant::
     QStringList targets = formats();
     if (type == QVariant::String) {
         GtkSelectionData *data = gtk_clipboard_wait_for_contents(m_clipboard, gdk_atom_intern("text/plain", TRUE));
+        if (!data) {
+            return QString();
+        }
+
         guchar *text = gtk_selection_data_get_text(data);
         if (text) {
             return QString::fromUtf8(reinterpret_cast<char*>(text), strlen(reinterpret_cast<char*>(text)));
