@@ -44,7 +44,7 @@
 #include "qgtktheme.h"
 #include "qgtkopenglcontext.h"
 #include "qgtkeventdispatcher.h"
-//#include "qgtkclipboard.h"
+#include "qgtkclipboard.h"
 
 #include <QtWidgets/qapplication.h>
 #include <QtGui/private/qpixmap_raster_p.h>
@@ -164,10 +164,10 @@ bool QGtkIntegration::hasCapability(QPlatformIntegration::Capability cap) const
     }
 }
 
-//QPlatformClipboard *QGtkIntegration::clipboard() const
-//{
-//    return new QGtkClipboard;
-//}
+QPlatformClipboard *QGtkIntegration::clipboard() const
+{
+    return new QGtkClipboard;
+}
 
 QPlatformFontDatabase *QGtkIntegration::fontDatabase() const
 {

@@ -64,7 +64,7 @@ public:
     QPlatformOpenGLContext *createPlatformOpenGLContext(QOpenGLContext *context) const override;
     bool hasCapability(QPlatformIntegration::Capability cap) const override;
     QPlatformFontDatabase *fontDatabase() const override;
-    //QPlatformClipboard *clipboard() const override;
+    QPlatformClipboard *clipboard() const override;
     QStringList themeNames() const override;
     QPlatformTheme *createPlatformTheme(const QString &name) const override;
     QPlatformServices *services() const override;

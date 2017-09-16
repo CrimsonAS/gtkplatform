@@ -41,15 +41,24 @@
 #define QGTKCLIPBOARD_H
 
 #include <qpa/qplatformclipboard.h>
+#include <private/qdnd_p.h>
+
+#include <gtk/gtk.h>
+
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
-class QGtkClipboardMime : QInternalMimeData
+class QGtkClipboardMime : public QInternalMimeData
 {
     Q_OBJECT
 public:
     QGtkClipboardMime(QClipboard::Mode clipboardMode);
     ~QGtkClipboardMime();
+
+    bool ownsMode() const;
+    void setMimeData(QMimeData *data);
+    QMimeData *currentData() const { return m_currentData; }
 
 protected:
     bool hasFormat_sys(const QString &mimeType) const override;
@@ -57,7 +66,8 @@ protected:
     QVariant retrieveData_sys(const QString &mimeType, QVariant::Type type) const override;
 
 private:
-    QClipboard::Mode m_clipboardMode;
+    GtkClipboard *m_clipboard;
+    QMimeData *m_currentData = nullptr;
 };
 
 class QGtkClipboard : public QPlatformClipboard
@@ -72,9 +82,9 @@ public:
     bool ownsMode(QClipboard::Mode mode) const override;
 
 private:
-    QGtkClipboardMime *m_clipData;
-    QGtkClipboardMime *m_selData;
-    QGtkClipboardMime *mimeForMode(QClipboard::Mode mode);
+    std::unique_ptr<QGtkClipboardMime> m_clipData;
+    std::unique_ptr<QGtkClipboardMime> m_selData;
+    QGtkClipboardMime *mimeForMode(QClipboard::Mode mode) const;
 };
 
 QT_END_NAMESPACE

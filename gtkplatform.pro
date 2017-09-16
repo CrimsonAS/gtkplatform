@@ -29,7 +29,7 @@ SOURCES =   main.cpp \
             qgtkcursor.cpp \
             qgtkeventdispatcher.cpp \
             CSystrace.cpp \
-            #qgtkclipboard.cpp
+            qgtkclipboard.cpp
 
 HEADERS =   qgtkintegration.h \
             qgtkbackingstore.h \
@@ -48,7 +48,7 @@ HEADERS =   qgtkintegration.h \
             qgtkeventdispatcher.h \
             CSystrace.h \
             CTraceMessages.h \
-            #qgtkclipboard.h
+            qgtkclipboard.h
 
 CONFIG += qpa/genericunixfontdatabase
 
