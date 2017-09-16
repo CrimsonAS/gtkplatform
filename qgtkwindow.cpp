@@ -396,7 +396,7 @@ void QGtkWindow::onConfigure()
     }
     QRect geom = QRect(x, y, width, height);
 
-    QWindowSystemInterface::handleGeometryChange(window(), geom);
+    QWindowSystemInterface::handleGeometryChange(window(), geom, m_windowGeometry);
     m_windowGeometry = geom;
 }
 
