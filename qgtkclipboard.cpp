@@ -213,23 +213,25 @@ void QGtkClipboardMime::setMimeData(QMimeData *data)
 
     const QStringList formats = m_currentData->formats();
     qCWarning(lcClipboard) << "Setting mime data to " << formats;
-    QVarLengthArray<GtkTargetEntry*, 16> gtkTargets;
+    QVarLengthArray<GtkTargetEntry, 16> gtkTargets;
     for (const QString &format : formats) {
-        gtkTargets.append(gtk_target_entry_new(format.toUtf8().constData(), 0, 0));
+        // ### this seems suboptimal, is GtkTargetEntry supposed to be used
+        // publically in this way?
+        gtkTargets.append(GtkTargetEntry{strdup(format.toUtf8().constData()), 0, 0});
     }
 
     if (gtk_clipboard_set_with_data(
         m_clipboard,
-        gtkTargets[0],
+        &gtkTargets[0],
         gtkTargets.size(),
         getFun,
         clearFun,
         this
     )) {
-        gtk_clipboard_set_can_store(m_clipboard, gtkTargets[0], gtkTargets.size());
+        gtk_clipboard_set_can_store(m_clipboard, &gtkTargets[0], gtkTargets.size());
     }
 
-    for (GtkTargetEntry *gtkTarg : gtkTargets) {
-        gtk_target_entry_free(gtkTarg);
+    for (GtkTargetEntry &gtkTarg : gtkTargets) {
+        free(gtkTarg.target);
     }
 }
