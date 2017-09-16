@@ -489,7 +489,10 @@ void QGtkWindow::setWindowFlags(Qt::WindowFlags flags)
     // ### recreate the window if the type changes, but be careful, we may
     // recurse.
     gtk_window_set_decorated(GTK_WINDOW(m_window.get()), !(flags & Qt::FramelessWindowHint));
-    gtk_window_set_deletable(GTK_WINDOW(m_window.get()), flags & Qt::WindowCloseButtonHint);
+
+    if ((flags & Qt::CustomizeWindowHint)) {
+        gtk_window_set_deletable(GTK_WINDOW(m_window.get()), (flags & Qt::WindowCloseButtonHint));
+    }
 }
 
 void QGtkWindow::setWindowState(Qt::WindowState state)
