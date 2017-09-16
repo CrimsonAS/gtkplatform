@@ -57,6 +57,7 @@ void QGtkCursor::changeCursor(QCursor *windowCursor, QWindow *window)
     bool bitmapCursor = false;
 
     switch (shape) {
+    case Qt::BlankCursor:
     case Qt::CustomCursor:
     case Qt::ArrowCursor:
         gtkCursorName = "default";
@@ -87,9 +88,6 @@ void QGtkCursor::changeCursor(QCursor *windowCursor, QWindow *window)
         break;
     case Qt::SizeAllCursor:
         gtkCursorName = "all-scroll";
-        break;
-    case Qt::BlankCursor:
-        gtkCursorName = "none";
         break;
     case Qt::SplitVCursor:
         gtkCursorName = "ns-resize";
