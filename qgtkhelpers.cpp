@@ -709,10 +709,10 @@ Qt::MouseButton qt_convertGButtonToQButton(guint button)
         b = Qt::LeftButton;
         break;
     case 2:
-        b = Qt::RightButton;
+        b = Qt::MiddleButton;
         break;
     case 3:
-        b = Qt::MiddleButton;
+        b = Qt::RightButton;
         break;
     case 4:
         b = Qt::ExtraButton1;
