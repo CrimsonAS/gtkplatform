@@ -119,7 +119,7 @@ QGtkClipboardMime::QGtkClipboardMime(QClipboard::Mode clipboardMode)
 
 QGtkClipboardMime::~QGtkClipboardMime()
 {
-
+    gtk_clipboard_store(m_clipboard);
 }
 
 bool QGtkClipboardMime::hasFormat_sys(const QString &mimeType) const
