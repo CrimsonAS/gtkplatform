@@ -332,6 +332,20 @@ QGtkWindow::~QGtkWindow()
 
 void QGtkWindow::onDraw(cairo_t *cr)
 {
+    if (m_newGeometry != m_windowGeometry) {
+        bool needsExpose = m_newGeometry.size() != m_windowGeometry.size();
+        QWindowSystemInterface::handleGeometryChange(window(), m_newGeometry, m_windowGeometry);
+        m_windowGeometry = m_newGeometry;
+
+        if (needsExpose) {
+            QWindowSystemInterface::handleExposeEvent(window(), m_windowGeometry);
+
+            // we must flush, otherwise the content we'll render might be out of date.
+            // ### would be nice if we could compress these, somehow: at the least we'll
+            // get a configure and a size-allocate independent of each other.
+            QWindowSystemInterface::flushWindowSystemEvents(QEventLoop::ExcludeUserInputEvents);
+        }
+    }
     TRACE_EVENT0("gfx", "QGtkWindow::onDraw");
     // Hold frameMutex during blit to cairo to prevent changes
     QMutexLocker lock(&m_frameMutex);
@@ -387,25 +401,10 @@ void QGtkWindow::onConfigure()
     int x;
     int y;
     gtk_window_get_position(GTK_WINDOW(m_window.get()), &x, &y);
-    int width;
-    int height;
-    gtk_window_get_size(GTK_WINDOW(m_window.get()), &width, &height);
 
-    // ### we subtract menu height here because it needs to be calculated in
-    // window size somehow, otherwise we end up with content being positioned
-    // outside the real bounds of the window.
-    //
-    // ideally, we do this by subtracting it from frameMargins. we then probably
-    // need to listen to allocation changes on m_menubar, and send geometry
-    // changes when the menubar size changes.
-    int menu_height = gtk_widget_get_allocated_height(GTK_WIDGET(m_menubar.get()));
-    if (height > menu_height) {
-        height -= menu_height;
-    }
-    QRect geom = QRect(x, y, width, height);
-
-    QWindowSystemInterface::handleGeometryChange(window(), geom, m_windowGeometry);
-    m_windowGeometry = geom;
+    GdkRectangle r;
+    gtk_widget_get_allocated_size(m_content.get(), &r, nullptr);
+    m_newGeometry = QRect(x, y, r.width, r.height);
 }
 
 bool QGtkWindow::onDelete()

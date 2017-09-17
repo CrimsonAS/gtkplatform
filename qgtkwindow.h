@@ -150,6 +150,7 @@ private:
     guint m_tick_callback = 0;
     Qt::WindowFlags m_flags = Qt::Widget;
     QRect m_windowGeometry; // must be cached as it's accessed from multiple threads
+    QRect m_newGeometry;
     Qt::KeyboardModifiers m_scrollModifiers = Qt::NoModifier;
     bool m_scrollStarted = false;
     QRegion m_invalidateRegionNextTime;
