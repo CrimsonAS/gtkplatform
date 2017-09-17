@@ -248,6 +248,9 @@ void *QGtkIntegration::nativeResourceForScreen(const QByteArray &resource, QScre
 void *QGtkIntegration::nativeResourceForWindow(const QByteArray &resource, QWindow *window)
 {
     void *result = 0;
+    if (resource == "gtkwindow") {
+        return static_cast<QGtkWindow*>(window->handle())->gtkWindow().get();
+    }
     qWarning() << "Unimplemented request for " << resource << " on " << window;
     return result;
 }
