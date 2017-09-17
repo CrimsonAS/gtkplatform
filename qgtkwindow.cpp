@@ -309,6 +309,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
     QWindowSystemInterface::registerTouchDevice(m_touchDevice);
 
     setWindowState(window()->windowState());
+    propagateSizeHints();
     setWindowFlags(window()->flags());
     if (!window()->title().isEmpty())
         setWindowTitle(window()->title());
@@ -699,6 +700,7 @@ void QGtkWindow::propagateSizeHints()
         hints.min_width = minSize.width();
         hints.min_height = minSize.height();
         activeHints |= GDK_HINT_MIN_SIZE;
+        gtk_widget_set_size_request(GTK_WIDGET(m_content.get()), hints.min_width, hints.min_height);
     }
 
     if (!maxSize.isNull()) {
