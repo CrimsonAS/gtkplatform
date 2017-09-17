@@ -424,7 +424,7 @@ QSurfaceFormat QGtkWindow::format() const
 void QGtkWindow::setGeometry(const QRect &rect)
 {
     gtk_window_move(GTK_WINDOW(m_window.get()), rect.x(), rect.y());
-    gtk_window_resize(GTK_WINDOW(m_window.get()), rect.width(), rect.height());
+    gtk_window_resize(GTK_WINDOW(m_window.get()), qMax(rect.width(), 1), qMax(rect.height(), 1));
 }
 
 QRect QGtkWindow::geometry() const
