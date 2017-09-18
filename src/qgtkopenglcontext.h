@@ -65,6 +65,7 @@ protected:
     EGLConfig m_eglConfig;
     QGtkOpenGLContext *m_shareContext;
     QOpenGLFramebufferObject *m_fbo;
+    QOpenGLFramebufferObject *m_fbo_mirrored;
 
     QGtkOpenGLContext();
 };

@@ -97,12 +97,14 @@ QGtkOpenGLContext::QGtkOpenGLContext()
     , m_eglConfig(nullptr)
     , m_shareContext(nullptr)
     , m_fbo(nullptr)
+    , m_fbo_mirrored(nullptr)
 {
 }
 
 QGtkOpenGLContext::~QGtkOpenGLContext()
 {
     delete m_fbo;
+    delete m_fbo_mirrored;
     if (m_eglContext) {
         eglDestroyContext(m_eglDisplay, m_eglContext);
     }
@@ -128,17 +130,29 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
     TRACE_EVENT0("gfx", "QGtkOpenGLContext::swapBuffers");
     QGtkWindow *win = static_cast<QGtkWindow*>(surface);
 
-    // Download rendered frame, slowly, so slowly.
     QImage *image = win->beginUpdateFrame("swapBuffers");
-    if (image->size() != QSize(m_fbo->width(), m_fbo->height()) ||
+
+    // ### perhaps this should be done in one place (inside QGtkBackingStore)?
+    if (image->size() != QSize(m_fbo_mirrored->width(), m_fbo_mirrored->height()) ||
         image->format() != QImage::Format_ARGB32)
     {
-        *image = QImage(m_fbo->width(), m_fbo->height(), QImage::Format_ARGB32);
+        *image = QImage(m_fbo_mirrored->width(), m_fbo_mirrored->height(), QImage::Format_ARGB32);
         image->setDevicePixelRatio(win->devicePixelRatio());
     }
+
+    // Download rendered frame, slowly, so slowly.
+    // First we need to invert y, otherwise we'll draw upside down. To do that,
+    // blit to a framebuffer with inverted coordinate.
+    QRect srcRect(0, image->size().height(), image->size().width(), -image->size().height());
+    QRect destRect(0, 0, image->size().width(), image->size().height());
+    QOpenGLFramebufferObject::blitFramebuffer(m_fbo_mirrored, destRect,
+                                              m_fbo, srcRect,
+                                              GL_COLOR_BUFFER_BIT, GL_LINEAR, 0, 0, QOpenGLFramebufferObject::DontRestoreFramebufferBinding);
+
+    // Now read back the flipped data into the backing store image.
     QOpenGLFunctions funcs(QOpenGLContext::currentContext());
+    m_fbo_mirrored->bind();
     funcs.glReadPixels(0, 0, image->width(), image->height(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image->bits());
-    *image = std::move(*image).mirrored(false, true);
 
     // XXX In singlethreaded rendering, we can't really block swapBuffers because
     // this would also block the GTK loop, and any workaround to that seems insane.
@@ -170,11 +184,18 @@ bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
     QSize sz = win->geometry().size() * win->devicePixelRatio();
     if (m_fbo && m_fbo->size() != sz) {
         qCDebug(lcContext) << "clearing old context FBO of size" << m_fbo->size();
+        delete m_fbo_mirrored;
+        m_fbo_mirrored = nullptr;
+        // XXX ###: I've seen defaultFramebufferObject getting called when a
+        // QOpenGLFramebufferObject is deleted. That seems scary given this. To
+        // reproduce, delete m_fbo_mirrored after m_fbo is already set to
+        // nullptr, and watch it assert.
         delete m_fbo;
         m_fbo = nullptr;
     }
     if (!m_fbo) {
         m_fbo = new QOpenGLFramebufferObject(sz, QOpenGLFramebufferObject::CombinedDepthStencil);
+        m_fbo_mirrored = new QOpenGLFramebufferObject(sz, QOpenGLFramebufferObject::CombinedDepthStencil);
         qCDebug(lcContext) << "created new context FBO of size" << m_fbo->size();
     }
 
