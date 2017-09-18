@@ -149,7 +149,7 @@ bool QGtkBackingStore::scroll(const QRegion &region, int dx, int dy)
 
     qgwin->endUpdateFrame("scroll");
     QRegion uregion = region.united(region.translated(delta));
-    qgwin->invalidateRegionNextTime(uregion);
+    qgwin->invalidateRegion(uregion);
 
     return true;
 }

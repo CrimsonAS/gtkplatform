@@ -113,7 +113,6 @@ public:
     QImage *beginUpdateFrame(const QString &reason);
     void endUpdateFrame(const QString &reason);
     void invalidateRegion(const QRegion &region);
-    void invalidateRegionNextTime(const QRegion &region);
     QImage currentFrameImage() const;
 
     QGtkRefPtr<GtkMenuBar> gtkMenuBar() const;
@@ -136,7 +135,6 @@ private:
     QRect m_newGeometry;
     Qt::KeyboardModifiers m_scrollModifiers = Qt::NoModifier;
     bool m_scrollStarted = false;
-    QRegion m_invalidateRegionNextTime;
 };
 
 QT_END_NAMESPACE

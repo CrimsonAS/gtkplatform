@@ -810,19 +810,8 @@ void QGtkWindow::endUpdateFrame(const QString &reason)
 #endif
 }
 
-void QGtkWindow::invalidateRegionNextTime(const QRegion &region)
-{
-    m_invalidateRegionNextTime = region;
-}
-
 void QGtkWindow::invalidateRegion(const QRegion &region)
 {
-    QRegion realInvalidatedRegion = region;
-
-    if (!m_invalidateRegionNextTime.isEmpty()) {
-        realInvalidatedRegion = realInvalidatedRegion.united(m_invalidateRegionNextTime);
-        m_invalidateRegionNextTime = QRegion();
-    }
     auto courier = QGtkCourierObject::instance;
     Q_ASSERT(courier);
     if (courier->thread() != QThread::currentThread()) {
@@ -831,7 +820,7 @@ void QGtkWindow::invalidateRegion(const QRegion &region)
         return;
     }
 
-    QRegion realRegion = region.isNull() ? QRegion(m_frame.rect()) : realInvalidatedRegion;
+    QRegion realRegion = region.isNull() ? QRegion(m_frame.rect()) : region;
     cairo_region_t *cairoRegion = cairo_region_from_region(realRegion);
     gtk_widget_queue_draw_region(m_content.get(), cairoRegion);
     cairo_region_destroy(cairoRegion);
