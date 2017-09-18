@@ -651,8 +651,7 @@ void QGtkWindow::setWindowTitle(const QString &title)
 
 void QGtkWindow::setWindowFilePath(const QString &title)
 {
-    // WTF is this?
-    qWarning() << "setWindowFilePath: Not implemented: " << title;
+    // we can't do anything useful with this
 }
 
 void QGtkWindow::setWindowIcon(const QIcon &icon)
@@ -670,12 +669,12 @@ void QGtkWindow::setWindowIcon(const QIcon &icon)
 
 void QGtkWindow::raise()
 {
-    // ### we cannot control the stacking order
+    // we cannot control the stacking order
 }
 
 void QGtkWindow::lower()
 {
-    // ### we cannot control the stacking order
+    // we cannot control the stacking order
 }
 
 bool QGtkWindow::isExposed() const
