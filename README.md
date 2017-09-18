@@ -117,7 +117,8 @@ This project aims to help mitigate those issues.
   Right now, QOpenGLContext's swapBuffers is non-blocking in all cases. This
   means that OpenGL content is not limited from drawing too fast. You can use
   QWindow::requestUpdate to limit your rendering. In the longer term, we might
-  try to do something about this for threaded OpenGL use.
+  try to do something about this for threaded OpenGL use. See
+  [#2](https://github.com/CrimsonAS/gtkplatform/issues/2).
 
 * Notifications don't work right.
 
@@ -130,7 +131,7 @@ This project aims to help mitigate those issues.
   I am very unsurprised. The clipboard code is very new, and right now only
   supports plain text. It also wasn't terribly easy to write due to a combination
   of [GtkClipboard's documentation](https://developer.gnome.org/gtk3/stable/gtk3-Clipboards.html#gtk-clipboard-set-with-data)
-  basically not existing, and being a rather convoluted API.
+  basically not existing, and being a rather convoluted API. See [#5](https://github.com/CrimsonAS/gtkplatform/issues/5).
 
 * Drag and drop doesn't work (or: Accessibility, your_feature_here)
 
@@ -139,17 +140,18 @@ This project aims to help mitigate those issues.
 
 * My menu shortcuts have funny things in them
 
-  The mapping of GTK+ keys to Qt keys is incomplete. See qgtkhelpers.cpp.
+  The mapping of GTK+ keys to Qt keys is incomplete. See [#8](https://github.com/CrimsonAS/gtkplatform/issues/8).
 
 * My menu shortcuts don't activate
 
-  Known problem, currently without a known solution.
+  Known problem, currently without a known solution. See [#7](https://github.com/CrimsonAS/gtkplatform/issues/7).
 
 * QtWebEngine doesn't work out of the box
 
   Correct. Currently there's a hardcoded "whitelist" of platform plugins that
   will work. The patch to make it work is quite trivial, see `src/core/content_browser_client_qt.cpp`,
-  and make it request "eglcontext" unconditionally (or when using the "gtk" plugin).
+  and make it request "eglcontext" unconditionally (or when using the "gtk"
+  plugin). See [#9](https://github.com/CrimsonAS/gtkplatform/issues/9).
 
 # FAQ
 
