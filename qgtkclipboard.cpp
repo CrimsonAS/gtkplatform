@@ -82,6 +82,7 @@ void QGtkClipboard::setMimeData(QMimeData *data, QClipboard::Mode mode)
         return;
     QGtkClipboardMime *m = mimeForMode(mode);
     m->setMimeData(data);
+    emitChanged(mode);
 }
 
 bool QGtkClipboard::supportsMode(QClipboard::Mode mode) const
