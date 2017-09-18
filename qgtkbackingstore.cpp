@@ -57,7 +57,6 @@ QGtkBackingStore::QGtkBackingStore(QWindow *window)
     : QPlatformBackingStore(window)
     , m_paintImage(nullptr)
 {
-    qDebug() << "QGtkBackingStore";
 }
 
 QGtkBackingStore::~QGtkBackingStore()
