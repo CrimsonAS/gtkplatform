@@ -85,12 +85,8 @@ public:
     bool isActive() const override;
     void propagateSizeHints() override;
     void setOpacity(qreal level) override;
-/*
-    void setMask(const QRegion &region) override;
     void requestActivateWindow() override;
-
-    void handleContentOrientationChange(Qt::ScreenOrientation orientation) override;
-*/
+    void setMask(const QRegion &region) override;
     bool setKeyboardGrabEnabled(bool grab) override;
     bool setMouseGrabEnabled(bool grab) override;
 /*

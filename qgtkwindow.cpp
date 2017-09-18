@@ -670,13 +670,12 @@ void QGtkWindow::setWindowIcon(const QIcon &icon)
 
 void QGtkWindow::raise()
 {
-    gtk_window_present(GTK_WINDOW(m_window.get()));
+    // ### we cannot control the stacking order
 }
 
 void QGtkWindow::lower()
 {
-    // ### not sure we can do this
-    qWarning() << "lower: Not implemented";
+    // ### we cannot control the stacking order
 }
 
 bool QGtkWindow::isExposed() const
@@ -746,12 +745,16 @@ void QGtkWindow::setOpacity(qreal level)
     gtk_widget_set_opacity(m_window.get(), level);
 }
 
-/*
-void QGtkWindow::setMask(const QRegion &region){}
-void QGtkWindow::requestActivateWindow(){}
+void QGtkWindow::requestActivateWindow()
+{
+    gtk_window_present(GTK_WINDOW(m_window.get()));
+}
 
-void QGtkWindow::handleContentOrientationChange(Qt::ScreenOrientation orientation){}
-*/
+void QGtkWindow::setMask(const QRegion &region)
+{
+    qWarning() << "gtk+ does not support window masks";
+}
+
 bool QGtkWindow::setKeyboardGrabEnabled(bool grab)
 {
     if (grab) {
@@ -766,13 +769,8 @@ bool QGtkWindow::setMouseGrabEnabled(bool grab)
     }
     return true;
 }
+
 /*
-bool QGtkWindow::setWindowModified(bool modified){}
-
-void QGtkWindow::windowEvent(QEvent *event){}
-
-bool QGtkWindow::startSystemResize(const QPoint &pos, Qt::Corner corner){}
-
 void QGtkWindow::setFrameStrutEventsEnabled(bool enabled){}
 bool QGtkWindow::frameStrutEventsEnabled() const{}
 */
@@ -790,6 +788,7 @@ bool QGtkWindow::isAlertState() const
 /*
 void QGtkWindow::invalidateSurface(){}
 */
+
 void QGtkWindow::requestUpdate()
 {
     TRACE_EVENT_ASYNC_BEGIN0("gfx", "QGtkWindow::requestUpdate", this);
