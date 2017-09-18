@@ -265,7 +265,8 @@ void QGtkWindow::create(Qt::WindowType windowType)
     setGeometry(window()->geometry());
 
     if (windowType == Qt::ToolTip ||
-        windowType == Qt::Popup) {
+        windowType == Qt::Popup ||
+        window()->modality() != Qt::NonModal) {
         const QWindow *transientParent = window()->transientParent();
         if (!transientParent)
             transientParent = qApp->focusWindow();
@@ -311,6 +312,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
     setWindowState(window()->windowState());
     propagateSizeHints();
     setWindowFlags(window()->flags());
+    gtk_window_set_modal(GTK_WINDOW(m_window.get()), window()->modality() != Qt::NonModal);
     if (!window()->title().isEmpty())
         setWindowTitle(window()->title());
 
