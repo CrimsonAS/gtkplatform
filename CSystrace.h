@@ -24,6 +24,46 @@
 #ifndef SYSTRACE_H
 #define SYSTRACE_H
 
+#if defined(DISABLE_TRACE_CODE)
+struct CSystraceEvent;
+
+inline void systrace_init() {}
+inline void systrace_deinit() {}
+inline int systrace_should_trace(const char *) { return 0; }
+inline void systrace_duration_begin(const char *, const char *) {}
+inline void systrace_duration_end(const char *, const char *) {}
+inline void systrace_duration_begin(CSystraceEvent &) {}
+inline void systrace_duration_end(CSystraceEvent &) {}
+inline void systrace_record_counter(const char *, const char *, int , int = -1) {}
+inline void systrace_async_begin(const char *, const char *, const void *) {}
+inline void systrace_async_end(const char *, const char *, const void *) {}
+
+struct CSystraceEvent
+{
+public:
+    CSystraceEvent(const char *, const char *)
+    {
+    }
+
+    ~CSystraceEvent()
+    {
+    }
+};
+
+struct CSystraceAsyncEvent
+{
+public:
+    CSystraceAsyncEvent(const char *, const char *, const void *)
+    {
+    }
+
+    ~CSystraceAsyncEvent()
+    {
+    }
+};
+
+#else
+
 #include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -131,6 +171,8 @@ private:
     const char *m_tracepoint;
     const void *m_cookie;
 };
+
+#endif // DISABLE_TRACE_CODE
 
 #define COMBINE1(X,Y) X##Y  // helper macros
 #define COMBINE(X,Y) COMBINE1(X,Y)
