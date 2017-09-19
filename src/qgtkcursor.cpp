@@ -114,7 +114,7 @@ void QGtkCursor::changeCursor(QCursor *windowCursor, QWindow *window)
         break;
     }
 
-    GdkCursor *c = nullptr;
+    QGtkRefPtr<GdkCursor> c;
     if (bitmapCursor == false) {
         c = gdk_cursor_new_from_name(gdk_display_get_default(), gtkCursorName.constData());
     } else {
@@ -125,7 +125,7 @@ void QGtkCursor::changeCursor(QCursor *windowCursor, QWindow *window)
 
     // ### are we called before being realized, sometimes? why does this happen?
     if (gtk_widget_get_window(pw->gtkWindow().get()) != nullptr) {
-        gdk_window_set_cursor(gtk_widget_get_window(pw->gtkWindow().get()), c);
+        gdk_window_set_cursor(gtk_widget_get_window(pw->gtkWindow().get()), c.get());
     }
 }
 
