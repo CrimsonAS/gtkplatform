@@ -639,6 +639,7 @@ void QGtkWindow::setWindowTitle(const QString &title)
 void QGtkWindow::setWindowFilePath(const QString &title)
 {
     // we can't do anything useful with this
+    Q_UNUSED(title);
 }
 
 void QGtkWindow::setWindowIcon(const QIcon &icon)
@@ -738,7 +739,8 @@ void QGtkWindow::requestActivateWindow()
 
 void QGtkWindow::setMask(const QRegion &region)
 {
-    qWarning() << "gtk+ does not support window masks";
+    // can't do anything useful with this
+    Q_UNUSED(region);
 }
 
 bool QGtkWindow::setKeyboardGrabEnabled(bool grab)
