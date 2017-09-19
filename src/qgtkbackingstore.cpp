@@ -70,6 +70,8 @@ void QGtkBackingStore::beginPaint(const QRegion &region)
 void QGtkBackingStore::endPaint()
 {
     Q_ASSERT(m_paintImage);
+    static_cast<QGtkWindow*>(window()->handle())->endUpdateFrame("endPaint");
+    m_paintImage = nullptr;
     TRACE_EVENT_ASYNC_END0("gfx", "QGtkBackingStore::paint", this);
 }
 
@@ -77,17 +79,13 @@ void QGtkBackingStore::composeAndFlush(QWindow *window, const QRegion &region, c
                                        QPlatformTextureList *textures, QOpenGLContext *context, bool translucentBackground)
 {
     TRACE_EVENT0("gfx", "QGtkBackingStore::composeAndFlush");
-    static_cast<QGtkWindow*>(window->handle())->endUpdateFrame("composeAndFlush");
-    m_paintImage = nullptr;
     QPlatformBackingStore::composeAndFlush(window, region, offset, textures, context, translucentBackground);
 }
 
 void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)
 {
     TRACE_EVENT0("gfx", "QGtkBackingStore::flush");
-    static_cast<QGtkWindow*>(window->handle())->endUpdateFrame("composeAndFlush");
     static_cast<QGtkWindow*>(window->handle())->invalidateRegion(region.translated(offset));
-    m_paintImage = nullptr;
 }
 
 void QGtkBackingStore::resize(const QSize &size, const QRegion &)
