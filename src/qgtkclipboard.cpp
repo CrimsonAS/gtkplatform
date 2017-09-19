@@ -112,6 +112,7 @@ QGtkClipboardData::QGtkClipboardData(QClipboard::Mode clipboardMode)
 
 QGtkClipboardData::~QGtkClipboardData()
 {
+    gtk_clipboard_set_can_store(m_clipboard, NULL, 0);
     delete m_localData;
     delete m_systemData;
 }
@@ -225,6 +226,7 @@ QMimeData *QGtkClipboardData::mimeData() const
     }
 
     bool hasText = false;
+    bool hasImage = false;
     for (const QString &format : formats()) {
         qCDebug(lcClipboard) << "Examining format " << format;
         if (format.startsWith("text/plain")) {
@@ -232,12 +234,45 @@ QMimeData *QGtkClipboardData::mimeData() const
             if (hasText) {
                 continue;
             }
-            hasText = true;
-            QByteArray data = retrieveData(format);
-            m_systemData->setText(QString::fromUtf8(data));
+            const gchar *rdata = gtk_clipboard_wait_for_text(m_clipboard);
+            if (!rdata) {
+                continue;
+            }
+            QString data = QString::fromUtf8((rdata), strlen(rdata));
+            g_free((void*)rdata);
+            if (!data.isNull()) {
+                hasText = true;
+                m_systemData->setText(data);
+            }
+        } else if (format.startsWith("image/")) {
+            if (hasImage) {
+                continue;
+            }
+            QGtkRefPtr<GdkPixbuf> img = gtk_clipboard_wait_for_image(m_clipboard);
+            if (!img.get()) {
+                qCDebug(lcClipboard) << "No such format...";
+                continue;
+            }
+            QImage data;
+            if (gdk_pixbuf_get_has_alpha(img.get())) {
+                data = QImage(gdk_pixbuf_get_pixels(img.get()),
+                              gdk_pixbuf_get_width(img.get()), gdk_pixbuf_get_height(img.get()),
+                              gdk_pixbuf_get_rowstride(img.get()),
+                              QImage::Format_RGBA8888).copy();
+            } else {
+                data = QImage(gdk_pixbuf_get_pixels(img.get()),
+                              gdk_pixbuf_get_width(img.get()), gdk_pixbuf_get_height(img.get()),
+                              gdk_pixbuf_get_rowstride(img.get()),
+                              QImage::Format_RGB32).copy();
+            }
+            if (!data.isNull()) {
+                hasImage = true;
+                m_systemData->setImageData(QVariant::fromValue(data));
+                //m_systemData->setImageData(QVariant::fromValue(QImage::fromData(data)));
+            }
         } else {
-            QByteArray data = retrieveData(format);
-            m_systemData->setData(format, data);
+            //QByteArray data = retrieveData(format).toByteArray();
+            //m_systemData->setData(format, data);
         }
     }
 
@@ -268,37 +303,5 @@ QStringList QGtkClipboardData::formats() const
     g_free(targs);
     qCDebug(lcClipboard) << "Returning " << formatList;
     return formatList;
-}
-
-QByteArray QGtkClipboardData::retrieveData(const QString &mimeType) const
-{
-    if (mimeType.isEmpty()) {
-        qCDebug(lcClipboard) << "Getting format" << mimeType;
-        return QByteArray();
-    }
-
-    if (!mimeType.contains('/')) {
-        qCDebug(lcClipboard) << "Ignoring non-mimetype " << mimeType;
-        return QByteArray();
-    }
-
-    GtkSelectionData *data = gtk_clipboard_wait_for_contents(m_clipboard, gdk_atom_intern(mimeType.toUtf8().constData(), TRUE));
-    if (!data) {
-        qCDebug(lcClipboard) << "No such data" << mimeType;
-        return QByteArray();
-    }
-
-    guchar *text = gtk_selection_data_get_text(data);
-    gtk_selection_data_free(data);
-    if (text) {
-        return QByteArray(reinterpret_cast<char*>(text), strlen(reinterpret_cast<char*>(text)));
-        g_free(text);
-    } else {
-        qCDebug(lcClipboard) << "No text available for format" << mimeType;
-        return QByteArray();
-    }
-
-    qCDebug(lcClipboard) << "WTF: format" << mimeType;
-    return QByteArray();
 }
 

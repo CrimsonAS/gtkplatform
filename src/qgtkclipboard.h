@@ -53,7 +53,6 @@ Q_SIGNALS:
 
 private:
     QStringList formats() const;
-    QByteArray retrieveData(const QString &mimeType) const;
 
     GtkClipboard *m_clipboard = nullptr;
     QMimeData *m_localData = nullptr; // app-local
