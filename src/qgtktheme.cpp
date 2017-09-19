@@ -104,9 +104,6 @@ const QPalette *QGtkTheme::palette(Palette type) const
 
 const QFont *QGtkTheme::font(Font type) const
 {
-    if (type == QPlatformTheme::FixedFont)
-        return QPlatformTheme::font(type);
-
     if (!m_fontConfigured) {
         m_fontConfigured = true;
 
