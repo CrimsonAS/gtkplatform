@@ -251,10 +251,10 @@ This project aims to help mitigate those issues.
 
 * **Q:** Does this render using gtk+?
 
-  **A:** Sort of. The content of the window is entirely rendered by Qt right
-  now. Once Qt is done with that, it passes over to our code, and we use gtk+
-  to get that content on screen as well as to provide some of the desktop's
-  settings, like font settings.
+  **A:** Sort of. With the exception of menu bars on windows, the content of the
+  window is entirely rendered by Qt right now. Once Qt is done with that, it
+  passes over to our code, and we use gtk+ to get that content on screen as
+  well as to provide some of the desktop's settings, like font settings.
 
   So the reason that widgets look "native" is for the most part not down to the
   work that we've done, but rather the work of the people who wrote the Adwaita
