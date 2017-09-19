@@ -37,8 +37,13 @@
 #include <QtGui/private/qpixmap_raster_p.h>
 #include <QtGui/private/qguiapplication_p.h>
 
+#if QT_VERSION >= QT_VERSION_CHECK(5,8,0)
+#include <QtFontDatabaseSupport/private/qgenericunixfontdatabase_p.h>
+#include <QtServiceSupport/private/qgenericunixservices_p.h>
+#else
 #include <QtPlatformSupport/private/qgenericunixfontdatabase_p.h>
 #include <QtPlatformSupport/private/qgenericunixservices_p.h>
+#endif
 
 #include <gtk/gtk.h>
 

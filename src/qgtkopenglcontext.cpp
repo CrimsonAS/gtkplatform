@@ -38,7 +38,13 @@
 #include <dlfcn.h>
 
 #ifdef GDK_WINDOWING_WAYLAND
+
+#if QT_VERSION >= QT_VERSION_CHECK(5,8,0)
+#include <QtEglSupport/private/qeglconvenience_p.h>
+#else
 #include <QtPlatformSupport/private/qeglconvenience_p.h>
+#endif
+
 #include <gdk/gdkwayland.h>
 #endif
 #ifdef GDK_WINDOWING_X11

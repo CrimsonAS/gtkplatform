@@ -44,15 +44,20 @@ public:
     QPlatformSystemTrayIcon *createPlatformSystemTrayIcon() const override;
 #endif
 
-    bool usePlatformNativeDialog(DialogType dialogType) const override;   
+    bool usePlatformNativeDialog(DialogType dialogType) const override;
     QPlatformDialogHelper *createPlatformDialogHelper(DialogType dialogType) const override;
 
-    const QPalette *palette(Palette type = SystemPalette) const override; 
+    const QPalette *palette(Palette type = SystemPalette) const override;
     const QFont *font(Font type = SystemFont) const override;
     QPixmap standardPixmap(StandardPixmap sp, const QSizeF &size) const override;
+#if QT_VERSION >= QT_VERSION_CHECK(5,8,0)
+    QIcon fileIcon(const QFileInfo &fileInfo,
+            QPlatformTheme::IconOptions options = 0) const override;
+#else
     QPixmap fileIconPixmap(const QFileInfo &fileInfo,
             const QSizeF &size,
             QPlatformTheme::IconOptions options = 0) const override;
+#endif
 
     QVariant themeHint(ThemeHint hint) const override;
     QString standardButtonText(int button) const override;

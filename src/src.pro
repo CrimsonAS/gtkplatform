@@ -2,10 +2,18 @@ TARGET = qgtk
 
 CONFIG -= release
 CONFIG += debug
-QT += core-private gui-private platformsupport-private widgets
+QT += core-private gui-private widgets
 
-# qhighdpi has some bugs with this in 5.7.
-# DEFINES += QT_NO_FOREACH
+equals(QT_MAJOR_VERSION, 5):lessThan(QT_MINOR_VERSION, 8): {
+    QT += platformsupport-private
+} else {
+    QT += fontdatabase_support_private egl_support_private service_support_private
+}
+
+equals(QT_MAJOR_VERSION):lessThan(QT_MINOR_VERSION, 9): {
+    # qhighdpi has some bugs with this in at least 5.7.
+    DEFINES += QT_NO_FOREACH
+}
 
 SOURCES =   main.cpp \
             qgtkintegration.cpp \

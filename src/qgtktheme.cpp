@@ -137,12 +137,20 @@ QPixmap QGtkTheme::standardPixmap(StandardPixmap sp, const QSizeF &size) const
     return QPlatformTheme::standardPixmap(sp, size);
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(5,8,0)
+QIcon QGtkTheme::fileIcon(const QFileInfo &fileInfo,
+        QPlatformTheme::IconOptions options) const
+{
+    return QPlatformTheme::fileIcon(fileInfo, options);
+}
+#else
 QPixmap QGtkTheme::fileIconPixmap(const QFileInfo &fileInfo,
         const QSizeF &size,
         QPlatformTheme::IconOptions options) const
 {
     return QPlatformTheme::fileIconPixmap(fileInfo, size, options);
 }
+#endif
 
 QVariant QGtkTheme::themeHint(ThemeHint hint) const
 {
