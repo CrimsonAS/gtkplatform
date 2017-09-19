@@ -413,6 +413,11 @@ QSurfaceFormat QGtkWindow::format() const
 
 void QGtkWindow::setGeometry(const QRect &rect)
 {
+    if (!window()->isVisible()) {
+        // if we aren't visible, we won't get a configure event, so cache the
+        // geometry for the time being.
+        m_windowGeometry = QRect(QPoint(0, 0), rect.size());
+    }
     gtk_window_move(GTK_WINDOW(m_window.get()), rect.x(), rect.y());
     gtk_window_resize(GTK_WINDOW(m_window.get()), qMax(rect.width(), 1), qMax(rect.height(), 1));
 }
