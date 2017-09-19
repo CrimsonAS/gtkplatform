@@ -244,8 +244,6 @@ void QGtkWindow::create(Qt::WindowType windowType)
     // to be sure...
     g_signal_connect(m_window.get(), "size-allocate", G_CALLBACK(size_allocate_cb), this);
     g_signal_connect(m_window.get(), "delete-event", G_CALLBACK(delete_cb), this);
-    g_signal_connect(m_window.get(), "key-press-event", G_CALLBACK(key_press_cb), this);
-    g_signal_connect(m_window.get(), "key-release-event", G_CALLBACK(key_release_cb), this);
     g_signal_connect(m_window.get(), "scroll-event", G_CALLBACK(scroll_cb), this);
     g_signal_connect(m_window.get(), "window-state-event", G_CALLBACK(window_state_event_cb), this);
     m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), window_tick_cb, this, NULL);
@@ -290,6 +288,9 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_content.get(), "button-release-event", G_CALLBACK(button_release_cb), this);
     g_signal_connect(m_content.get(), "touch-event", G_CALLBACK(touch_event_cb), this);
     g_signal_connect(m_content.get(), "motion-notify-event", G_CALLBACK(motion_notify_cb), this);
+    g_signal_connect(m_content.get(), "key-press-event", G_CALLBACK(key_press_cb), this);
+    g_signal_connect(m_content.get(), "key-release-event", G_CALLBACK(key_release_cb), this);
+    gtk_widget_set_can_focus(m_content.get(), true);
 
     m_touchDevice = new QTouchDevice;
     m_touchDevice->setType(QTouchDevice::TouchScreen); // ### use GdkDevice or not?
@@ -454,6 +455,7 @@ void QGtkWindow::setVisible(bool visible)
 {
     if (visible) {
         gtk_widget_show_all(m_window.get());
+        gtk_widget_grab_focus(m_content.get());
     } else {
         gtk_widget_hide(m_window.get());
     }
