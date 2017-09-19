@@ -35,7 +35,7 @@
 #include <QtCore/qvariant.h>
 #include <QtGui/qpixmap.h>
 
-const char *QGtkTheme::name = "gtk";
+const char *QGtkTheme::name = "gtkqpainternal";
 
 QGtkTheme::QGtkTheme()
 {
