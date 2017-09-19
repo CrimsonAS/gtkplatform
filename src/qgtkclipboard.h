@@ -32,35 +32,39 @@
 
 #include <gtk/gtk.h>
 
-#include <memory>
-
 QT_BEGIN_NAMESPACE
 
-class QGtkClipboardMime : public QInternalMimeData
+class QGtkClipboardData : public QObject
 {
     Q_OBJECT
 public:
-    QGtkClipboardMime(QClipboard::Mode clipboardMode);
-    ~QGtkClipboardMime();
+    QGtkClipboardData(QClipboard::Mode clipboardMode);
+    ~QGtkClipboardData();
 
+    void setData(QMimeData *data);
+    QMimeData *mimeData() const;
     bool ownsMode() const;
-    void setMimeData(QMimeData *data);
-    QMimeData *currentData() const { return m_currentData; }
 
-protected:
-    bool hasFormat_sys(const QString &mimeType) const override;
-    QStringList formats_sys() const override;
-    QVariant retrieveData_sys(const QString &mimeType, QVariant::Type type) const override;
+    void onLocalClear();
+    void onLocalGet(GtkSelectionData *selection_data);
+
+Q_SIGNALS:
+    void changed();
 
 private:
-    GtkClipboard *m_clipboard;
-    QMimeData *m_currentData = nullptr;
+    QStringList formats() const;
+    QByteArray retrieveData(const QString &mimeType) const;
+
+    GtkClipboard *m_clipboard = nullptr;
+    QMimeData *m_localData = nullptr; // app-local
+    QMimeData *m_systemData = nullptr; // system-global, remote
+    QClipboard::Mode m_mode;
 };
 
-class QGtkClipboard : public QPlatformClipboard
+class QGtkClipboard : public QPlatformClipboard, QObject
 {
 public:
-    QGtkClipboard();
+    QGtkClipboard(QObject *parent = 0);
     ~QGtkClipboard();
 
     QMimeData *mimeData(QClipboard::Mode mode = QClipboard::Clipboard) override;
@@ -69,9 +73,9 @@ public:
     bool ownsMode(QClipboard::Mode mode) const override;
 
 private:
-    std::unique_ptr<QGtkClipboardMime> m_clipData;
-    std::unique_ptr<QGtkClipboardMime> m_selData;
-    QGtkClipboardMime *mimeForMode(QClipboard::Mode mode) const;
+    QGtkClipboardData m_clipData;
+    QGtkClipboardData m_selData;
+    QGtkClipboardData *mimeForMode(QClipboard::Mode mode) const;
 };
 
 QT_END_NAMESPACE

@@ -41,6 +41,7 @@ QT_BEGIN_NAMESPACE
 
 class QTouchDevice;
 class QGtkScreen;
+class QGtkClipboard;
 
 class QGtkIntegration : public QPlatformIntegration, public QPlatformNativeInterface
 {
@@ -83,6 +84,7 @@ private:
     GdkDisplay *m_display;
     QVector<const char*> m_arguments; /* must remain allocated for gdk's sake */
     QVector<QGtkScreen*> m_screens;
+    QGtkClipboard *m_clipboard = nullptr;
 
     EGLDisplay m_eglDisplay; // non-null for wayland platforms
 };

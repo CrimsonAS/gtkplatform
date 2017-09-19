@@ -25,6 +25,7 @@
 ****************************************************************************/
 
 #include "qgtkclipboard.h"
+#include "qgtkhelpers.h"
 
 #include <gtk/gtk.h>
 
@@ -32,23 +33,26 @@
 
 Q_LOGGING_CATEGORY(lcClipboard, "qt.qpa.gtk.clipboard");
 
-QGtkClipboard::QGtkClipboard()
-    : m_clipData(new QGtkClipboardMime(QClipboard::Clipboard))
-    , m_selData(new QGtkClipboardMime(QClipboard::Selection))
+QGtkClipboard::QGtkClipboard(QObject *parent)
+    : QObject(parent)
+    , m_clipData(QClipboard::Clipboard)
+    , m_selData(QClipboard::Selection)
 {
+    QObject::connect(&m_clipData, &QGtkClipboardData::changed, this, [=](){ emitChanged(QClipboard::Clipboard); });
+    QObject::connect(&m_selData, &QGtkClipboardData::changed, this, [=](){ emitChanged(QClipboard::Selection); });
 }
 
 QGtkClipboard::~QGtkClipboard()
 {
 }
 
-QGtkClipboardMime *QGtkClipboard::mimeForMode(QClipboard::Mode mode) const
+QGtkClipboardData *QGtkClipboard::mimeForMode(QClipboard::Mode mode) const
 {
     switch (mode) {
         case QClipboard::Clipboard:
-            return m_clipData.get();
+            return const_cast<QGtkClipboardData*>(&m_clipData);
         case QClipboard::Selection:
-            return m_selData.get();
+            return const_cast<QGtkClipboardData*>(&m_selData);
         default:
             Q_UNREACHABLE();
     }
@@ -59,16 +63,16 @@ QMimeData *QGtkClipboard::mimeData(QClipboard::Mode mode)
     if (!supportsMode(mode))
         return 0;
 
-    QGtkClipboardMime *m = mimeForMode(mode);
-    return m;
+    QGtkClipboardData *m = mimeForMode(mode);
+    return m->mimeData();
 }
 
 void QGtkClipboard::setMimeData(QMimeData *data, QClipboard::Mode mode)
 {
     if (!supportsMode(mode))
         return;
-    QGtkClipboardMime *m = mimeForMode(mode);
-    m->setMimeData(data);
+    QGtkClipboardData *m = mimeForMode(mode);
+    m->setData(data);
     emitChanged(mode);
 }
 
@@ -87,11 +91,12 @@ bool QGtkClipboard::ownsMode(QClipboard::Mode mode) const
 {
     if (!supportsMode(mode))
         return false;
-    QGtkClipboardMime *m = mimeForMode(mode);
+    QGtkClipboardData *m = mimeForMode(mode);
     return m->ownsMode();
 }
 
-QGtkClipboardMime::QGtkClipboardMime(QClipboard::Mode clipboardMode)
+QGtkClipboardData::QGtkClipboardData(QClipboard::Mode clipboardMode)
+    : m_mode(clipboardMode)
 {
     switch (clipboardMode) {
     case QClipboard::Clipboard:
@@ -105,104 +110,83 @@ QGtkClipboardMime::QGtkClipboardMime(QClipboard::Mode clipboardMode)
     }
 }
 
-QGtkClipboardMime::~QGtkClipboardMime()
+QGtkClipboardData::~QGtkClipboardData()
 {
-    gtk_clipboard_store(m_clipboard);
+    delete m_localData;
+    delete m_systemData;
 }
 
-bool QGtkClipboardMime::hasFormat_sys(const QString &mimeType) const
-{
-    return formats().contains(mimeType);
-}
-
-QStringList QGtkClipboardMime::formats_sys() const
-{
-    GdkAtom *targs;
-    gint ntargs;
-
-    // ### this involves event loop reentry, so not very safe
-    gboolean hasTargets = gtk_clipboard_wait_for_targets(m_clipboard, &targs, &ntargs);
-    if (!hasTargets) {
-        return QStringList();
-    }
-
-    QStringList formatList;
-    formatList.reserve(ntargs);
-
-    // ### consider caching?
-    for (int i = 0; i < ntargs; ++i) {
-        gchar *str = gdk_atom_name(targs[i]);
-        formatList.append(str);
-        g_free(str);
-    }
-
-    g_free(targs);
-    return formatList;
-}
-
-QVariant QGtkClipboardMime::retrieveData_sys(const QString &mimeType, QVariant::Type type) const
-{
-    if (mimeType.isEmpty()) {
-        return QVariant();
-    }
-
-    QStringList targets = formats();
-    if (type == QVariant::String) {
-        GtkSelectionData *data = gtk_clipboard_wait_for_contents(m_clipboard, gdk_atom_intern("text/plain", TRUE));
-        if (!data) {
-            return QString();
-        }
-
-        guchar *text = gtk_selection_data_get_text(data);
-        if (text) {
-            return QString::fromUtf8(reinterpret_cast<char*>(text), strlen(reinterpret_cast<char*>(text)));
-            g_free(text);
-        } else {
-            return QString();
-        }
-    }
-
-    // ### QImage, type mapping, etc.
-
-    return QVariant();
-}
-
-bool QGtkClipboardMime::ownsMode() const
+bool QGtkClipboardData::ownsMode() const
 {
     return gtk_clipboard_get_owner(m_clipboard) != NULL;
 }
 
-static void getFun(GtkClipboard *, GtkSelectionData *selection_data, guint /*info*/, gpointer gtkClipboardMime)
+static void getFun(GtkClipboard *, GtkSelectionData *selection_data, guint /*info*/, gpointer gtkClipboardData)
 {
-    QGtkClipboardMime *gmime = static_cast<QGtkClipboardMime*>(gtkClipboardMime);
+    qCDebug(lcClipboard) << "getFun";
+    QGtkClipboardData *gdata = static_cast<QGtkClipboardData*>(gtkClipboardData);
+    gdata->onLocalGet(selection_data);
+}
+
+static void clearFun(GtkClipboard*, gpointer gtkClipboardData)
+{
+    qCDebug(lcClipboard) << "clearFun";
+    QGtkClipboardData *gdata = static_cast<QGtkClipboardData*>(gtkClipboardData);
+    gdata->onLocalClear();
+}
+
+void QGtkClipboardData::onLocalClear()
+{
+    qCDebug(lcClipboard) << "Clear func" << m_mode;
+    delete m_localData;
+    m_localData = nullptr;
+    Q_EMIT changed();
+}
+
+// Request for the data from our set clipboard to give to a remote client
+void QGtkClipboardData::onLocalGet(GtkSelectionData *selection_data)
+{
     GdkAtom targ = gtk_selection_data_get_target(selection_data);
     gchar *targstr = gdk_atom_name(targ);
-    QMimeData *realMime = gmime->currentData();
-    QByteArray data = realMime ? realMime->data(targstr) : QByteArray();
-    qCWarning(lcClipboard) << "Got a request for data of type and size " << targstr << data.size();
+    QByteArray data = m_localData ? m_localData->data(targstr) : QByteArray();
+    qCDebug(lcClipboard) << "Got a request for data of type and size " << targstr << data.size() << m_mode;
     g_free(targstr);
 
     gtk_selection_data_set(selection_data, targ, 8, reinterpret_cast<const guchar*>(data.constData()), data.size());
 }
 
-static void clearFun(GtkClipboard*, gpointer /*gtkClipboardMime*/)
+// Set our local clipboard, and inform the system about it
+void QGtkClipboardData::setData(QMimeData *data)
 {
-    qCWarning(lcClipboard) << "clear func";
-}
-
-void QGtkClipboardMime::setMimeData(QMimeData *data)
-{
-    if (!data) {
-        qCWarning(lcClipboard) << "Clearing mime data" << data;
+    qCDebug(lcClipboard) << "Setting mime data " << data << m_mode << (data ? data->formats() : QStringList());
+    m_localData = data;
+    if (!data || data->formats().isEmpty()) {
+        qCDebug(lcClipboard) << "Clearing mime data" << data;
         gtk_clipboard_clear(m_clipboard);
         return;
     }
-    m_currentData = data;
 
-    const QStringList formats = m_currentData->formats();
-    qCWarning(lcClipboard) << "Setting mime data to " << formats;
+    if (data->hasText()) {
+        QByteArray textData = data->text().toUtf8();
+        gtk_clipboard_set_text(m_clipboard, textData.constData(), textData.size());
+        return;
+    }
+
+    if (data->hasImage()) {
+        QImage imageData = qvariant_cast<QImage>(data->imageData());
+        gtk_clipboard_set_image(m_clipboard, qt_pixmapToPixbuf(QPixmap::fromImage(imageData)).get());
+        return;
+    }
+
+    // ### rich text? html? what else should we handle...
+
+    QStringList formats = m_localData->formats();
+    qCDebug(lcClipboard) << "Setting mime data to " << formats;
     QVarLengthArray<GtkTargetEntry, 16> gtkTargets;
-    for (const QString &format : formats) {
+    for (QString &format : formats) {
+        if (format.startsWith("text/plain")) {
+            format = "text/plain;charset=utf-8";
+        }
         // ### this seems suboptimal, is GtkTargetEntry supposed to be used
         // publically in this way?
         gtkTargets.append(GtkTargetEntry{strdup(format.toUtf8().constData()), 0, 0});
@@ -215,11 +199,106 @@ void QGtkClipboardMime::setMimeData(QMimeData *data)
         getFun,
         clearFun,
         this
-    )) {
-        gtk_clipboard_set_can_store(m_clipboard, &gtkTargets[0], gtkTargets.size());
+    ) == TRUE) {
+        gtk_clipboard_set_can_store(m_clipboard, NULL, 0);
     }
 
     for (GtkTargetEntry &gtkTarg : gtkTargets) {
         free(gtkTarg.target);
     }
 }
+
+QMimeData *QGtkClipboardData::mimeData() const
+{
+    qCDebug(lcClipboard) << "Getting data" << m_mode << m_localData << m_systemData;
+    if (m_localData) {
+        qCDebug(lcClipboard) << "Getting local data";
+        return m_localData;
+    }
+
+    if (m_systemData) {
+        qCDebug(lcClipboard) << "Clearing system data";
+        m_systemData->clear();
+    } else {
+        qCDebug(lcClipboard) << "Creating system data";
+        const_cast<QGtkClipboardData*>(this)->m_systemData = new QMimeData();
+    }
+
+    bool hasText = false;
+    for (const QString &format : formats()) {
+        qCDebug(lcClipboard) << "Examining format " << format;
+        if (format.startsWith("text/plain")) {
+            // ### what about UTF8_STRING? STRING?
+            if (hasText) {
+                continue;
+            }
+            hasText = true;
+            QByteArray data = retrieveData(format);
+            m_systemData->setText(QString::fromUtf8(data));
+        } else {
+            QByteArray data = retrieveData(format);
+            m_systemData->setData(format, data);
+        }
+    }
+
+    return m_systemData;
+}
+
+QStringList QGtkClipboardData::formats() const
+{
+    GdkAtom *targs;
+    gint ntargs;
+
+    // ### this involves event loop reentry, so not very safe?
+    gboolean hasTargets = gtk_clipboard_wait_for_targets(m_clipboard, &targs, &ntargs);
+    if (!hasTargets) {
+        qCDebug(lcClipboard) << "No targets?";
+        return QStringList();
+    }
+
+    QStringList formatList;
+    formatList.reserve(ntargs);
+
+    for (int i = 0; i < ntargs; ++i) {
+        gchar *str = gdk_atom_name(targs[i]);
+        formatList.append(str);
+        g_free(str);
+    }
+
+    g_free(targs);
+    qCDebug(lcClipboard) << "Returning " << formatList;
+    return formatList;
+}
+
+QByteArray QGtkClipboardData::retrieveData(const QString &mimeType) const
+{
+    if (mimeType.isEmpty()) {
+        qCDebug(lcClipboard) << "Getting format" << mimeType;
+        return QByteArray();
+    }
+
+    if (!mimeType.contains('/')) {
+        qCDebug(lcClipboard) << "Ignoring non-mimetype " << mimeType;
+        return QByteArray();
+    }
+
+    GtkSelectionData *data = gtk_clipboard_wait_for_contents(m_clipboard, gdk_atom_intern(mimeType.toUtf8().constData(), TRUE));
+    if (!data) {
+        qCDebug(lcClipboard) << "No such data" << mimeType;
+        return QByteArray();
+    }
+
+    guchar *text = gtk_selection_data_get_text(data);
+    gtk_selection_data_free(data);
+    if (text) {
+        return QByteArray(reinterpret_cast<char*>(text), strlen(reinterpret_cast<char*>(text)));
+        g_free(text);
+    } else {
+        qCDebug(lcClipboard) << "No text available for format" << mimeType;
+        return QByteArray();
+    }
+
+    qCDebug(lcClipboard) << "WTF: format" << mimeType;
+    return QByteArray();
+}
+

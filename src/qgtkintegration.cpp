@@ -158,7 +158,11 @@ bool QGtkIntegration::hasCapability(QPlatformIntegration::Capability cap) const
 
 QPlatformClipboard *QGtkIntegration::clipboard() const
 {
-    return new QGtkClipboard;
+    if (m_clipboard == nullptr) {
+        QGtkIntegration *that = const_cast<QGtkIntegration*>(this);
+        that->m_clipboard = new QGtkClipboard(that);
+    }
+    return this->m_clipboard;
 }
 
 QPlatformFontDatabase *QGtkIntegration::fontDatabase() const
