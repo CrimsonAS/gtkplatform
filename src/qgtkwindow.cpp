@@ -152,19 +152,12 @@ static gboolean window_tick_cb(GtkWidget*, GdkFrameClock *, gpointer platformWin
     return G_SOURCE_CONTINUE;
 }
 
-static gboolean enter_window_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+static gboolean enter_leave_window_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "enter_window_notify_cb" << pw;
-    pw->onEnterLeaveWindow(event, true);
-    return false;
-}
-
-static gboolean leave_window_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
-{
-    QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "leave_window_notify_cb" << pw;
-    pw->onEnterLeaveWindow(event, false);
+    bool entering = event->type == GDK_ENTER_NOTIFY;
+    qCDebug(lcWindow) << "enter_leave_window_notify_cb" << pw << entering;
+    pw->onEnterLeaveWindow(event, entering);
     return false;
 }
 
@@ -244,8 +237,8 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_window.get(), "map", G_CALLBACK(map_cb), this);
     g_signal_connect(m_window.get(), "unmap", G_CALLBACK(unmap_cb), this);
     g_signal_connect(m_window.get(), "configure-event", G_CALLBACK(configure_cb), this);
-    g_signal_connect(m_window.get(), "enter-notify-event", G_CALLBACK(enter_window_notify_cb), this);
-    g_signal_connect(m_window.get(), "leave-notify-event", G_CALLBACK(leave_window_notify_cb), this);
+    g_signal_connect(m_window.get(), "enter-notify-event", G_CALLBACK(enter_leave_window_notify_cb), this);
+    g_signal_connect(m_window.get(), "leave-notify-event", G_CALLBACK(enter_leave_window_notify_cb), this);
 
     // for whatever reason, configure-event is not enough. it doesn't seem to
     // get emitted for popup type windows. so also connect to size-allocate just
