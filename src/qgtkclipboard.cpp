@@ -38,8 +38,8 @@ QGtkClipboard::QGtkClipboard(QObject *parent)
     , m_clipData(QClipboard::Clipboard)
     , m_selData(QClipboard::Selection)
 {
-    QObject::connect(&m_clipData, &QGtkClipboardData::changed, this, [=](){ emitChanged(QClipboard::Clipboard); });
-    QObject::connect(&m_selData, &QGtkClipboardData::changed, this, [=](){ emitChanged(QClipboard::Selection); });
+    QObject::connect(&m_clipData, &QGtkClipboardData::changed, this, [=](){ emitChanged(QClipboard::Clipboard); qCDebug(lcClipboard) << "Clipboard changed"; });
+    QObject::connect(&m_selData, &QGtkClipboardData::changed, this, [=](){ emitChanged(QClipboard::Selection); qCDebug(lcClipboard) << "Selection changed"; });
 }
 
 QGtkClipboard::~QGtkClipboard()
@@ -73,6 +73,7 @@ void QGtkClipboard::setMimeData(QMimeData *data, QClipboard::Mode mode)
         return;
     QGtkClipboardData *m = mimeForMode(mode);
     m->setData(data);
+    qCDebug(lcClipboard) << "setMimeData changed";
     emitChanged(mode);
 }
 
@@ -225,83 +226,46 @@ QMimeData *QGtkClipboardData::mimeData() const
         const_cast<QGtkClipboardData*>(this)->m_systemData = new QMimeData();
     }
 
-    bool hasText = false;
-    bool hasImage = false;
-    for (const QString &format : formats()) {
-        qCDebug(lcClipboard) << "Examining format " << format;
-        if (format.startsWith("text/plain")) {
-            // ### what about UTF8_STRING? STRING?
-            if (hasText) {
-                continue;
-            }
-            const gchar *rdata = gtk_clipboard_wait_for_text(m_clipboard);
-            if (!rdata) {
-                continue;
-            }
-            QString data = QString::fromUtf8((rdata), strlen(rdata));
-            g_free((void*)rdata);
-            if (!data.isNull()) {
-                hasText = true;
-                m_systemData->setText(data);
-            }
-        } else if (format.startsWith("image/")) {
-            if (hasImage) {
-                continue;
-            }
-            QGtkRefPtr<GdkPixbuf> img = gtk_clipboard_wait_for_image(m_clipboard);
-            if (!img.get()) {
-                qCDebug(lcClipboard) << "No such format...";
-                continue;
-            }
-            QImage data;
-            if (gdk_pixbuf_get_has_alpha(img.get())) {
-                data = QImage(gdk_pixbuf_get_pixels(img.get()),
-                              gdk_pixbuf_get_width(img.get()), gdk_pixbuf_get_height(img.get()),
-                              gdk_pixbuf_get_rowstride(img.get()),
-                              QImage::Format_RGBA8888).copy();
-            } else {
-                data = QImage(gdk_pixbuf_get_pixels(img.get()),
-                              gdk_pixbuf_get_width(img.get()), gdk_pixbuf_get_height(img.get()),
-                              gdk_pixbuf_get_rowstride(img.get()),
-                              QImage::Format_RGB32).copy();
-            }
-            if (!data.isNull()) {
-                hasImage = true;
-                m_systemData->setImageData(QVariant::fromValue(data));
-                //m_systemData->setImageData(QVariant::fromValue(QImage::fromData(data)));
-            }
+    qCDebug(lcClipboard) << "Reading image data";
+    QGtkRefPtr<GdkPixbuf> img = gtk_clipboard_wait_for_image(m_clipboard);
+    if (img.get()) {
+        qCDebug(lcClipboard) << "Image w h"
+                   << gdk_pixbuf_get_width(img.get()) << gdk_pixbuf_get_height(img.get())
+                   << "Stride alpha"
+                   << gdk_pixbuf_get_rowstride(img.get())
+                   << gdk_pixbuf_get_has_alpha(img.get());
+        QImage data;
+        if (gdk_pixbuf_get_has_alpha(img.get())) {
+            data = QImage(gdk_pixbuf_get_pixels(img.get()),
+                          gdk_pixbuf_get_width(img.get()), gdk_pixbuf_get_height(img.get()),
+                          gdk_pixbuf_get_rowstride(img.get()),
+                          QImage::Format_RGBA8888).copy();
+            qCDebug(lcClipboard) << "Read RGBA8888 image " << data;
         } else {
-            //QByteArray data = retrieveData(format).toByteArray();
-            //m_systemData->setData(format, data);
+            data = QImage(gdk_pixbuf_get_pixels(img.get()),
+                          gdk_pixbuf_get_width(img.get()), gdk_pixbuf_get_height(img.get()),
+                          gdk_pixbuf_get_rowstride(img.get()),
+                          QImage::Format_RGB888).copy();
+            qCDebug(lcClipboard) << "Read RGB32 image " << data;
         }
+        if (!data.isNull()) {
+            m_systemData->setImageData(QVariant::fromValue(data));
+        }
+        return m_systemData;
+    }
+
+    qCDebug(lcClipboard) << "Reading text data";
+    const gchar *rdata = gtk_clipboard_wait_for_text(m_clipboard);
+    if (rdata) {
+        QString data = QString::fromUtf8((rdata), strlen(rdata));
+        g_free((void*)rdata);
+        if (!data.isNull()) {
+            m_systemData->setText(data);
+            qCDebug(lcClipboard) << "Read text " << data;
+        }
+        return m_systemData;
     }
 
     return m_systemData;
-}
-
-QStringList QGtkClipboardData::formats() const
-{
-    GdkAtom *targs;
-    gint ntargs;
-
-    // ### this involves event loop reentry, so not very safe?
-    gboolean hasTargets = gtk_clipboard_wait_for_targets(m_clipboard, &targs, &ntargs);
-    if (!hasTargets) {
-        qCDebug(lcClipboard) << "No targets?";
-        return QStringList();
-    }
-
-    QStringList formatList;
-    formatList.reserve(ntargs);
-
-    for (int i = 0; i < ntargs; ++i) {
-        gchar *str = gdk_atom_name(targs[i]);
-        formatList.append(str);
-        g_free(str);
-    }
-
-    g_free(targs);
-    qCDebug(lcClipboard) << "Returning " << formatList;
-    return formatList;
 }
 
