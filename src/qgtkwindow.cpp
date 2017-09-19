@@ -152,19 +152,27 @@ static gboolean window_tick_cb(GtkWidget*, GdkFrameClock *, gpointer platformWin
     return G_SOURCE_CONTINUE;
 }
 
-static gboolean enter_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+static gboolean enter_window_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "enter_notify_cb" << pw;
-    pw->onEnterLeave(event, true);
+    qCDebug(lcWindow) << "enter_window_notify_cb" << pw;
+    pw->onEnterLeaveWindow(event, true);
     return false;
 }
 
-static gboolean leave_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
+static gboolean leave_window_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "enter_notify_cb" << pw;
-    pw->onEnterLeave(event, false);
+    qCDebug(lcWindow) << "leave_window_notify_cb" << pw;
+    pw->onEnterLeaveWindow(event, false);
+    return false;
+}
+
+static gboolean leave_content_notify_cb(GtkWidget *, GdkEvent *, gpointer platformWindow)
+{
+    QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindow) << "leave_content_notify_cb" << pw;
+    pw->onLeaveContent();
     return false;
 }
 
@@ -236,8 +244,8 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_window.get(), "map", G_CALLBACK(map_cb), this);
     g_signal_connect(m_window.get(), "unmap", G_CALLBACK(unmap_cb), this);
     g_signal_connect(m_window.get(), "configure-event", G_CALLBACK(configure_cb), this);
-    g_signal_connect(m_window.get(), "enter-notify-event", G_CALLBACK(enter_notify_cb), this);
-    g_signal_connect(m_window.get(), "leave-notify-event", G_CALLBACK(leave_notify_cb), this);
+    g_signal_connect(m_window.get(), "enter-notify-event", G_CALLBACK(enter_window_notify_cb), this);
+    g_signal_connect(m_window.get(), "leave-notify-event", G_CALLBACK(leave_window_notify_cb), this);
 
     // for whatever reason, configure-event is not enough. it doesn't seem to
     // get emitted for popup type windows. so also connect to size-allocate just
@@ -278,7 +286,8 @@ void QGtkWindow::create(Qt::WindowType windowType)
         GDK_BUTTON_RELEASE_MASK |
         GDK_SCROLL_MASK |
         GDK_SMOOTH_SCROLL_MASK |
-        GDK_TOUCH_MASK
+        GDK_TOUCH_MASK |
+        GDK_LEAVE_NOTIFY_MASK
     );
 
     // Register event handlers that need coordinates on the content widget, not
@@ -290,6 +299,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_content.get(), "key-press-event", G_CALLBACK(key_press_cb), this);
     g_signal_connect(m_content.get(), "key-release-event", G_CALLBACK(key_release_cb), this);
     g_signal_connect(m_content.get(), "scroll-event", G_CALLBACK(scroll_cb), this);
+    g_signal_connect(m_content.get(), "leave-notify-event", G_CALLBACK(leave_content_notify_cb), this);
     gtk_widget_set_can_focus(m_content.get(), true);
 
     m_touchDevice = new QTouchDevice;
@@ -593,7 +603,7 @@ void QGtkWindow::onWindowStateEvent(GdkEvent *event)
     // GDK_WINDOW_STATE_WITHDRAWN not handled.
 }
 
-void QGtkWindow::onEnterLeave(GdkEvent *event, bool entered)
+void QGtkWindow::onEnterLeaveWindow(GdkEvent *event, bool entered)
 {
     GdkEventCrossing *ev = (GdkEventCrossing*)event;
     static QPointer<QWindow> enterWindow;
@@ -622,6 +632,13 @@ void QGtkWindow::onEnterLeave(GdkEvent *event, bool entered)
             QWindowSystemInterface::handleLeaveEvent(leaveWindow.data());
         }
     });
+}
+
+void QGtkWindow::onLeaveContent()
+{
+    // reset the mouse cursor.
+    QGtkRefPtr<GdkCursor> c = gdk_cursor_new_from_name(gdk_display_get_default(), "default");
+    gdk_window_set_cursor(gtk_widget_get_window(m_window.get()), c.get());
 }
 
 WId QGtkWindow::winId() const

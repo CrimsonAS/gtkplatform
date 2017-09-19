@@ -109,7 +109,8 @@ public:
     bool onScrollEvent(GdkEvent *event);
     void onWindowStateEvent(GdkEvent *event);
     void onUpdateFrameClock();
-    void onEnterLeave(GdkEvent *event, bool entered);
+    void onEnterLeaveWindow(GdkEvent *event, bool entered);
+    void onLeaveContent();
     QImage *beginUpdateFrame(const QString &reason);
     void endUpdateFrame(const QString &reason);
     void invalidateRegion(const QRegion &region);
