@@ -34,6 +34,8 @@ environment that I can use today.
 
 ## current state
 
+_use with caution_.
+
 What works:
 
 * Showing, resizing, and hiding windows windows (all hopefully flicker-free)
