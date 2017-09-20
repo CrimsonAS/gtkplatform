@@ -46,7 +46,7 @@ public:
     bool ownsMode() const;
 
     void onLocalClear();
-    void onLocalGet(GtkSelectionData *selection_data);
+    void onLocalGet(GtkSelectionData *selection_data, guint info);
 
 Q_SIGNALS:
     void changed();

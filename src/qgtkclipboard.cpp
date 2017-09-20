@@ -33,6 +33,11 @@
 
 Q_LOGGING_CATEGORY(lcClipboard, "qt.qpa.gtk.clipboard");
 
+enum TargetTypes {
+    TargetTypeText = 1,
+    TargetTypeImage = 2
+};
+
 QGtkClipboard::QGtkClipboard(QObject *parent)
     : QObject(parent)
     , m_clipData(QClipboard::Clipboard)
@@ -73,7 +78,7 @@ void QGtkClipboard::setMimeData(QMimeData *data, QClipboard::Mode mode)
         return;
     QGtkClipboardData *m = mimeForMode(mode);
     m->setData(data);
-    qCDebug(lcClipboard) << "setMimeData changed";
+    qCDebug(lcClipboard) << "setMimeData changed to " << data;
     emitChanged(mode);
 }
 
@@ -123,16 +128,14 @@ bool QGtkClipboardData::ownsMode() const
     return gtk_clipboard_get_owner(m_clipboard) != NULL;
 }
 
-static void getFun(GtkClipboard *, GtkSelectionData *selection_data, guint /*info*/, gpointer gtkClipboardData)
+static void getFun(GtkClipboard *, GtkSelectionData *selection_data, guint info, gpointer gtkClipboardData)
 {
-    qCDebug(lcClipboard) << "getFun";
     QGtkClipboardData *gdata = static_cast<QGtkClipboardData*>(gtkClipboardData);
-    gdata->onLocalGet(selection_data);
+    gdata->onLocalGet(selection_data, info);
 }
 
 static void clearFun(GtkClipboard*, gpointer gtkClipboardData)
 {
-    qCDebug(lcClipboard) << "clearFun";
     QGtkClipboardData *gdata = static_cast<QGtkClipboardData*>(gtkClipboardData);
     gdata->onLocalClear();
 }
@@ -142,78 +145,79 @@ void QGtkClipboardData::onLocalClear()
     qCDebug(lcClipboard) << "Clear func" << m_mode;
     delete m_localData;
     m_localData = nullptr;
-    Q_EMIT changed();
 }
 
 // Request for the data from our set clipboard to give to a remote client
-void QGtkClipboardData::onLocalGet(GtkSelectionData *selection_data)
+void QGtkClipboardData::onLocalGet(GtkSelectionData *selection_data, guint info)
 {
-    GdkAtom targ = gtk_selection_data_get_target(selection_data);
-    gchar *targstr = gdk_atom_name(targ);
-    QByteArray data = m_localData ? m_localData->data(targstr) : QByteArray();
-    qCDebug(lcClipboard) << "Got a request for data of type and size " << targstr << data.size() << m_mode;
-    g_free(targstr);
+    qCDebug(lcClipboard) << "Local get for " << m_localData;
+    if (!m_localData) {
+        return;
+    }
 
-    gtk_selection_data_set(selection_data, targ, 8, reinterpret_cast<const guchar*>(data.constData()), data.size());
+    if (info == TargetTypeText) {
+        gtk_selection_data_set_text(selection_data, m_localData->text().toUtf8().constData(), -1);
+    } else if (info == TargetTypeImage) {
+        QImage imageData = qvariant_cast<QImage>(m_localData->imageData());
+        gtk_selection_data_set_pixbuf(selection_data, qt_pixmapToPixbuf(QPixmap::fromImage(imageData)).get());
+    }
 }
 
 // Set our local clipboard, and inform the system about it
 void QGtkClipboardData::setData(QMimeData *data)
 {
     qCDebug(lcClipboard) << "Setting mime data " << data << m_mode << (data ? data->formats() : QStringList());
-    m_localData = data;
     if (!data || data->formats().isEmpty()) {
         qCDebug(lcClipboard) << "Clearing mime data" << data;
         gtk_clipboard_clear(m_clipboard);
         return;
     }
 
+    GtkTargetList *targetList = gtk_target_list_new(nullptr, 0);
+
     if (data->hasText()) {
-        QByteArray textData = data->text().toUtf8();
-        gtk_clipboard_set_text(m_clipboard, textData.constData(), textData.size());
-        return;
+        gtk_target_list_add_text_targets(targetList, TargetTypeText);
     }
 
     if (data->hasImage()) {
         QImage imageData = qvariant_cast<QImage>(data->imageData());
-        gtk_clipboard_set_image(m_clipboard, qt_pixmapToPixbuf(QPixmap::fromImage(imageData)).get());
-        return;
+        gtk_target_list_add_image_targets(targetList, TargetTypeImage, TRUE);
     }
 
     // ### rich text? html? what else should we handle...
 
-    QStringList formats = m_localData->formats();
-    qCDebug(lcClipboard) << "Setting mime data to " << formats;
-    QVarLengthArray<GtkTargetEntry, 16> gtkTargets;
-    for (QString &format : formats) {
-        if (format.startsWith("text/plain")) {
-            format = "text/plain;charset=utf-8";
+    int targetCount = 0;
+    GtkTargetEntry *table = gtk_target_table_new_from_list(targetList, &targetCount);
+
+    if (targetCount > 0 && table) {
+        if (gtk_clipboard_set_with_data(
+            m_clipboard,
+            table,
+            targetCount,
+            getFun,
+            clearFun,
+            this
+        ) == TRUE) {
+            gtk_clipboard_set_can_store(m_clipboard, nullptr, 0);
+        } else {
+            qCWarning(lcClipboard) << "Store FAILED";
         }
-        // ### this seems suboptimal, is GtkTargetEntry supposed to be used
-        // publically in this way?
-        gtkTargets.append(GtkTargetEntry{strdup(format.toUtf8().constData()), 0, 0});
+    } else {
+        qCWarning(lcClipboard) << "No targets";
     }
 
-    if (gtk_clipboard_set_with_data(
-        m_clipboard,
-        &gtkTargets[0],
-        gtkTargets.size(),
-        getFun,
-        clearFun,
-        this
-    ) == TRUE) {
-        gtk_clipboard_set_can_store(m_clipboard, NULL, 0);
+    if (table) {
+        gtk_target_table_free(table, targetCount);
     }
 
-    for (GtkTargetEntry &gtkTarg : gtkTargets) {
-        free(gtkTarg.target);
-    }
+    gtk_target_list_unref(targetList);
+    m_localData = data;
 }
 
 QMimeData *QGtkClipboardData::mimeData() const
 {
     qCDebug(lcClipboard) << "Getting data" << m_mode << m_localData << m_systemData;
-    if (m_localData) {
+    if (ownsMode()) {
         qCDebug(lcClipboard) << "Getting local data";
         return m_localData;
     }
