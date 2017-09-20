@@ -143,13 +143,11 @@ void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, c
 {
     Q_UNUSED(item);
 
-    // ### this isn't called because of a Q_OS check in qtbase?
-    QGtkRefPtr<GtkMenuItem> mi = gtkMenuItem();
-    GtkWidget *menu = gtk_menu_item_get_submenu(mi.get());
+    GtkMenu *menu = m_menu.get();
     GdkRectangle gRect { targetRect.x(), targetRect.y(), targetRect.width(), targetRect.height() };
     gtk_menu_popup_at_rect(
-        GTK_MENU(menu),
-        GDK_WINDOW(static_cast<QGtkWindow*>(parentWindow->handle())->gtkWindow().get()),
+        menu,
+        gtk_widget_get_window(static_cast<QGtkWindow*>(parentWindow->handle())->gtkWindow().get()),
         &gRect,
         GdkGravity(GDK_GRAVITY_NORTH_WEST),
         GdkGravity(GDK_GRAVITY_NORTH_WEST),
