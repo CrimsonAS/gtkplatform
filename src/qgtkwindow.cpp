@@ -456,7 +456,11 @@ void QGtkWindow::onWindowStateEvent(GdkEvent *event)
     if (type != Qt::ToolTip && (ev->changed_mask & GDK_WINDOW_STATE_FOCUSED)) {
         static QPointer<QWindow> newActiveWindow = nullptr;
         if (ev->new_window_state & GDK_WINDOW_STATE_FOCUSED) {
+            qCDebug(lcWindow) << window() << " focused";
             newActiveWindow = window();
+        } else if (newActiveWindow == window()) {
+            qCDebug(lcWindow) << window() << " unfocused";
+            newActiveWindow = nullptr;
         }
 
         // We need a timer here to debounce the focus changes. Reason being that
@@ -473,6 +477,7 @@ void QGtkWindow::onWindowStateEvent(GdkEvent *event)
         // dismissed (since a combo box shouldn't be kept open if its parent
         // window loses focus to something other than the combo).
         QTimer::singleShot(0, [=]() {
+            qCDebug(lcWindow) << "Active changed to " << newActiveWindow.data();
             QWindowSystemInterface::handleWindowActivated(newActiveWindow.data(), Qt::ActiveWindowFocusReason);
         });
     }
@@ -639,6 +644,7 @@ void QGtkWindow::setOpacity(qreal level)
 
 void QGtkWindow::requestActivateWindow()
 {
+    qCDebug(lcWindow) << "Request activate" << window();
     gtk_window_present(GTK_WINDOW(m_window.get()));
 }
 
