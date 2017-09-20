@@ -55,6 +55,7 @@ QGtkMenuItem::~QGtkMenuItem()
 void QGtkMenuItem::setTag(quintptr tag)
 {
     m_tag = tag;
+    Q_EMIT updated();
 }
 
 quintptr QGtkMenuItem::tag()const
@@ -65,6 +66,7 @@ quintptr QGtkMenuItem::tag()const
 void QGtkMenuItem::setText(const QString &text)
 {
     m_text = qt_convertToGtkMnemonics(text);
+    Q_EMIT updated();
 }
 
 void QGtkMenuItem::setIcon(const QIcon &icon)
@@ -76,16 +78,19 @@ void QGtkMenuItem::setMenu(QPlatformMenu *pmenu)
 {
     QGtkMenu *childMenu = static_cast<QGtkMenu*>(pmenu);
     m_childMenu = childMenu;
+    Q_EMIT updated();
 }
 
 void QGtkMenuItem::setVisible(bool isVisible)
 {
     m_visible = isVisible;
+    Q_EMIT updated();
 }
 
 void QGtkMenuItem::setIsSeparator(bool isSeparator)
 {
     m_isSeparator = isSeparator;
+    Q_EMIT updated();
 }
 
 void QGtkMenuItem::setFont(const QFont &font)
@@ -101,21 +106,25 @@ void QGtkMenuItem::setRole(MenuRole role)
 void QGtkMenuItem::setCheckable(bool checkable)
 {
     m_checkable = checkable;
+    Q_EMIT updated();
 }
 
 void QGtkMenuItem::setChecked(bool isChecked)
 {
     m_checked = isChecked;
+    Q_EMIT updated();
 }
 
 void QGtkMenuItem::setShortcut(const QKeySequence& shortcut)
 {
     m_shortcut = shortcut;
+    Q_EMIT updated();
 }
 
 void QGtkMenuItem::setEnabled(bool enabled)
 {
     m_enabled = enabled;
+    Q_EMIT updated();
 }
 
 void QGtkMenuItem::setIconSize(int size)
@@ -131,17 +140,14 @@ void QGtkMenuItem::setNativeContents(WId item)
 void QGtkMenuItem::setHasExclusiveGroup(bool hasExclusiveGroup)
 {
     m_hasExclusiveGroup = hasExclusiveGroup;
+    Q_EMIT updated();
 }
 
 QGtkRefPtr<GtkWidget> QGtkMenuItem::gtkMenuItem() const
 {
-    return m_gtkMenuItem;
-}
-
-QGtkRefPtr<GtkWidget> QGtkMenuItem::sync()
-{
+    QGtkRefPtr<GtkWidget> ret;
     if (m_isSeparator) {
-        m_gtkMenuItem = gtk_separator_menu_item_new();
+        ret = gtk_separator_menu_item_new();
     } else if (m_childMenu) {
         QGtkRefPtr<GtkMenuItem> mi = m_childMenu->gtkMenuItem();
         //g_signal_connect(mi, "select", G_CALLBACK(select_cb), const_cast<QGtkMenuItem*>(this));
@@ -151,7 +157,7 @@ QGtkRefPtr<GtkWidget> QGtkMenuItem::sync()
         GtkWidget *child = gtk_bin_get_child(GTK_BIN(mi.get()));
         gtk_label_set_markup_with_mnemonic(GTK_LABEL(child), m_text.toUtf8().constData());
         gtk_widget_set_sensitive(GTK_WIDGET(mi.get()), m_enabled);
-        m_gtkMenuItem = GTK_WIDGET(mi.get());
+        ret = GTK_WIDGET(mi.get());
     } else {
         GtkWidget *mi = nullptr;
         if (m_checkable) {
@@ -195,12 +201,12 @@ QGtkRefPtr<GtkWidget> QGtkMenuItem::sync()
             gtk_accel_label_set_accel(GTK_ACCEL_LABEL(label), gKey, GdkModifierType(gModifiers));
         }
 
-        m_gtkMenuItem = mi;
+        ret = mi;
     }
 
-    gtk_widget_set_visible(m_gtkMenuItem.get(), m_visible);
+    gtk_widget_set_visible(ret.get(), m_visible);
 
-    return m_gtkMenuItem;
+    return ret;
 }
 
 void QGtkMenuItem::emitSelect()

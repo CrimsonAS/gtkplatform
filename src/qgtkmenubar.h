@@ -39,6 +39,7 @@ class QGtkMenu;
 
 class QGtkMenuBar : public QPlatformMenuBar
 {
+    Q_OBJECT
 public:
     QGtkMenuBar();
     ~QGtkMenuBar();
@@ -51,13 +52,17 @@ public:
     QPlatformMenu *menuForTag(quintptr tag) const override;
     QPlatformMenu *createMenu() const override;
 
+Q_SIGNALS:
+    void updated();
+
 private Q_SLOTS:
+    void queueRegenerate();
     void regenerate();
 
 private:
     QGtkRefPtr<GtkMenuBar> m_menubar;
     QVector<QGtkMenu*> m_items;
-    QVector<QGtkRefPtr<GtkMenuItem>> m_gtkItems;
+    bool m_regenerateQueued = false;
 };
 
 QT_END_NAMESPACE

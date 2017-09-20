@@ -60,10 +60,14 @@ public:
     void setHasExclusiveGroup(bool hasExclusiveGroup) override;
 
     QGtkRefPtr<GtkWidget> gtkMenuItem() const;
-    QGtkRefPtr<GtkWidget> sync();
 
     void emitSelect();
     void emitActivate();
+
+    QGtkMenu *menu() { return m_childMenu; }
+
+Q_SIGNALS:
+    void updated();
 
 private:
     QString m_text;
@@ -76,7 +80,6 @@ private:
     QGtkMenu *m_childMenu = nullptr;
     QKeySequence m_shortcut;
     qintptr m_tag;
-    QGtkRefPtr<GtkWidget> m_gtkMenuItem = nullptr;
 };
 
 #endif // QGTKMENUITEM_H

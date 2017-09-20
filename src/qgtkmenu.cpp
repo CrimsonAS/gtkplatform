@@ -38,9 +38,6 @@ Q_LOGGING_CATEGORY(lcMenu, "qt.qpa.gtk.menu");
 QGtkMenu::QGtkMenu()
     : m_tag((qintptr)this)
 {
-    m_menu = GTK_MENU(gtk_menu_new());
-    m_menuItem = GTK_MENU_ITEM(gtk_menu_item_new_with_mnemonic(""));
-    gtk_menu_item_set_submenu(m_menuItem.get(), GTK_WIDGET(m_menu.get()));
 }
 
 QGtkMenu::~QGtkMenu()
@@ -54,43 +51,36 @@ void QGtkMenu::insertMenuItem(QPlatformMenuItem *menuItem, QPlatformMenuItem *be
 
     int idx = m_items.indexOf(bi);
     if (idx < 0) {
-        m_gtkItems.append(mi->sync());
         m_items.append(mi);
-        gtk_menu_shell_append(GTK_MENU_SHELL(m_menu.get()), m_gtkItems.last().get());
     } else {
-        m_gtkItems.insert(idx, mi->sync());
         m_items.insert(idx, mi);
-        gtk_menu_shell_insert(GTK_MENU_SHELL(m_menu.get()), m_gtkItems.at(idx).get(), idx);
+    }
+    if (mi->menu()) {
+        connect(mi->menu(), &QGtkMenu::updated, this, &QGtkMenu::updated, Qt::UniqueConnection);
     }
     qCDebug(lcMenu) << "Added menu item " << mi << " before " << bi << " at " << idx;
+    Q_EMIT updated();
 }
 
 void QGtkMenu::removeMenuItem(QPlatformMenuItem *menuItem)
 {
     QGtkMenuItem *mi = static_cast<QGtkMenuItem*>(menuItem);
-
     int idx = m_items.indexOf(mi);
     m_items.removeAt(idx);
-    gtk_container_remove(GTK_CONTAINER(m_menu.get()), m_gtkItems.takeAt(idx).get());
+    if (mi->menu()) {
+        disconnect(mi->menu(), &QGtkMenu::updated, this, &QGtkMenu::updated);
+    }
+    Q_EMIT updated();
 }
 
 void QGtkMenu::syncMenuItem(QPlatformMenuItem *menuItem)
 {
-    Q_UNUSED(menuItem);
-    QGtkMenuItem *mi = static_cast<QGtkMenuItem*>(menuItem);
-    QGtkRefPtr<GtkWidget> oldItem = mi->gtkMenuItem();
-    QGtkRefPtr<GtkWidget> newItem = mi->sync();
-
-    if (oldItem != newItem) {
-        Q_ASSERT(oldItem);
-        Q_ASSERT(newItem);
-        int oldIdx = m_gtkItems.indexOf(oldItem);
-        qCDebug(lcMenu) << "Sync removing item " << oldItem << " for new " << newItem << " at pos " << oldIdx;
-        Q_ASSERT(oldIdx != -1);
-        gtk_container_remove(GTK_CONTAINER(m_menu.get()), m_gtkItems.at(oldIdx).get());
-        gtk_menu_shell_insert(GTK_MENU_SHELL(m_menu.get()), newItem.get(), oldIdx);
-        m_gtkItems[oldIdx] = newItem;
+    QGtkMenu *m = static_cast<QGtkMenuItem*>(menuItem)->menu();
+    if (m) {
+        connect(m, &QGtkMenu::updated, this, &QGtkMenu::updated, Qt::UniqueConnection);
     }
+
+    Q_EMIT updated();
 }
 
 void QGtkMenu::syncSeparatorsCollapsible(bool enable)
@@ -101,6 +91,7 @@ void QGtkMenu::syncSeparatorsCollapsible(bool enable)
 void QGtkMenu::setTag(quintptr tag)
 {
     m_tag = tag;
+    Q_EMIT updated();
 }
 
 quintptr QGtkMenu::tag()const
@@ -110,10 +101,8 @@ quintptr QGtkMenu::tag()const
 
 void QGtkMenu::setText(const QString &text)
 {
-    QString gtkText = qt_convertToGtkMnemonics(text);
-
-    GtkWidget *child = gtk_bin_get_child(GTK_BIN(m_menuItem.get()));
-    gtk_label_set_markup_with_mnemonic(GTK_LABEL(child), gtkText.toUtf8().constData());
+    m_text = text;
+    Q_EMIT updated();
 }
 
 void QGtkMenu::setIcon(const QIcon &icon)
@@ -124,7 +113,7 @@ void QGtkMenu::setIcon(const QIcon &icon)
 void QGtkMenu::setEnabled(bool enabled)
 {
     m_enabled = enabled;
-    gtk_widget_set_sensitive(GTK_WIDGET(m_menuItem.get()), m_enabled);
+    Q_EMIT updated();
 }
 
 bool QGtkMenu::isEnabled() const
@@ -136,17 +125,18 @@ void QGtkMenu::setVisible(bool visible)
 {
     //aboutToShow, aboutToHide signals
     Q_UNUSED(visible);
-    gtk_widget_set_visible(GTK_WIDGET(m_menuItem.get()), visible);
+    m_visible = visible;
+    Q_EMIT updated();
 }
 
 void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, const QPlatformMenuItem *item)
 {
     Q_UNUSED(item);
 
-    GtkMenu *menu = m_menu.get();
+    QGtkRefPtr<GtkMenu> menu = gtkMenu();
     GdkRectangle gRect { targetRect.x(), targetRect.y(), targetRect.width(), targetRect.height() };
     gtk_menu_popup_at_rect(
-        menu,
+        menu.get(),
         gtk_widget_get_window(static_cast<QGtkWindow*>(parentWindow->handle())->gtkWindow().get()),
         &gRect,
         GdkGravity(GDK_GRAVITY_NORTH_WEST),
@@ -180,7 +170,20 @@ QPlatformMenuItem *QGtkMenu::menuItemForTag(quintptr tag) const
 
 QGtkRefPtr<GtkMenuItem> QGtkMenu::gtkMenuItem() const
 {
-    return m_menuItem;
+    QGtkRefPtr<GtkMenuItem> mi = GTK_MENU_ITEM(gtk_menu_item_new_with_mnemonic(qt_convertToGtkMnemonics(m_text).toUtf8().constData()));
+    gtk_menu_item_set_submenu(mi.get(), GTK_WIDGET(gtkMenu().get()));
+    gtk_widget_set_sensitive(GTK_WIDGET(mi.get()), m_enabled);
+    gtk_widget_set_visible(GTK_WIDGET(mi.get()), m_visible);
+    return mi;
+}
+
+QGtkRefPtr<GtkMenu> QGtkMenu::gtkMenu() const
+{
+    QGtkRefPtr<GtkMenu> menu = GTK_MENU(gtk_menu_new());
+    for (QGtkMenuItem *i : m_items) {
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu.get()), i->gtkMenuItem().get());
+    }
+    return menu;
 }
 
 QVector<QGtkMenuItem*> QGtkMenu::items() const

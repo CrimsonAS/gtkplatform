@@ -64,17 +64,21 @@ public:
     QPlatformMenuItem *menuItemAt(int position) const override;
     QPlatformMenuItem *menuItemForTag(quintptr tag) const override;
 
+    QGtkRefPtr<GtkMenu> gtkMenu() const;
     QGtkRefPtr<GtkMenuItem> gtkMenuItem() const;
 
     QVector<QGtkMenuItem*> items() const;
+
+Q_SIGNALS:
+    void updated();
 
 private:
     QVector<QGtkMenuItem*> m_items;
     QVector<QGtkRefPtr<GtkWidget>> m_gtkItems;
     bool m_enabled = true;
+    bool m_visible = true;
+    QString m_text;
     qintptr m_tag;
-    QGtkRefPtr<GtkMenu> m_menu;
-    QGtkRefPtr<GtkMenuItem> m_menuItem;
 };
 
 QT_END_NAMESPACE
