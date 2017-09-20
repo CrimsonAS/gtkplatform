@@ -32,6 +32,30 @@ Rather, I say this to emphasize that while I would like to see better
 performance, the first priority for me is having a nice, consistent desktop
 environment that I can use today.
 
+## current state
+
+What works:
+
+* Showing, resizing, and hiding windows windows (all hopefully flicker-free)
+* Rendering in those windows
+    * Using QPainter
+    * Using QOpenGLContext (on Wayland; X11 is is tracked at
+      [#11](https://github.com/CrimsonAS/gtkplatform/issues/11))
+    * A mix of OpenGL and software rendering in those windows (QOpenGLWidget, etc)
+    * QtWebEngine (if patched, tracked at [#9](https://github.com/CrimsonAS/gtkplatform/issues/9)
+* Simple clipboard interaction (text/image copying)
+* Native gtk+ dialogs (taken from Qt)
+* Native gtk+ menubar
+* Notifications using libnotify
+* Input events
+    * Touch
+    * Keyboard
+    * Mouse, including smooth scroll events
+
+What doesn't:
+
+* Basically everything else.
+
 # screenshots
 
 Here's Qt Creator running with the gtk+ platform plugin:
@@ -94,10 +118,11 @@ and ought to be able to take for granted, there's the root issue
 that there is a significant amount of duplicate work going on here: any new
 development has to be solved in (at least) two major toolkits.
 
-So with this background, we get to the situation that lead to this project:
-frustration with a myriad of bad, very user-visible bugs on Linux like
-variances in how high DPI is dealt with, font sizing and selection that wasn't
-identical, black flicker on resizing, bad trackpad scroll behaviour, 
+So with this background, we get to the situation that lead to this project. A
+while ago, I moved from macOS back to Linux as my day to day desktop system, and
+quickly experienced frustration with a myriad of bad, very user-visible bugs
+on Linux like variances in how high DPI is dealt with, font sizing and selection
+that wasn't identical, black flicker on resizing, bad trackpad scroll behaviour,
 the reliance of Qt applications on xwayland rather than being first class
 Wayland citizens, etc.
 
@@ -210,11 +235,15 @@ This project aims to help mitigate those issues.
   window decorations, their own theming and font handling, etc. This code is
   specifically designed for use in environments like the GNOME desktop.
 
-  Being honest, though, my own *personal* view is that Qt on the Linux desktop
-  is not doing especially well right now. There's a lot of rough edges on
-  QtWayland on desktop, some older, less glaring issues on the xcb side, and it
-  feels like there simply aren't many people interested in working on improving
-  this situation. This is my own attempt at doing that.
+  That having been said, I have to say that my own *personal* view is that Qt,
+  while a great platform for embedded use and single purpose systems, is not
+  doing especially well for desktop use.
+
+  There's a lot of rough edges on QtWayland on desktop, a separate set of
+  issues on the xcb side, and it seems like this situation has been more or
+  less indefinite (at least, since I started using Linux on a day to day
+  basis in 2008). This is my own attempt at improving that situation. Whether or
+  not it will be successful, I don't know.
 
 * **Q:** There's no system tray icon support
 
