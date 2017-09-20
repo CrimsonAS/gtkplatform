@@ -201,10 +201,6 @@ void QGtkWindow::onUpdateFrameClock()
     }
 }
 
-// window
-//  -> vbox
-//      -> menubar
-//      -> drawingarea
 QGtkWindow::QGtkWindow(QWindow *window)
     : QPlatformWindow(window)
     , m_buttons(Qt::NoButton)
