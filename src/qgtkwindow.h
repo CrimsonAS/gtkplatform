@@ -108,7 +108,7 @@ public:
     bool onTouchEvent(GdkEvent *event);
     bool onScrollEvent(GdkEvent *event);
     void onWindowStateEvent(GdkEvent *event);
-    void onUpdateFrameClock();
+    void onWindowTickCallback();
     void onEnterLeaveWindow(GdkEvent *event, bool entered);
     void onLeaveContent();
     QImage *beginUpdateFrame(const QString &reason);
@@ -136,6 +136,20 @@ private:
     QRect m_newGeometry;
     Qt::KeyboardModifiers m_scrollModifiers = Qt::NoModifier;
     bool m_scrollStarted = false;
+
+    static void drawCallback(GtkWidget *, cairo_t *cr, gpointer platformWindow);
+    static gboolean windowTickCallback(GtkWidget*, GdkFrameClock *, gpointer platformWindow);
+};
+
+class QGtkCourierObject : public QObject
+{
+    Q_OBJECT
+
+public:
+    static QGtkCourierObject *instance;
+
+    QGtkCourierObject(QObject *parent = nullptr);
+    Q_INVOKABLE void queueDraw(QGtkWindow *win);
 };
 
 QT_END_NAMESPACE

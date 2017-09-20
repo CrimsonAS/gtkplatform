@@ -30,28 +30,18 @@
 #include <QtGui/qguiapplication.h>
 #include <qpa/qwindowsysteminterface.h>
 #include <QtGui/private/qwindow_p.h>
-#include <QtCore/qthread.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qtimer.h>
 #include <QtCore/qdebug.h>
 #include <QtCore/qloggingcategory.h>
 
-#include "CSystrace.h"
-
 Q_LOGGING_CATEGORY(lcWindow, "qt.qpa.gtk.window");
-Q_LOGGING_CATEGORY(lcWindowRender, "qt.qpa.gtk.window.render");
-
-static void draw_cb(GtkWidget *, cairo_t *cr, gpointer platformWindow)
-{
-    QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindowRender) << "draw_cb" << pw;
-    pw->onDraw(cr);
-}
+Q_LOGGING_CATEGORY(lcWindowEvents, "qt.qpa.gtk.window");
 
 static gboolean map_cb(GtkWidget *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindowRender) << "map_cb" << pw;
+    qCDebug(lcWindowEvents) << "map_cb" << pw;
     pw->onMap();
     return FALSE;
 }
@@ -59,7 +49,7 @@ static gboolean map_cb(GtkWidget *, gpointer platformWindow)
 static gboolean unmap_cb(GtkWidget *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindowRender) << "unmap_cb" << pw;
+    qCDebug(lcWindowEvents) << "unmap_cb" << pw;
     pw->onUnmap();
     return FALSE;
 }
@@ -67,7 +57,7 @@ static gboolean unmap_cb(GtkWidget *, gpointer platformWindow)
 static gboolean configure_cb(GtkWidget *, GdkEvent *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindowRender) << "configure_cb" << pw;
+    qCDebug(lcWindowEvents) << "configure_cb" << pw;
     pw->onConfigure();
     return FALSE;
 }
@@ -75,7 +65,7 @@ static gboolean configure_cb(GtkWidget *, GdkEvent *, gpointer platformWindow)
 static gboolean size_allocate_cb(GtkWidget *, GdkRectangle *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindowRender) << "size_allocate_cb" << pw;
+    qCDebug(lcWindowEvents) << "size_allocate_cb" << pw;
     pw->onConfigure();
     return FALSE;
 }
@@ -83,80 +73,72 @@ static gboolean size_allocate_cb(GtkWidget *, GdkRectangle *, gpointer platformW
 static gboolean delete_cb(GtkWidget *, GdkEvent *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindowRender) << "delete_cb" << pw;
+    qCDebug(lcWindowEvents) << "delete_cb" << pw;
     return pw->onDelete() ? TRUE : FALSE;
 }
 
 static gboolean key_press_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "key_press_cb" << pw;
+    qCDebug(lcWindowEvents) << "key_press_cb" << pw;
     return pw->onKeyPress(event) ? TRUE : FALSE;
 }
 
 static gboolean key_release_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "key_release_cb" << pw;
+    qCDebug(lcWindowEvents) << "key_release_cb" << pw;
     return pw->onKeyRelease(event) ? TRUE : FALSE;
 }
 
 static gboolean button_press_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "button_press_cb" << pw;
+    qCDebug(lcWindowEvents) << "button_press_cb" << pw;
     return pw->onButtonPress(event) ? TRUE : FALSE;
 }
 
 static gboolean button_release_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "button_release_cb" << pw;
+    qCDebug(lcWindowEvents) << "button_release_cb" << pw;
     return pw->onButtonRelease(event) ? TRUE : FALSE;
 }
 
 static gboolean touch_event_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "touch_event_cb" << pw;
+    qCDebug(lcWindowEvents) << "touch_event_cb" << pw;
     return pw->onTouchEvent(event) ? TRUE : FALSE;
 }
 
 static gboolean motion_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "motion_notify_cb" << pw;
+    qCDebug(lcWindowEvents) << "motion_notify_cb" << pw;
     return pw->onMotionNotify(event) ? TRUE : FALSE;
 }
 
 static gboolean scroll_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "scroll_cb" << pw;
+    qCDebug(lcWindowEvents) << "scroll_cb" << pw;
     return pw->onScrollEvent(event) ? TRUE : FALSE;
 }
 
 static gboolean window_state_event_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "window_state_event_cb" << pw;
+    qCDebug(lcWindowEvents) << "window_state_event_cb" << pw;
     pw->onWindowStateEvent(event);
     return FALSE;
-}
-
-static gboolean window_tick_cb(GtkWidget*, GdkFrameClock *, gpointer platformWindow)
-{
-    QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "window_tick_cb" << pw;
-    pw->onUpdateFrameClock();
-    return G_SOURCE_CONTINUE;
 }
 
 static gboolean enter_leave_window_notify_cb(GtkWidget *, GdkEvent *event, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
     bool entering = event->type == GDK_ENTER_NOTIFY;
-    qCDebug(lcWindow) << "enter_leave_window_notify_cb" << pw << entering;
+    qCDebug(lcWindowEvents) << "enter_leave_window_notify_cb" << pw << entering;
     pw->onEnterLeaveWindow(event, entering);
     return false;
 }
@@ -164,41 +146,9 @@ static gboolean enter_leave_window_notify_cb(GtkWidget *, GdkEvent *event, gpoin
 static gboolean leave_content_notify_cb(GtkWidget *, GdkEvent *, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindow) << "leave_content_notify_cb" << pw;
+    qCDebug(lcWindowEvents) << "leave_content_notify_cb" << pw;
     pw->onLeaveContent();
     return false;
-}
-
-class QGtkCourierObject : public QObject
-{
-    Q_OBJECT
-
-public:
-    static QGtkCourierObject *instance;
-
-    QGtkCourierObject(QObject *parent = nullptr)
-        : QObject(parent)
-    {
-        qRegisterMetaType<QGtkWindow*>("QGtkWindow*");
-    }
-
-    Q_INVOKABLE void queueDraw(QGtkWindow *win)
-    {
-        gtk_widget_queue_draw(win->gtkWindow().get());
-    }
-};
-
-QGtkCourierObject *QGtkCourierObject::instance;
-
-
-void QGtkWindow::onUpdateFrameClock()
-{
-    TRACE_EVENT0("gfx", "QGtkWindow::onUpdateFrameClock");
-    if (m_wantsUpdate) {
-        m_wantsUpdate = false;
-        TRACE_EVENT_ASYNC_END0("gfx", "QGtkWindow::requestUpdate", this);
-        QWindowPrivate::get(window())->deliverUpdateRequest();
-    }
 }
 
 QGtkWindow::QGtkWindow(QWindow *window)
@@ -242,7 +192,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_window.get(), "size-allocate", G_CALLBACK(size_allocate_cb), this);
     g_signal_connect(m_window.get(), "delete-event", G_CALLBACK(delete_cb), this);
     g_signal_connect(m_window.get(), "window-state-event", G_CALLBACK(window_state_event_cb), this);
-    m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), window_tick_cb, this, NULL);
+    m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), QGtkWindow::windowTickCallback, this, NULL);
     setGeometry(window()->geometry());
 
     if (windowType == Qt::ToolTip ||
@@ -264,7 +214,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
     gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(m_menubar.get()), FALSE, FALSE, 0);
 
     m_content = gtk_drawing_area_new();
-    g_signal_connect(m_content.get(), "draw", G_CALLBACK(draw_cb), this);
+    g_signal_connect(m_content.get(), "draw", G_CALLBACK(QGtkWindow::drawCallback), this);
 
     gtk_box_pack_end(GTK_BOX(vbox), m_content.get(), TRUE, TRUE, 0);
 
@@ -316,64 +266,6 @@ QGtkWindow::~QGtkWindow()
     gtk_widget_remove_tick_callback(m_window.get(), m_tick_callback);
     QWindowSystemInterface::unregisterTouchDevice(m_touchDevice);
     gtk_widget_destroy(m_window.get());
-}
-
-#undef LOCK_DEBUG
-
-void QGtkWindow::onDraw(cairo_t *cr)
-{
-    if (m_newGeometry != m_windowGeometry) {
-        bool needsExpose = m_newGeometry.size() != m_windowGeometry.size();
-        QWindowSystemInterface::handleGeometryChange(window(), m_newGeometry, m_windowGeometry);
-        m_windowGeometry = m_newGeometry;
-
-        if (needsExpose) {
-            QWindowSystemInterface::handleExposeEvent(window(), m_windowGeometry);
-
-            // we must flush, otherwise the content we'll render might be out of date.
-            // ### would be nice if we could compress these, somehow: at the least we'll
-            // get a configure and a size-allocate independent of each other.
-            QWindowSystemInterface::flushWindowSystemEvents(QEventLoop::ExcludeUserInputEvents);
-        }
-    }
-    TRACE_EVENT0("gfx", "QGtkWindow::onDraw");
-    // Hold frameMutex during blit to cairo to prevent changes
-    QMutexLocker lock(&m_frameMutex);
-#if defined(LOCK_DEBUG)
-    qWarning() << "rendering (LOCKED)" << this;
-#endif
-    if (m_frame.isNull())
-        return;
-
-#if 0
-    QString clipString;
-    cairo_rectangle_list_t *clip = cairo_copy_clip_rectangle_list(cr);
-    for (int i = 0; i < clip->num_rectangles; i++) {
-        auto r = clip->rectangles[i];
-        clipString += QString("%1,%2@%3x%4  ").arg(r.x).arg(r.y).arg(r.width).arg(r.height);
-    }
-    qDebug(lcWindow) << "onDraw with clip:" << clipString;
-#endif
-
-    cairo_surface_t *surf = cairo_image_surface_create_for_data(
-            const_cast<uchar*>(m_frame.constBits()),
-            CAIRO_FORMAT_ARGB32,
-            m_frame.width(),
-            m_frame.height(),
-            m_frame.bytesPerLine()
-    );
-    int sf = gtk_widget_get_scale_factor(m_window.get());
-    cairo_surface_set_device_scale(surf, sf, sf);
-    cairo_set_source_surface(cr, surf, 0, 0);
-    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-    // cairo_paint respects the current clip, which GTK sets based on
-    // updated regions of the window, so we don't need to do anything
-    // other than include the updated regions in queue_draw calls.
-    cairo_paint(cr);
-    cairo_surface_destroy(surf);
-#if defined(LOCK_DEBUG)
-    qWarning() << "rendering (UNLOCKING)" << this;
-#endif
 }
 
 void QGtkWindow::onMap()
@@ -790,62 +682,6 @@ bool QGtkWindow::isAlertState() const
 void QGtkWindow::invalidateSurface(){}
 */
 
-void QGtkWindow::requestUpdate()
-{
-    TRACE_EVENT_ASYNC_BEGIN0("gfx", "QGtkWindow::requestUpdate", this);
-    m_wantsUpdate = true;
-}
-
-QImage *QGtkWindow::beginUpdateFrame(const QString &reason)
-{
-    m_frameMutex.lock();
-    Q_UNUSED(reason);
-#if defined(LOCK_DEBUG)
-    qWarning() << "beginUpdateFrame " << reason << "(LOCKED)" << this;
-#endif
-    return &m_frame;
-}
-
-static cairo_region_t *cairo_region_from_region(const QRegion &region)
-{
-    cairo_region_t *r = cairo_region_create();
-    for (const QRect &qrect : region.rects()) {
-        cairo_rectangle_int_t rect = { qrect.x(), qrect.y(), qrect.width(), qrect.height() };
-        cairo_region_union_rectangle(r, &rect);
-    }
-    return r;
-}
-
-void QGtkWindow::endUpdateFrame(const QString &reason)
-{
-    m_frameMutex.unlock();
-    Q_UNUSED(reason);
-#if defined(LOCK_DEBUG)
-    qWarning() << "endUpdateFrame " << reason << "(UNLOCKED)" << this;
-#endif
-}
-
-void QGtkWindow::invalidateRegion(const QRegion &region)
-{
-    auto courier = QGtkCourierObject::instance;
-    Q_ASSERT(courier);
-    if (courier->thread() != QThread::currentThread()) {
-        // In the multithreaded case, always signal a full screen update for now
-        courier->metaObject()->invokeMethod(courier, "queueDraw", Qt::QueuedConnection, Q_ARG(QGtkWindow*, this));
-        return;
-    }
-
-    QRegion realRegion = region.isNull() ? QRegion(m_frame.rect()) : region;
-    cairo_region_t *cairoRegion = cairo_region_from_region(realRegion);
-    gtk_widget_queue_draw_region(m_content.get(), cairoRegion);
-    cairo_region_destroy(cairoRegion);
-}
-
-QImage QGtkWindow::currentFrameImage() const
-{
-    return m_frame;
-}
-
 QGtkRefPtr<GtkWidget> QGtkWindow::gtkWindow() const
 {
     return m_window;
@@ -856,4 +692,3 @@ QGtkRefPtr<GtkMenuBar> QGtkWindow::gtkMenuBar() const
     return m_menubar;
 }
 
-#include "qgtkwindow.moc"

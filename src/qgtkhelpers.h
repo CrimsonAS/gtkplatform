@@ -43,6 +43,7 @@ Qt::Key qt_convertToQtKey(int keyval);
 guint qt_convertToGdkKeyval(Qt::Key qKey);
 Qt::MouseButton qt_convertGButtonToQButton(guint button);
 Qt::TouchPointState qt_convertToQtTouchPointState(GdkEventType type);
+cairo_region_t *qt_convertToCairoRegion(const QRegion &region);
 
 QT_END_NAMESPACE
 

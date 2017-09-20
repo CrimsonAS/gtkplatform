@@ -23,6 +23,7 @@ SOURCES =   main.cpp \
             qgtkwindow_keyboard.cpp \
             qgtkwindow_mouse.cpp \
             qgtkwindow_touch.cpp \
+            qgtkwindow_render.cpp \
             qgtktheme.cpp \
             qgtksystemtrayicon.cpp \
             qgtkmenubar.cpp \

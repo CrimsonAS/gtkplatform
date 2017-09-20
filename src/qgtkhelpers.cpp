@@ -795,3 +795,14 @@ Qt::TouchPointState qt_convertToQtTouchPointState(GdkEventType type)
     }
 }
 
+cairo_region_t *qt_convertToCairoRegion(const QRegion &region)
+{
+    cairo_region_t *r = cairo_region_create();
+    for (const QRect &qrect : region.rects()) {
+        cairo_rectangle_int_t rect = { qrect.x(), qrect.y(), qrect.width(), qrect.height() };
+        cairo_region_union_rectangle(r, &rect);
+    }
+    return r;
+}
+
+
