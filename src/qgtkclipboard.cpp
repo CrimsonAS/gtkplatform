@@ -233,25 +233,7 @@ QMimeData *QGtkClipboardData::mimeData() const
     qCDebug(lcClipboard) << "Reading image data";
     QGtkRefPtr<GdkPixbuf> img = gtk_clipboard_wait_for_image(m_clipboard);
     if (img.get()) {
-        qCDebug(lcClipboard) << "Image w h"
-                   << gdk_pixbuf_get_width(img.get()) << gdk_pixbuf_get_height(img.get())
-                   << "Stride alpha"
-                   << gdk_pixbuf_get_rowstride(img.get())
-                   << gdk_pixbuf_get_has_alpha(img.get());
-        QImage data;
-        if (gdk_pixbuf_get_has_alpha(img.get())) {
-            data = QImage(gdk_pixbuf_get_pixels(img.get()),
-                          gdk_pixbuf_get_width(img.get()), gdk_pixbuf_get_height(img.get()),
-                          gdk_pixbuf_get_rowstride(img.get()),
-                          QImage::Format_RGBA8888).copy();
-            qCDebug(lcClipboard) << "Read RGBA8888 image " << data;
-        } else {
-            data = QImage(gdk_pixbuf_get_pixels(img.get()),
-                          gdk_pixbuf_get_width(img.get()), gdk_pixbuf_get_height(img.get()),
-                          gdk_pixbuf_get_rowstride(img.get()),
-                          QImage::Format_RGB888).copy();
-            qCDebug(lcClipboard) << "Read RGB32 image " << data;
-        }
+        QImage data = qt_pixbufToIamge(img);
         if (!data.isNull()) {
             m_systemData->setImageData(QVariant::fromValue(data));
         }

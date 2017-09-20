@@ -45,6 +45,23 @@ QGtkRefPtr<GdkPixbuf> qt_pixmapToPixbuf(const QPixmap &pixmap)
     return gpb;
 }
 
+QImage qt_pixbufToIamge(const QGtkRefPtr<GdkPixbuf> &pixbuf)
+{
+    QImage data;
+    if (gdk_pixbuf_get_has_alpha(pixbuf.get())) {
+        data = QImage(gdk_pixbuf_get_pixels(pixbuf.get()),
+                      gdk_pixbuf_get_width(pixbuf.get()), gdk_pixbuf_get_height(pixbuf.get()),
+                      gdk_pixbuf_get_rowstride(pixbuf.get()),
+                      QImage::Format_RGBA8888).copy();
+    } else {
+        data = QImage(gdk_pixbuf_get_pixels(pixbuf.get()),
+                      gdk_pixbuf_get_width(pixbuf.get()), gdk_pixbuf_get_height(pixbuf.get()),
+                      gdk_pixbuf_get_rowstride(pixbuf.get()),
+                      QImage::Format_RGB888).copy();
+    }
+    return data;
+}
+
 // Returns the largest image for this icon, in RGBA format.
 QImage qt_getBiggestImageForIcon(const QIcon &icon)
 {
