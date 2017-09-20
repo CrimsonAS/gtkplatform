@@ -62,17 +62,7 @@ Here's Qt Creator running with the gtk+ platform plugin:
 
 ![Creator with the gtk+ platform plugin](https://qtl.me/E3D02BB87DD13C40C2DEF08E2440B735.png)
 
-And a comparison, here's Creator with the same window size using the xcb platform plugin.
-
-![Creator with the xcb platform plugin](https://qtl.me/2683070DCBAF60FFADC510A6A322C7FC.png)
-
-And another comparison, here's Creator with the same window size using the Wayland platform plugin.
-
-![Creator with the Wayland platform plugin](https://qtl.me/9F89F6A19C600A19DBE822A08770B89E.png)
-
-And just in case you're feeling hungry, have QtWebEngine running a WebGL example:
-
-![QtWebEngine under the gtk+ platform plugin](https://qtl.me/168BF191CADAA8817E61E67563F3889C.png)
+If you'd like to see more, [go take a look at the wiki](https://github.com/CrimsonAS/gtkplatform/wiki).
 
 # building
 
