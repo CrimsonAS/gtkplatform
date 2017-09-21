@@ -34,6 +34,7 @@
 
 QT_BEGIN_NAMESPACE
 
+QGtkRefPtr<GdkPixbuf> qt_imageToPixbuf(const QImage &image);
 QGtkRefPtr<GdkPixbuf> qt_pixmapToPixbuf(const QPixmap &pixmap);
 QImage qt_pixbufToImage(const QGtkRefPtr<GdkPixbuf> &pixbuf);
 QGtkRefPtr<GdkPixbuf> qt_iconToPixbuf(const QIcon &icon);

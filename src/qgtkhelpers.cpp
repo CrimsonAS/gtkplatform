@@ -26,23 +26,30 @@
 
 #include "qgtkhelpers.h"
 
-QGtkRefPtr<GdkPixbuf> qt_pixmapToPixbuf(const QPixmap &pixmap)
+QGtkRefPtr<GdkPixbuf> qt_imageToPixbuf(const QImage &image)
 {
-    // ### assert pixmap is in RGBA
-    QImage i = pixmap.toImage();
-
+    if (image.isNull())
+        return 0;
+    guchar *buf = (guchar*)malloc(image.byteCount());
+    memcpy(buf, image.constBits(), image.byteCount());
     QGtkRefPtr<GdkPixbuf> gpb = gdk_pixbuf_new_from_data(
-        i.constBits(),
+        buf,
         GDK_COLORSPACE_RGB,
-        true,
+        true, // ### assert image is in RGBA
         8,
-        i.width(),
-        i.height(),
-        i.bytesPerLine(),
-        NULL,
+        image.width(),
+        image.height(),
+        image.bytesPerLine(),
+        (GdkPixbufDestroyNotify)free,
         NULL
     );
     return gpb;
+}
+
+QGtkRefPtr<GdkPixbuf> qt_pixmapToPixbuf(const QPixmap &pixmap)
+{
+    QImage i = pixmap.toImage();
+    return qt_imageToPixbuf(i);
 }
 
 QImage qt_pixbufToImage(const QGtkRefPtr<GdkPixbuf> &pixbuf)
@@ -95,21 +102,7 @@ QImage qt_getBiggestImageForIcon(const QIcon &icon)
 QGtkRefPtr<GdkPixbuf> qt_iconToPixbuf(const QIcon &icon)
 {
     QImage i = qt_getBiggestImageForIcon(icon);
-    if (i.isNull())
-        return 0;
-    QGtkRefPtr<GdkPixbuf> gpb = gdk_pixbuf_new_from_data(
-        i.constBits(),
-        GDK_COLORSPACE_RGB,
-        true,
-        8,
-        i.width(),
-        i.height(),
-        i.bytesPerLine(),
-        NULL,
-        NULL
-    );
-
-    return gpb;
+    return qt_imageToPixbuf(i);
 }
 
 // Convert a QIcon to a GIcon for use elsewhere.
