@@ -152,6 +152,8 @@ public:
     Q_INVOKABLE void queueDraw(QGtkWindow *win);
 };
 
+extern QAtomicInt thatThing;
+
 QT_END_NAMESPACE
 
 #endif // QGTKWINDOW_H

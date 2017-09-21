@@ -104,6 +104,9 @@ GLuint QGtkOpenGLContext::defaultFramebufferObject(QPlatformSurface *surface) co
     return m_fbo->handle();
 }
 
+#include <QThread>
+#include <QGuiApplication>
+
 void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
 {
     TRACE_EVENT0("gfx", "QGtkOpenGLContext::swapBuffers");
@@ -143,7 +146,17 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
     // been drawn onto the surface to properly throttle the rendering thread.
     win->endUpdateFrame("swapBuffers");
     win->invalidateRegion(QRegion());
+
+    if (QThread::currentThread() != QCoreApplication::instance()->thread()) {
+        while (thatThing.load() != 0) {
+            ; // wait
+        }
+    } else {
+        qWarning() << "Skipping, on main thread";
+    }
 }
+
+QAtomicInt thatThing;
 
 bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
 {

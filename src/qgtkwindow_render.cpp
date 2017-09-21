@@ -48,6 +48,8 @@ void QGtkWindow::drawCallback(GtkWidget *, cairo_t *cr, gpointer platformWindow)
 void QGtkWindow::onDraw(cairo_t *cr)
 {
     if (m_newGeometry != m_windowGeometry) {
+        qWarning() << "special case, dereffing" << thatThing.load();
+        thatThing.deref(); // special case; to let it swap for us
         bool needsExpose = m_newGeometry.size() != m_windowGeometry.size();
         QWindowSystemInterface::handleGeometryChange(window(), m_newGeometry, m_windowGeometry);
         m_windowGeometry = m_newGeometry;
@@ -60,6 +62,8 @@ void QGtkWindow::onDraw(cairo_t *cr)
             // get a configure and a size-allocate independent of each other.
             QWindowSystemInterface::flushWindowSystemEvents(QEventLoop::ExcludeUserInputEvents);
         }
+        thatThing.ref(); // undo special case
+        qWarning() << "special case, re-reffed" << thatThing.load();
     }
     TRACE_EVENT0("gfx", "QGtkWindow::onDraw");
     // Hold frameMutex during blit to cairo to prevent changes
@@ -115,16 +119,22 @@ void QGtkWindow::onWindowTickCallback()
 {
     TRACE_EVENT0("gfx", "QGtkWindow::onWindowTickCallback");
     if (m_wantsUpdate) {
-        m_wantsUpdate = false;
         TRACE_EVENT_ASYNC_END0("gfx", "QGtkWindow::requestUpdate", this);
+        m_wantsUpdate = false;
+        thatThing.deref();
+        qWarning() << "draw unref" << thatThing.load();
         QWindowPrivate::get(window())->deliverUpdateRequest();
     }
 }
 
 void QGtkWindow::requestUpdate()
 {
-    TRACE_EVENT_ASYNC_BEGIN0("gfx", "QGtkWindow::requestUpdate", this);
-    m_wantsUpdate = true;
+    if (!m_wantsUpdate) {
+        TRACE_EVENT_ASYNC_BEGIN0("gfx", "QGtkWindow::requestUpdate", this);
+        m_wantsUpdate = true;
+        thatThing.ref();
+        qWarning() << "draw ref" << thatThing.load();
+    }
 }
 
 QGtkCourierObject::QGtkCourierObject(QObject *parent)

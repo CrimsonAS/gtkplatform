@@ -270,12 +270,20 @@ QGtkWindow::~QGtkWindow()
 
 void QGtkWindow::onMap()
 {
+    thatThing.deref(); // special case; to let it swap for us
+    qWarning() << "special case, dereffed" << thatThing.load();
     QWindowSystemInterface::handleExposeEvent(window(), QRect(QPoint(), geometry().size()));
+    QWindowSystemInterface::flushWindowSystemEvents(QEventLoop::ExcludeUserInputEvents);
+    thatThing.ref(); // undo special case
 }
 
 void QGtkWindow::onUnmap()
 {
+    thatThing.deref(); // special case; to let it swap for us
+    qWarning() << "special case, dereffed" << thatThing.load();
     QWindowSystemInterface::handleExposeEvent(window(), QRegion());
+    QWindowSystemInterface::flushWindowSystemEvents(QEventLoop::ExcludeUserInputEvents);
+    thatThing.ref(); // undo special case
 }
 
 void QGtkWindow::onConfigure()
