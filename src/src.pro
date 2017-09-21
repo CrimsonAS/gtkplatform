@@ -32,6 +32,7 @@ SOURCES =   main.cpp \
             qgtkhelpers.cpp \
             qgtk3dialoghelpers.cpp \
             qgtkopenglcontext.cpp \
+            qgtkopenglcontext_wayland.cpp \
             qgtkcursor.cpp \
             qgtkeventdispatcher.cpp \
             qgtkclipboard.cpp \

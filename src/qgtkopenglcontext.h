@@ -29,10 +29,13 @@
 
 #include <QtGui/qopenglframebufferobject.h>
 #include <qpa/qplatformopenglcontext.h>
+#include <gdk/gdk.h>
 
+#ifdef GDK_WINDOWING_WAYLAND
 typedef void *EGLContext;
 typedef void *EGLDisplay;
 typedef void *EGLConfig;
+#endif
 
 QT_BEGIN_NAMESPACE
 
@@ -52,23 +55,41 @@ public:
     bool isSharing() const override;
     bool isValid() const override;
 
+    virtual void *nativeResource(const QByteArray &resource) const;
+
+protected:
+    QSurfaceFormat m_format;
+    QGtkOpenGLContext *m_shareContext;
+    QOpenGLFramebufferObject *m_fbo;
+    QOpenGLFramebufferObject *m_fbo_mirrored;
+};
+
+#ifdef GDK_WINDOWING_WAYLAND
+class QGtkWaylandContext : public QGtkOpenGLContext
+{
+public:
+    using QGtkOpenGLContext::QGtkOpenGLContext;
+    virtual ~QGtkWaylandContext();
+
+    void initialize() override;
+    bool makeCurrent(QPlatformSurface *surface) override;
+    void doneCurrent() override;
+
     QFunctionPointer getProcAddress(const char *procName) override;
 
+    bool isValid() const override;
+
+    virtual void *nativeResource(const QByteArray &resource) const override;
     EGLContext eglContext() const;
     EGLDisplay eglDisplay() const;
     EGLConfig eglConfig() const;
 
 protected:
-    QSurfaceFormat m_format;
     EGLContext m_eglContext;
     EGLDisplay m_eglDisplay;
     EGLConfig m_eglConfig;
-    QGtkOpenGLContext *m_shareContext;
-    QOpenGLFramebufferObject *m_fbo;
-    QOpenGLFramebufferObject *m_fbo_mirrored;
-
-    QGtkOpenGLContext();
 };
+#endif
 
 QT_END_NAMESPACE
 

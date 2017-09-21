@@ -138,7 +138,12 @@ void QGtkIntegration::onMonitorRemoved(GdkMonitor *monitor)
 
 QPlatformOpenGLContext *QGtkIntegration::createPlatformOpenGLContext(QOpenGLContext *context) const
 {
-    return new QGtkOpenGLContext(context->format(), static_cast<QGtkOpenGLContext*>(context->shareHandle()));
+#ifdef GDK_WINDOWING_WAYLAND
+    if (GDK_IS_WAYLAND_DISPLAY(m_display)) {
+        return new QGtkWaylandContext(context->format(), static_cast<QGtkOpenGLContext*>(context->shareHandle()));
+    }
+#endif
+    return nullptr;
 }
 
 bool QGtkIntegration::hasCapability(QPlatformIntegration::Capability cap) const
@@ -258,18 +263,11 @@ void *QGtkIntegration::nativeResourceForContext(const QByteArray &resource, QOpe
     if (!context->handle()) {
         return result;
     }
-    auto qgtkContext = static_cast<QGtkOpenGLContext*>(context->handle());
 
-    if (resource == "eglcontext") {
-        result = qgtkContext->eglContext();
-    } else if (resource == "eglconfig") {
-        result = qgtkContext->eglConfig();
-    } else if (resource == "egldisplay") {
-        result = qgtkContext->eglDisplay();
-    } else {
+    result = static_cast<QGtkOpenGLContext*>(context->handle())->nativeResource(resource);
+    if (!result) {
         qWarning() << "Unimplemented request for " << resource << " on " << context;
     }
-
     return result;
 }
 

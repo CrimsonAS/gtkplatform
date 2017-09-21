@@ -75,45 +75,18 @@ Q_LOGGING_CATEGORY(lcContext, "qt.qpa.gtk.context");
 // the raster image back to QGtkWindow to composite.
 
 QGtkOpenGLContext::QGtkOpenGLContext(const QSurfaceFormat &format, QGtkOpenGLContext *shareContext)
-    : QGtkOpenGLContext()
-{
-    m_format = format;
-    m_shareContext = shareContext;
-
-    QGtkIntegration *integration = QGtkIntegration::instance();
-#ifdef GDK_WINDOWING_WAYLAND
-    if ((m_eglDisplay = integration->eglDisplay())) {
-        m_eglConfig = q_configFromGLFormat(m_eglDisplay, format);
-        m_format = q_glFormatFromConfig(m_eglDisplay, m_eglConfig, m_format);
-        m_eglContext = eglCreateContext(m_eglDisplay, m_eglConfig,
-                                        shareContext ? shareContext->m_eglContext : NULL,
-                                        NULL);
-        Q_ASSERT(m_eglContext);
-    }
-    else
-#endif
-    {
-        qWarning("GTK platform does not support this display backend for GL contexts");
-    }
-}
-
-QGtkOpenGLContext::QGtkOpenGLContext()
-    : m_eglContext(nullptr)
-    , m_eglDisplay(nullptr)
-    , m_eglConfig(nullptr)
-    , m_shareContext(nullptr)
+    : m_shareContext(nullptr)
     , m_fbo(nullptr)
     , m_fbo_mirrored(nullptr)
 {
+    m_format = format;
+    m_shareContext = shareContext;
 }
 
 QGtkOpenGLContext::~QGtkOpenGLContext()
 {
     delete m_fbo;
     delete m_fbo_mirrored;
-    if (m_eglContext) {
-        eglDestroyContext(m_eglDisplay, m_eglContext);
-    }
 }
 
 QSurfaceFormat QGtkOpenGLContext::format() const
@@ -174,18 +147,6 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
 
 bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
 {
-    TRACE_EVENT0("gfx", "QGtkOpenGLContext::makeCurrent");
-    if (m_eglContext) {
-        bool ok = eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, m_eglContext);
-        if (!ok) {
-            qWarning() << "eglMakeCurrent failed";
-            return ok;
-        }
-    } else {
-        qWarning("No context in QGtkOpenGLContext::makeCurrent");
-        return false;
-    }
-
     QGtkWindow *win = static_cast<QGtkWindow*>(surface);
     QSize sz = win->geometry().size() * win->devicePixelRatio();
     if (m_fbo && m_fbo->size() != sz) {
@@ -213,10 +174,6 @@ bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
 
 void QGtkOpenGLContext::doneCurrent()
 {
-    TRACE_EVENT0("gfx", "QGtkOpenGLContext::doneCurrent");
-    if (m_eglContext) {
-        eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    }
 }
 
 bool QGtkOpenGLContext::isSharing() const
@@ -226,30 +183,11 @@ bool QGtkOpenGLContext::isSharing() const
 
 bool QGtkOpenGLContext::isValid() const
 {
-    return m_eglContext;
+    return false;
 }
 
-QFunctionPointer QGtkOpenGLContext::getProcAddress(const char *procName)
+void *QGtkOpenGLContext::nativeResource(const QByteArray &resource) const
 {
-    eglBindAPI(EGL_OPENGL_API); // ### EGL_OPENGL_ES_API?
-    QFunctionPointer proc = (QFunctionPointer)eglGetProcAddress(procName);
-    if (!proc) {
-        proc = (QFunctionPointer)dlsym(RTLD_DEFAULT, procName);
-    }
-    return proc;
-}
-
-EGLContext QGtkOpenGLContext::eglContext() const
-{
-    return m_eglContext;
-}
-
-EGLDisplay QGtkOpenGLContext::eglDisplay() const
-{
-    return m_eglDisplay;
-}
-
-EGLConfig QGtkOpenGLContext::eglConfig() const
-{
-    return m_eglConfig;
+    Q_UNUSED(resource);
+    return nullptr;
 }
