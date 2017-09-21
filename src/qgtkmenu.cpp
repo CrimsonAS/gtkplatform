@@ -29,6 +29,7 @@
 #include "qgtkmenuitem.h"
 #include "qgtkhelpers.h"
 
+#include <QtGui/qguiapplication.h>
 #include <QtGui/qwindow.h>
 #include <QtCore/qdebug.h>
 #include <QtCore/qloggingcategory.h>
@@ -138,6 +139,8 @@ void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, c
         dismiss();
     }
 
+    Q_EMIT aboutToShow();
+
     m_popup = gtkMenu();
     GdkRectangle gRect { targetRect.x(), targetRect.y(), targetRect.width(), targetRect.height() };
     gtk_menu_popup_at_rect(
@@ -148,14 +151,19 @@ void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, c
         GdkGravity(GDK_GRAVITY_NORTH_WEST),
         NULL
     );
+    connect(qGuiApp, &QGuiApplication::focusObjectChanged, this, &QGtkMenu::dismiss);
 }
 
 void QGtkMenu::dismiss()
 {
+    Q_EMIT aboutToHide();
+
     if (m_popup) {
+        gtk_menu_popdown(m_popup.get());
         gtk_widget_destroy(GTK_WIDGET(m_popup.get()));
         m_popup = nullptr;
     }
+    disconnect(qGuiApp, &QGuiApplication::focusObjectChanged, this, &QGtkMenu::dismiss);
 }
 
 QPlatformMenuItem *QGtkMenu::menuItemAt(int position) const
