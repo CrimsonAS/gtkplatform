@@ -280,13 +280,21 @@ void QGtkWindow::onUnmap()
 
 void QGtkWindow::onConfigure()
 {
-    int x;
-    int y;
-    gtk_window_get_position(GTK_WINDOW(m_window.get()), &x, &y);
+    // windowX and windowY are the window system coordinates of the top-left of the client
+    // portion of the window. They don't include server-side decorations but do include client-side.
+    int windowX = 0, windowY = 0;
+    GdkWindow *gwindow = gtk_widget_get_window(m_window.get());
+    if (gwindow)
+        gdk_window_get_position(gwindow, &windowX, &windowY);
 
-    GdkRectangle r;
-    gtk_widget_get_allocated_size(m_content.get(), &r, nullptr);
-    m_newGeometry = QRect(x, y, r.width, r.height);
+    // contentRect is the drawn content area of the window in window coordinates. This excludes
+    // client-side decorations and other frame elements (e.g. menubar).
+    GdkRectangle contentRect;
+    gtk_widget_get_allocated_size(m_content.get(), &contentRect, nullptr);
+
+    // QWindow geometry is contentRect translated to window system coordinates with windowX/windowY
+    m_newGeometry = QRect(windowX + contentRect.x, windowY + contentRect.y,
+                          contentRect.width, contentRect.height);
 }
 
 bool QGtkWindow::onDelete()
@@ -335,16 +343,31 @@ QMargins QGtkWindow::frameMargins() const
     if (!gwindow) {
         return QMargins();
     }
-    GdkRectangle frame_rect;
-    gdk_window_get_frame_extents(gtk_widget_get_window(m_window.get()), &frame_rect);
-    GdkRectangle alloc_rect;
-    gtk_widget_get_allocation(m_window.get(), &alloc_rect);
-    return QMargins(
-        alloc_rect.x,
-        alloc_rect.y,
-        frame_rect.width - alloc_rect.width - alloc_rect.x,
-        frame_rect.height - alloc_rect.height - alloc_rect.y
-    );
+
+    // Bounding rectangle of the entire window, including server-side frame
+    // x and y are in root window coordinates
+    GdkRectangle frameRect;
+    gdk_window_get_frame_extents(gwindow, &frameRect);
+
+    // Position of the top-left of the window area, excluding server-side frames,
+    // also in root window coordinates
+    int originX, originY;
+    gdk_window_get_origin(gwindow, &originX, &originY);
+
+    // Rectangle in window coordinates of the content area, excluding client-side frames
+    GdkRectangle contentRect;
+    gtk_widget_get_allocated_size(m_content.get(), &contentRect, nullptr);
+
+    // Size of the margin for top and left. This is the server-side margin (difference
+    // between the frame and origin's X) plus the client-side margin (contentRect.x)
+    int leftMargin = originX - frameRect.x + contentRect.x;
+    int topMargin = originY - frameRect.y + contentRect.y;
+
+    // Bottom and right margins are the remainder of frameRect's size after removing the
+    // top/left margins and contentRect size.
+    return QMargins(leftMargin, topMargin,
+                    frameRect.width - leftMargin - contentRect.width,
+                    frameRect.height - topMargin - contentRect.height);
 }
 
 void QGtkWindow::setVisible(bool visible)
