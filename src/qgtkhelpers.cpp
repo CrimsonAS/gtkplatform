@@ -45,7 +45,7 @@ QGtkRefPtr<GdkPixbuf> qt_pixmapToPixbuf(const QPixmap &pixmap)
     return gpb;
 }
 
-QImage qt_pixbufToIamge(const QGtkRefPtr<GdkPixbuf> &pixbuf)
+QImage qt_pixbufToImage(const QGtkRefPtr<GdkPixbuf> &pixbuf)
 {
     QImage data;
     if (gdk_pixbuf_get_has_alpha(pixbuf.get())) {

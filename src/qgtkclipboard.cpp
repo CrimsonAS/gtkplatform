@@ -233,7 +233,7 @@ QMimeData *QGtkClipboardData::mimeData() const
     qCDebug(lcClipboard) << "Reading image data";
     QGtkRefPtr<GdkPixbuf> img = gtk_clipboard_wait_for_image(m_clipboard);
     if (img.get()) {
-        QImage data = qt_pixbufToIamge(img);
+        QImage data = qt_pixbufToImage(img);
         if (!data.isNull()) {
             m_systemData->setImageData(QVariant::fromValue(data));
         }
