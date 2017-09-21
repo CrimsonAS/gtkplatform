@@ -51,6 +51,8 @@
 
 #include <glib.h>
 
+#include "CSystrace.h"
+
 QT_BEGIN_NAMESPACE
 
 struct GPollFDWithQSocketNotifier
@@ -103,8 +105,10 @@ static gboolean socketNotifierSourceDispatch(GSource *source, GSourceFunc, gpoin
     for (int i = 0; i < src->pollfds.count(); ++i) {
         GPollFDWithQSocketNotifier *p = src->pollfds.at(i);
 
-        if ((p->pollfd.revents & p->pollfd.events) != 0)
+        if ((p->pollfd.revents & p->pollfd.events) != 0) {
+            TRACE_EVENT0("gfx", "QGtkEventDispatcher::socketNotifierSourceDispatch");
             QCoreApplication::sendEvent(p->socketNotifier, &event);
+        }
     }
 
     return true; // ??? don't remove, right?
@@ -272,6 +276,7 @@ static gboolean postEventSourceCheck(GSource *source)
 
 static gboolean postEventSourceDispatch(GSource *s, GSourceFunc, gpointer)
 {
+    TRACE_EVENT0("gfx", "QGtkEventDispatcher::postEventSourceDispatch");
     GPostEventSource *source = reinterpret_cast<GPostEventSource *>(s);
     source->lastSerialNumber = source->serialNumber.load();
     QCoreApplication::sendPostedEvents();
@@ -309,6 +314,7 @@ static gboolean userEventSourceCheck(GSource *source)
 
 static gboolean userEventSourceDispatch(GSource *source, GSourceFunc, gpointer)
 {
+    TRACE_EVENT0("gfx", "QGtkEventDispatcher::userEventSourceDispatch");
     GUserEventSource *userEventSource = reinterpret_cast<GUserEventSource*>(source);
     QGtkEventDispatcherPrivate *dispatcher = userEventSource->d;
     QWindowSystemInterface::sendWindowSystemEvents(dispatcher->m_flags);
@@ -461,6 +467,7 @@ QGtkEventDispatcher::~QGtkEventDispatcher()
 
 bool QGtkEventDispatcher::processEvents(QEventLoop::ProcessEventsFlags flags)
 {
+    TRACE_EVENT0("gfx", "QGtkEventDispatcher::processEvents");
     Q_D(QGtkEventDispatcher);
 
     d->m_flags = flags;
@@ -515,6 +522,7 @@ void QGtkEventDispatcher::registerSocketNotifier(QSocketNotifier *notifier)
 #endif
 
     Q_D(QGtkEventDispatcher);
+    TRACE_COUNTER1("core", "registeredSockets", ++d->m_sockets);
 
 
     GPollFDWithQSocketNotifier *p = new GPollFDWithQSocketNotifier;
@@ -553,6 +561,7 @@ void QGtkEventDispatcher::unregisterSocketNotifier(QSocketNotifier *notifier)
 #endif
 
     Q_D(QGtkEventDispatcher);
+    TRACE_COUNTER1("core", "registeredSockets", --d->m_sockets);
 
     for (int i = 0; i < d->socketNotifierSource->pollfds.count(); ++i) {
         GPollFDWithQSocketNotifier *p = d->socketNotifierSource->pollfds.at(i);
@@ -581,6 +590,7 @@ void QGtkEventDispatcher::registerTimer(int timerId, int interval, Qt::TimerType
 #endif
 
     Q_D(QGtkEventDispatcher);
+    TRACE_COUNTER1("core", "registeredTimers", ++d->m_timers);
     d->timerSource->timerList.registerTimer(timerId, interval, timerType, object);
 }
 
@@ -597,6 +607,7 @@ bool QGtkEventDispatcher::unregisterTimer(int timerId)
 #endif
 
     Q_D(QGtkEventDispatcher);
+    TRACE_COUNTER1("core", "registeredTimers", --d->m_timers);
     return d->timerSource->timerList.unregisterTimer(timerId);
 }
 

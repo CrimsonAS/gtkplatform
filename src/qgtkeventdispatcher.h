@@ -101,6 +101,9 @@ public:
     void runTimersOnceWithNormalPriority();
 
     QEventLoop::ProcessEventsFlags m_flags = QEventLoop::AllEvents;
+
+    uint m_timers = 0;
+    uint m_sockets = 0;
 };
 
 QT_END_NAMESPACE
