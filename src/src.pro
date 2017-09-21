@@ -24,6 +24,7 @@ SOURCES =   main.cpp \
             qgtkwindow_mouse.cpp \
             qgtkwindow_touch.cpp \
             qgtkwindow_render.cpp \
+            qgtkwindow_gesture.cpp \
             qgtktheme.cpp \
             qgtksystemtrayicon.cpp \
             qgtkmenubar.cpp \
