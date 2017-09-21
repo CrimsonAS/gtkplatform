@@ -27,6 +27,8 @@
 #ifndef QPLATFORMINTEGRATION_GTK_H
 #define QPLATFORMINTEGRATION_GTK_H
 
+#include "qgtkservices.h"
+
 #include <qpa/qplatformintegration.h>
 #include <qpa/qplatformnativeinterface.h>
 #include <qpa/qplatformscreen.h>
@@ -79,7 +81,7 @@ public:
     EGLDisplay eglDisplay() const;
 
 private:
-    QScopedPointer<QPlatformServices> m_services;
+    QScopedPointer<QGtkServices> m_services;
     QScopedPointer<QPlatformFontDatabase> m_fontDatabase;
     GdkDisplay *m_display;
     QVector<const char*> m_arguments; /* must remain allocated for gdk's sake */

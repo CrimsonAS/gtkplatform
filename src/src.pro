@@ -34,7 +34,8 @@ SOURCES =   main.cpp \
             qgtkopenglcontext.cpp \
             qgtkcursor.cpp \
             qgtkeventdispatcher.cpp \
-            qgtkclipboard.cpp
+            qgtkclipboard.cpp \
+            qgtkservices.cpp
 
 HEADERS =   qgtkintegration.h \
             qgtkbackingstore.h \
@@ -51,14 +52,15 @@ HEADERS =   qgtkintegration.h \
             qgtkrefptr.h \
             qgtkcursor.h \
             qgtkeventdispatcher.h \
-            CTraceMessages.h \
-            qgtkclipboard.h
+            qgtkclipboard.h \
+            qgtkservices.h
 
 # CSystrace
 DEFINES += DISABLE_TRACE_CODE
 #LIBS += -lrt
 #SOURCES +=  CSystrace.cpp
-HEADERS +=  CSystrace.h
+HEADERS +=  CSystrace.h \
+            CTraceMessages.h
 
 CONFIG += qpa/genericunixfontdatabase
 

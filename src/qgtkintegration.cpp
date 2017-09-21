@@ -74,7 +74,7 @@ void monitor_removed(GdkDisplay *, GdkMonitor *monitor, gpointer integration)
 }
 
 QGtkIntegration::QGtkIntegration(const QStringList &)
-    : m_services(new QGenericUnixServices)
+    : m_services(new QGtkServices)
     , m_fontDatabase(new QGenericUnixFontDatabase)
     , m_eglDisplay(nullptr)
 {
