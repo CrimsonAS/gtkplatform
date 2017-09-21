@@ -75,6 +75,7 @@ Q_SIGNALS:
 private:
     QVector<QGtkMenuItem*> m_items;
     QVector<QGtkRefPtr<GtkWidget>> m_gtkItems;
+    QGtkRefPtr<GtkMenu> m_popup = nullptr;
     bool m_enabled = true;
     bool m_visible = true;
     QString m_text;

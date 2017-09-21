@@ -133,10 +133,16 @@ void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, c
 {
     Q_UNUSED(item);
 
-    QGtkRefPtr<GtkMenu> menu = gtkMenu();
+    if (m_popup) {
+        qCWarning(lcMenu) << "Trying to showPopup while one is already around";
+        dismiss();
+    }
+
+    m_popup = gtkMenu();
+    gtk_widget_show_all(GTK_WIDGET(m_popup.get()));
     GdkRectangle gRect { targetRect.x(), targetRect.y(), targetRect.width(), targetRect.height() };
     gtk_menu_popup_at_rect(
-        menu.get(),
+        m_popup.get(),
         gtk_widget_get_window(static_cast<QGtkWindow*>(parentWindow->handle())->gtkWindow().get()),
         &gRect,
         GdkGravity(GDK_GRAVITY_NORTH_WEST),
@@ -147,7 +153,10 @@ void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, c
 
 void QGtkMenu::dismiss()
 {
-    qCWarning(lcMenu) << "Stub";
+    if (m_popup) {
+        gtk_widget_destroy(GTK_WIDGET(m_popup.get()));
+        m_popup = nullptr;
+    }
 }
 
 QPlatformMenuItem *QGtkMenu::menuItemAt(int position) const
