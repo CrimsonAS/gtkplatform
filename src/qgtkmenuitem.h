@@ -73,8 +73,8 @@ private:
     QString m_text;
     bool m_checkable = false;
     bool m_isSeparator = false;
-    bool m_enabled = false;
-    bool m_visible = false;
+    bool m_enabled = true;
+    bool m_visible = true;
     bool m_checked = false;
     bool m_hasExclusiveGroup = false;
     QGtkMenu *m_childMenu = nullptr;

@@ -139,7 +139,6 @@ void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, c
     }
 
     m_popup = gtkMenu();
-    gtk_widget_show_all(GTK_WIDGET(m_popup.get()));
     GdkRectangle gRect { targetRect.x(), targetRect.y(), targetRect.width(), targetRect.height() };
     gtk_menu_popup_at_rect(
         m_popup.get(),
