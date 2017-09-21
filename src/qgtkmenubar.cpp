@@ -119,6 +119,11 @@ void QGtkMenuBar::handleReparent(QWindow *newParentWindow)
         m_menubar.reset(nullptr);
     } else {
         QGtkWindow *w = static_cast<QGtkWindow*>(newParentWindow->handle());
+        if (!w) {
+            // force creation of pwin
+            newParentWindow->create();
+        }
+        w = static_cast<QGtkWindow*>(newParentWindow->handle());
         m_menubar = w->gtkMenuBar();
     }
 
