@@ -119,6 +119,14 @@ public:
     QGtkRefPtr<GtkMenuBar> gtkMenuBar() const;
     QGtkRefPtr<GtkWidget> gtkWindow() const;
 
+    void beginZoom(QPointF &contentPoint, guint32 ts);
+    void zoom(QPointF &contentPoint, double scale, guint32 ts);
+    void endZoom(QPointF &contentPoint, guint32 ts);
+
+    void beginRotate(QPointF &contentPoint, guint32 ts);
+    void rotate(QPointF &contentPoint, double angle, double angle_delta, guint32 ts);
+    void endRotate(QPointF &contentPoint, guint32 ts);
+
 private:
     void maybeForceTransientParent(Qt::WindowType windowType);
     void reallyForceTransientFor(QWindow *transientParent);
@@ -142,6 +150,24 @@ private:
 
     static void drawCallback(GtkWidget *, cairo_t *cr, gpointer platformWindow);
     static gboolean windowTickCallback(GtkWidget*, GdkFrameClock *, gpointer platformWindow);
+
+    static void zoom_cb(GtkGestureZoom *pt, gdouble scale, gpointer platformWindow);
+    static void begin_zoom_cb(GtkGesture *pt, GdkEventSequence*, gpointer platformWindow);
+    static void end_zoom_cb(GtkGesture *pt, GdkEventSequence*, gpointer platformWindow);
+    static void cancel_zoom_cb(GtkGesture *pt, GdkEventSequence*, gpointer platformWindow);
+
+    static void rotate_cb(GtkGestureRotate *pt, gdouble angle, gdouble angle_delta, gpointer platformWindow);
+    static void begin_rotate_cb(GtkGesture *pt, GdkEventSequence*, gpointer platformWindow);
+    static void end_rotate_cb(GtkGesture *pt, GdkEventSequence*, gpointer platformWindow);
+    static void cancel_rotate_cb(GtkGesture *pt, GdkEventSequence*, gpointer platformWindow);
+
+    QGtkRefPtr<GtkGesture> m_zoomGesture;
+    QGtkRefPtr<GtkGesture> m_rotateGesture;
+    int m_activeNativeGestures = 0;
+    bool m_initialZoomSet = false;
+    double m_initialZoom = 0;
+    bool m_initialRotateSet = false;
+    double m_initialRotate = 0;
 };
 
 class QGtkCourierObject : public QObject

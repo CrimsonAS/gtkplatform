@@ -256,6 +256,22 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_content.get(), "leave-notify-event", G_CALLBACK(leave_content_notify_cb), this);
     gtk_widget_set_can_focus(m_content.get(), true);
 
+    m_zoomGesture = gtk_gesture_zoom_new(m_content.get());
+    gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(m_zoomGesture.get()), GTK_PHASE_CAPTURE);
+    g_signal_connect(m_zoomGesture.get(), "scale-changed", G_CALLBACK(QGtkWindow::zoom_cb), this);
+    g_signal_connect(m_zoomGesture.get(), "begin", G_CALLBACK(QGtkWindow::begin_zoom_cb), this);
+    g_signal_connect(m_zoomGesture.get(), "cancel", G_CALLBACK(QGtkWindow::cancel_zoom_cb), this);
+    g_signal_connect(m_zoomGesture.get(), "end", G_CALLBACK(QGtkWindow::end_zoom_cb), this);
+
+    m_rotateGesture = gtk_gesture_rotate_new(m_content.get());
+    gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(m_rotateGesture.get()), GTK_PHASE_CAPTURE);
+    g_signal_connect(m_rotateGesture.get(), "angle-changed", G_CALLBACK(QGtkWindow::rotate_cb), this);
+    g_signal_connect(m_rotateGesture.get(), "begin", G_CALLBACK(QGtkWindow::begin_rotate_cb), this);
+    g_signal_connect(m_rotateGesture.get(), "cancel", G_CALLBACK(QGtkWindow::cancel_rotate_cb), this);
+    g_signal_connect(m_rotateGesture.get(), "end", G_CALLBACK(QGtkWindow::end_rotate_cb), this);
+
+    gtk_gesture_group(m_zoomGesture.get(), m_rotateGesture.get());
+
     m_touchDevice = new QTouchDevice;
     m_touchDevice->setType(QTouchDevice::TouchScreen); // ### use GdkDevice or not?
     m_touchDevice->setCapabilities(QTouchDevice::Position | QTouchDevice::MouseEmulation);
