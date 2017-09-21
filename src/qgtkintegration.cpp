@@ -54,6 +54,9 @@
 #include <gdk/gdkwayland.h>
 static EGLDisplay createWaylandEGLDisplay(wl_display *display);
 #endif
+#ifdef GDK_WINDOWING_X11
+#include <gdk/gdkx.h>
+#endif
 
 #include "CSystrace.h"
 
@@ -102,6 +105,11 @@ QGtkIntegration::QGtkIntegration(const QStringList &)
     }
     else
 #endif
+#ifdef GDK_WINDOWING_X11
+    if (GDK_IS_X11_DISPLAY(m_display)) {
+    }
+    else
+#endif
         qWarning("GTK platform does not support this display backend; GL contexts will fail");
 }
 
@@ -141,6 +149,11 @@ QPlatformOpenGLContext *QGtkIntegration::createPlatformOpenGLContext(QOpenGLCont
 #ifdef GDK_WINDOWING_WAYLAND
     if (GDK_IS_WAYLAND_DISPLAY(m_display)) {
         return new QGtkWaylandContext(context->format(), static_cast<QGtkOpenGLContext*>(context->shareHandle()));
+    }
+#endif
+#ifdef GDK_WINDOWING_X11
+    if (GDK_IS_X11_DISPLAY(m_display)) {
+        return new QGtkX11Context(context->format(), static_cast<QGtkOpenGLContext*>(context->shareHandle()));
     }
 #endif
     return nullptr;

@@ -93,6 +93,26 @@ protected:
 };
 #endif
 
+#ifdef GDK_WINDOWING_X11
+class QGtkX11Context : public QGtkOpenGLContext
+{
+    using QGtkOpenGLContext::QGtkOpenGLContext;
+    virtual ~QGtkX11Context();
+
+    void initialize() override;
+    bool makeCurrent(QPlatformSurface *surface) override;
+    void doneCurrent() override;
+
+    QFunctionPointer getProcAddress(const char *procName) override;
+
+    bool isValid() const override;
+
+protected:
+    void *m_display;
+    void *m_glxContext;
+};
+#endif
+
 QT_END_NAMESPACE
 
 #endif // QGTKOPENGLCONTEXT_H
