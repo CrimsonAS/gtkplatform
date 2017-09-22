@@ -243,9 +243,7 @@ This project aims to help mitigate those issues.
 * **Q:** My application doesn't work!
 
   **A:** Not exactly a question, but: many applications rely on features of the
-  underlying platform at build time. Krita is an example of this: I haven't looked
-  into the details, but at least on Fedora, it attempts to fetch the XCB display
-  handle, and do something with it. This of course won't work out of the box in
+  underlying platform at build time. This of course won't work out of the box in
   many cases, sometimes due to missing mapping of a feature, and sometimes
   because it's outright not possible.
 
