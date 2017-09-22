@@ -127,28 +127,14 @@ This project aims to help mitigate those issues.
   When running on Wayland, this platform plugin will not allow absolute
   positioning of a window in global coordinate space. Instead, popups are
   positioned relative to their parent window. This usually manifests as windows
-  appearing very far away from where they ought to have triggered.
-
-* OpenGL runs too fast.
-
-  Right now, QOpenGLContext's swapBuffers is non-blocking in all cases. This
-  means that OpenGL content is not limited from drawing too fast. You can use
-  QWindow::requestUpdate to limit your rendering. In the longer term, we might
-  try to do something about this for threaded OpenGL use. See
-  [#2](https://github.com/CrimsonAS/gtkplatform/issues/2).
+  appearing very far away from where they ought to have triggered because they
+  failed to set a parent.
 
 * Notifications don't work right.
 
   Right now, we're using libnotify, because using GtkApplication without using
   g_application_run dodesn't seem trivial. This means that we're not using the
   latest and greatest stuff, unfortunately. I'd like to fix this somehow.
-
-* Clipboard can't copy images (or: doesn't really work right)
-
-  I am very unsurprised. The clipboard code is very new, and right now only
-  supports plain text. It also wasn't terribly easy to write due to a combination
-  of [GtkClipboard's documentation](https://developer.gnome.org/gtk3/stable/gtk3-Clipboards.html#gtk-clipboard-set-with-data)
-  basically not existing, and being a rather convoluted API. See [#5](https://github.com/CrimsonAS/gtkplatform/issues/5).
 
 * Drag and drop doesn't work (or: Accessibility, your_feature_here)
 
@@ -158,10 +144,6 @@ This project aims to help mitigate those issues.
 * My menu shortcuts have funny things in them
 
   The mapping of GTK+ keys to Qt keys is incomplete. See [#8](https://github.com/CrimsonAS/gtkplatform/issues/8).
-
-* My menu shortcuts don't activate
-
-  Known problem, currently without a known solution. See [#7](https://github.com/CrimsonAS/gtkplatform/issues/7).
 
 * QtWebEngine doesn't work out of the box
 
