@@ -163,6 +163,9 @@ bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
 {
     QGtkWindow *win = static_cast<QGtkWindow*>(surface);
     QSize sz = win->geometry().size() * win->devicePixelRatio();
+    if (sz.isEmpty())
+        sz = QSize(1, 1);
+
     if (m_fbo && m_fbo->size() != sz) {
         qCDebug(lcContext) << "clearing old context FBO of size" << m_fbo->size();
         delete m_fbo_mirrored;
