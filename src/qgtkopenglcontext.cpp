@@ -30,7 +30,6 @@
 
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qthread.h>
-#include <QtCore/qelapsedtimer.h>
 #include <QtCore/qdebug.h>
 #include <QtGui/qopenglcontext.h>
 #include <QtGui/qopenglfunctions.h>
@@ -112,8 +111,6 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
     TRACE_EVENT0("gfx", "QGtkOpenGLContext::swapBuffers");
     QGtkWindow *win = static_cast<QGtkWindow*>(surface);
 
-    QElapsedTimer t;
-    t.start();
     QImage *image = win->beginUpdateFrame("swapBuffers");
 
     // ### perhaps this should be done in one place (inside QGtkBackingStore)?
@@ -146,16 +143,23 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
     // or QWidget). We can't really do more than this because if we do block we
     // may lose the chance to process some events.
     //
-    // If we're swapping from a thread, though, all bets are off: we are
-    // probably rendering as fast as our little bits can take us, so we need to
-    // slow down to act fair to the rest of the system.
-    if (QThread::currentThread() != QCoreApplication::instance()->thread()) {
+    // If the application requested a swap interval, though, that means they
+    // want us to block, so let's try so they don't render as fast as our little
+    // bits can take us.
+    if (m_format.swapInterval() > 0) {
         // So yeah, this isn't exactly an ideal throttling mechanism, but it
         // should be quite deadlock-proof, and works well enough for the time
-        // being.
-        if (t.elapsed() < 10000) {
-            usleep(10000 - t.elapsed());
+        // being. We take the allowed frame time, and if we're finishing ahead
+        // of the allowed time, we sleep. This isn't perfect in that it doesn't
+        // include the time taken by gtk+ to get the frame onto the display but
+        // it's better than nothing.
+        qint64 timeBudget = 1000 / win->window()->screen()->refreshRate();
+        qint64 delta = timeBudget - m_swapTimer.elapsed();
+        if (m_swapTimer.isValid() && m_swapTimer.elapsed() < timeBudget) {
+            TRACE_EVENT0("gfx", "QGtkOpenGLContext::swapBuffers::usleep");
+            usleep(delta * 1000);
         }
+        m_swapTimer.restart();
     }
 }
 

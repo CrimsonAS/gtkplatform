@@ -27,6 +27,7 @@
 #ifndef QGTKOPENGLCONTEXT_H
 #define QGTKOPENGLCONTEXT_H
 
+#include <QtCore/qelapsedtimer.h>
 #include <QtGui/qopenglframebufferobject.h>
 #include <qpa/qplatformopenglcontext.h>
 #include <gdk/gdk.h>
@@ -62,6 +63,7 @@ protected:
     QGtkOpenGLContext *m_shareContext;
     QOpenGLFramebufferObject *m_fbo;
     QOpenGLFramebufferObject *m_fbo_mirrored;
+    QElapsedTimer m_swapTimer;
 };
 
 #ifdef GDK_WINDOWING_WAYLAND
