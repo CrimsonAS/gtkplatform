@@ -28,6 +28,9 @@
 #include "qgtkwindow.h"
 #include "qgtkintegration.h"
 
+#include <QtCore/qcoreapplication.h>
+#include <QtCore/qthread.h>
+#include <QtCore/qelapsedtimer.h>
 #include <QtCore/qdebug.h>
 #include <QtGui/qopenglcontext.h>
 #include <QtGui/qopenglfunctions.h>
@@ -109,6 +112,8 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
     TRACE_EVENT0("gfx", "QGtkOpenGLContext::swapBuffers");
     QGtkWindow *win = static_cast<QGtkWindow*>(surface);
 
+    QElapsedTimer t;
+    t.start();
     QImage *image = win->beginUpdateFrame("swapBuffers");
 
     // ### perhaps this should be done in one place (inside QGtkBackingStore)?
@@ -133,16 +138,25 @@ void QGtkOpenGLContext::swapBuffers(QPlatformSurface *surface)
     m_fbo_mirrored->bind();
     funcs.glReadPixels(0, 0, image->width(), image->height(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image->bits());
 
-    // XXX In singlethreaded rendering, we can't really block swapBuffers because
-    // this would also block the GTK loop, and any workaround to that seems insane.
-    // This is probably okay in that case anyway, because a singlethreaded renderer
-    // can't run on a swapBuffers loop.
-    //
-    // But in multithreaded rendering, having a nonblocking swapBuffers seems likely
-    // to cause runaway rendering. This should probably block until the image has
-    // been drawn onto the surface to properly throttle the rendering thread.
     win->endUpdateFrame("swapBuffers");
     win->invalidateRegion(QRegion());
+
+    // If swap is called on the main thread, then assume that the application
+    // knows what it is doing, and can self-throttle (either via requestUpdate,
+    // or QWidget). We can't really do more than this because if we do block we
+    // may lose the chance to process some events.
+    //
+    // If we're swapping from a thread, though, all bets are off: we are
+    // probably rendering as fast as our little bits can take us, so we need to
+    // slow down to act fair to the rest of the system.
+    if (QThread::currentThread() != QCoreApplication::instance()->thread()) {
+        // So yeah, this isn't exactly an ideal throttling mechanism, but it
+        // should be quite deadlock-proof, and works well enough for the time
+        // being.
+        if (t.elapsed() < 10000) {
+            usleep(10000 - t.elapsed());
+        }
+    }
 }
 
 bool QGtkOpenGLContext::makeCurrent(QPlatformSurface *surface)
