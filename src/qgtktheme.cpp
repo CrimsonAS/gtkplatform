@@ -31,6 +31,14 @@
 #include "qgtktheme.h"
 #include "qgtksystemtrayicon.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(5,8,0)
+# include <QtThemeSupport/private/qgenericunixthemes_p.h>
+#else
+ #include <QtPlatformSupport/private/qgenericunixthemes_p.h>
+#endif
+
+#include <QtCore/qmimetype.h>
+#include <QtCore/qmimedatabase.h>
 #include <QtCore/qdebug.h>
 #include <QtCore/qvariant.h>
 #include <QtGui/qpixmap.h>
@@ -137,18 +145,41 @@ QPixmap QGtkTheme::standardPixmap(StandardPixmap sp, const QSizeF &size) const
     return QPlatformTheme::standardPixmap(sp, size);
 }
 
+static QIcon fileIconForFile(const QFileInfo &fi)
+{
+    QMimeDatabase md;
+    QMimeType mt = md.mimeTypeForFile(fi);
+    if (!mt.isValid()) {
+        return QIcon();
+    }
+
+    const QString &iconName = mt.iconName();
+    if (!iconName.isEmpty()) {
+        QIcon ico = QIcon::fromTheme(iconName);
+        if (!ico.isNull()) {
+            return ico;
+        }
+    }
+
+    const QString &genericIconName = mt.genericIconName();
+    return QIcon::fromTheme(genericIconName);
+}
+
 #if QT_VERSION >= QT_VERSION_CHECK(5,8,0)
 QIcon QGtkTheme::fileIcon(const QFileInfo &fileInfo,
         QPlatformTheme::IconOptions options) const
 {
-    return QPlatformTheme::fileIcon(fileInfo, options);
+    return fileIconForFile(fileInfo);
 }
 #else
 QPixmap QGtkTheme::fileIconPixmap(const QFileInfo &fileInfo,
         const QSizeF &size,
         QPlatformTheme::IconOptions options) const
 {
-    return QPlatformTheme::fileIconPixmap(fileInfo, size, options);
+    Q_UNUSED(options);
+
+    QIcon ico = fileIconForFile(fileInfo);
+    return ico.pixmap(size.toSize());
 }
 #endif
 
@@ -157,10 +188,16 @@ QVariant QGtkTheme::themeHint(ThemeHint hint) const
     switch (hint) {
     case QPlatformTheme::SystemIconThemeName:
         return QVariant("Adwaita");
+    case QPlatformTheme::SystemIconFallbackThemeName:
+        return QVariant("gnome");
     case QPlatformTheme::StyleNames:
         return QStringList() << "Adwaita" << "Fusion";
     case QPlatformTheme::PasswordMaskCharacter:
         return QVariant(QChar(0x2022));
+    case QPlatformTheme::IconThemeSearchPaths:
+        return QVariant(QGenericUnixTheme::xdgIconThemePaths());
+    case QPlatformTheme::IconPixmapSizes:
+        return QVariant::fromValue(QIcon::fromTheme(QStringLiteral("inode-directory")).availableSizes());
     default:
         break;
     }
