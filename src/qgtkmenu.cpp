@@ -68,6 +68,7 @@ void QGtkMenu::removeMenuItem(QPlatformMenuItem *menuItem)
     QGtkMenuItem *mi = static_cast<QGtkMenuItem*>(menuItem);
     int idx = m_items.indexOf(mi);
     m_items.removeAt(idx);
+    m_items.removeAll(0); // if it was deleted, remove those too.
     if (mi->menu()) {
         disconnect(mi->menu(), &QGtkMenu::updated, this, &QGtkMenu::updated);
     }
@@ -168,15 +169,22 @@ void QGtkMenu::dismiss()
 
 QPlatformMenuItem *QGtkMenu::menuItemAt(int position) const
 {
-    if (position >= 0 && position < m_items.size())
-        return m_items.at(position);
+    int idx = 0;
+    while (position >= 0 && idx < m_items.size()) {
+        if (m_items.at(idx)) {
+            position--;
+        }
+        idx++;
+    }
+    if (idx >= 0 && idx < m_items.size())
+        return m_items.at(idx);
     return nullptr;
 }
 
 QPlatformMenuItem *QGtkMenu::menuItemForTag(quintptr tag) const
 {
     for (QGtkMenuItem *item : qAsConst(m_items)) {
-        if (item->tag() == tag) {
+        if (item && item->tag() == tag) {
             return item;
         }
     }
@@ -197,12 +205,13 @@ QGtkRefPtr<GtkMenu> QGtkMenu::gtkMenu() const
 {
     QGtkRefPtr<GtkMenu> menu = GTK_MENU(gtk_menu_new());
     for (QGtkMenuItem *i : m_items) {
-        gtk_menu_shell_append(GTK_MENU_SHELL(menu.get()), i->gtkMenuItem().get());
+        if (i)
+            gtk_menu_shell_append(GTK_MENU_SHELL(menu.get()), i->gtkMenuItem().get());
     }
     return menu;
 }
 
-QVector<QGtkMenuItem*> QGtkMenu::items() const
+QVector<QPointer<QGtkMenuItem>> QGtkMenu::items() const
 {
     return m_items;
 }

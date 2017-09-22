@@ -28,12 +28,11 @@
 #define QGTKMENUITEM_H
 
 #include "qgtkrefptr.h"
+#include "qgtkmenu.h"
 
 #include <qpa/qplatformmenu.h>
 
 #include <gtk/gtk.h>
-
-class QGtkMenu;
 
 class QGtkMenuItem : public QPlatformMenuItem
 {
@@ -64,7 +63,7 @@ public:
     void emitSelect();
     void emitActivate();
 
-    QGtkMenu *menu() { return m_childMenu; }
+    QGtkMenu *menu() { return m_childMenu.data(); }
 
 Q_SIGNALS:
     void updated();
@@ -77,7 +76,7 @@ private:
     bool m_visible = true;
     bool m_checked = false;
     bool m_hasExclusiveGroup = false;
-    QGtkMenu *m_childMenu = nullptr;
+    QPointer<QGtkMenu> m_childMenu;
     QKeySequence m_shortcut;
     qintptr m_tag;
 };

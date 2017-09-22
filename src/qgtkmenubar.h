@@ -61,7 +61,7 @@ private Q_SLOTS:
 
 private:
     QGtkRefPtr<GtkMenuBar> m_menubar;
-    QVector<QGtkMenu*> m_items;
+    QVector<QPointer<QGtkMenu>> m_items;
     bool m_regenerateQueued = false;
 };
 

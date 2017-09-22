@@ -67,14 +67,13 @@ public:
     QGtkRefPtr<GtkMenu> gtkMenu() const;
     QGtkRefPtr<GtkMenuItem> gtkMenuItem() const;
 
-    QVector<QGtkMenuItem*> items() const;
+    QVector<QPointer<QGtkMenuItem>> items() const;
 
 Q_SIGNALS:
     void updated();
 
 private:
-    QVector<QGtkMenuItem*> m_items;
-    QVector<QGtkRefPtr<GtkWidget>> m_gtkItems;
+    QVector<QPointer<QGtkMenuItem>> m_items;
     QGtkRefPtr<GtkMenu> m_popup = nullptr;
     bool m_enabled = true;
     bool m_visible = true;

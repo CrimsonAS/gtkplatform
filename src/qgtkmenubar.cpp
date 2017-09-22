@@ -72,6 +72,7 @@ void QGtkMenuBar::removeMenu(QPlatformMenu *menu)
     Q_ASSERT(idx >= 0);
     qCDebug(lcMenuBar) << "Removing menu " << m_items.at(idx) << idx;
     m_items.removeAt(idx);
+    m_items.removeAll(0); // if it was deleted, remove nulls too.
 
     disconnect(m, &QGtkMenu::updated, this, &QGtkMenuBar::queueRegenerate);
     Q_EMIT updated();
@@ -81,7 +82,8 @@ void QGtkMenuBar::syncMenu(QPlatformMenu *menuItem)
 {
     QGtkMenu *menu = static_cast<QGtkMenu*>(menuItem);
     for (QGtkMenuItem *item : menu->items()) {
-        menu->syncMenuItem(item);
+        if (item)
+            menu->syncMenuItem(item);
     }
 }
 
@@ -107,7 +109,8 @@ void QGtkMenuBar::regenerate()
     g_list_free(children);
 
     for (QGtkMenu *menu : m_items) {
-        gtk_menu_shell_append(GTK_MENU_SHELL(m_menubar.get()), GTK_WIDGET(menu->gtkMenuItem().get()));
+        if (menu)
+            gtk_menu_shell_append(GTK_MENU_SHELL(m_menubar.get()), GTK_WIDGET(menu->gtkMenuItem().get()));
     }
 }
 
@@ -147,7 +150,7 @@ void QGtkMenuBar::handleReparent(QWindow *newParentWindow)
 QPlatformMenu *QGtkMenuBar::menuForTag(quintptr tag) const
 {
     for (QGtkMenu *menu : qAsConst(m_items)) {
-        if (menu->tag() == tag) {
+        if (menu && menu->tag() == tag) {
             return menu;
         }
     }
