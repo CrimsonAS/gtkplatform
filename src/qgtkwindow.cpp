@@ -199,8 +199,21 @@ void QGtkWindow::create(Qt::WindowType windowType)
         windowType == Qt::Popup ||
         window()->modality() != Qt::NonModal) {
         const QWindow *transientParent = window()->transientParent();
-        if (!transientParent)
+        if (!transientParent) {
             transientParent = qApp->focusWindow();
+            qWarning() << "Forcing transient parent to focus window " << transientParent << " for window " << window() << " -- but this is likely incorrect, and the window may end up incorrectly positioned.";
+        }
+        if (!transientParent) {
+            QWindowList wl = qApp->topLevelWindows();
+            if (!wl.isEmpty()) {
+                transientParent = wl.first();
+                qWarning() << "Forcing transient parent to first available toplevel " << transientParent << " for window " << window() << " -- this is definitely incorrect, and the window may end up incorrectly positioned.";
+            }
+        }
+        if (!transientParent) {
+            qWarning() << "Showing " << window() << " as a transient window without a transient parent, positioning will almost certainly be incorrect (if it works at all!)";
+        }
+
         if (transientParent && transientParent->handle()) {
             QGtkWindow *transientParentPlatform = static_cast<QGtkWindow*>(transientParent->handle());
             gtk_window_set_transient_for(GTK_WINDOW(m_window.get()), GTK_WINDOW(transientParentPlatform->gtkWindow().get()));
