@@ -55,7 +55,8 @@
 static EGLDisplay createWaylandEGLDisplay(wl_display *display);
 #endif
 #ifdef GDK_WINDOWING_X11
-#include <gdk/gdkx.h>
+# include <gdk/gdkx.h>
+# include <X11/Xlib-xcb.h>
 #endif
 
 #include "CSystrace.h"
@@ -216,6 +217,33 @@ void *QGtkIntegration::nativeResourceForIntegration(const QByteArray &resource)
 
     if (resource == "egldisplay") {
         result = reinterpret_cast<void*>(m_eglDisplay);
+    } else if (resource == "connection") {
+#ifdef GDK_WINDOWING_X11
+    Display *dpy;
+    if (GDK_IS_X11_DISPLAY(m_display)) {
+        dpy = gdk_x11_display_get_xdisplay(m_display);
+    } else {
+        if (!m_xDisplay) {
+            m_xDisplay = XOpenDisplay(nullptr);
+        }
+        dpy = (Display*)m_xDisplay;
+    }
+    xcb_connection_t *conn = XGetXCBConnection(dpy);
+    result = reinterpret_cast<void*>(conn);
+#endif
+    } else if (resource == "display") {
+#ifdef GDK_WINDOWING_X11
+    Display *dpy;
+    if (GDK_IS_X11_DISPLAY(m_display)) {
+        dpy = gdk_x11_display_get_xdisplay(m_display);
+    } else {
+        if (!m_xDisplay) {
+            m_xDisplay = XOpenDisplay(nullptr);
+        }
+        dpy = (Display*)m_xDisplay;
+    }
+    result = reinterpret_cast<void*>(dpy);
+#endif
     } else {
         qWarning() << "Unimplemented request for " << resource;
     }

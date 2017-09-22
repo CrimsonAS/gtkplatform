@@ -38,6 +38,7 @@
 #include <gdk/gdk.h>
 
 typedef void *EGLDisplay;
+typedef void *XDisplay;;
 
 QT_BEGIN_NAMESPACE
 
@@ -89,6 +90,7 @@ private:
     QGtkClipboard *m_clipboard = nullptr;
 
     EGLDisplay m_eglDisplay; // non-null for wayland platforms
+    XDisplay m_xDisplay = nullptr; // used in the native platform interface
 };
 
 QT_END_NAMESPACE

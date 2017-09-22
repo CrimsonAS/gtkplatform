@@ -66,6 +66,8 @@ HEADERS +=  CSystrace.h \
 
 CONFIG += qpa/genericunixfontdatabase
 
+LIBS += -lX11-xcb
+
 CONFIG += link_pkgconfig
 PKGCONFIG_PRIVATE += gdk-3.0 gtk+-3.0 libnotify
 
