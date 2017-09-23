@@ -2,7 +2,7 @@ QT += widgets gui-private
 
 TEMPLATE = app
 TARGET = testheaderbar
-INCLUDEPATH += .
+INCLUDEPATH += ../src
 
 # Input
 SOURCES += main.cpp
