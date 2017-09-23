@@ -91,6 +91,10 @@ bool QGtkWindow::onMotionNotify(GdkEvent *event)
     GdkEventButton *ev = (GdkEventButton*)event;
     qCDebug(lcMouseMotion) << "Moved mouse at " << ev->x << ev->y << ev->x_root << ev->y_root;
 
+    QPoint mousePos(ev->x, ev->y);
+    mousePos = window()->mapToGlobal(mousePos);
+    QCursor::setPos(mousePos);
+
     bool isTabletEvent = false;
     QWindowSystemInterface::handleMouseEvent(
         window(),
