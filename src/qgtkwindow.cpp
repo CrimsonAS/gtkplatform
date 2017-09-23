@@ -594,13 +594,8 @@ WId QGtkWindow::winId() const
     return (WId)m_window.get();
 }
 
-void QGtkWindow::setParent(const QPlatformWindow *window)
+void QGtkWindow::setParent(const QPlatformWindow *)
 {
-    if (!window) {
-        gtk_window_set_transient_for(GTK_WINDOW(m_window.get()), nullptr);
-    } else {
-        gtk_window_set_transient_for(GTK_WINDOW(m_window.get()), GTK_WINDOW(static_cast<const QGtkWindow*>(window)->gtkWindow().get()));
-    }
 }
 
 void QGtkWindow::setWindowTitle(const QString &title)
