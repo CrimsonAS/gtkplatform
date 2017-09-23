@@ -224,6 +224,7 @@ void *QGtkIntegration::nativeResourceForIntegration(const QByteArray &resource)
         static bool xcb_warned = false;
         if (!xcb_warned) {
             qWarning() << "XCB connection requested; this is experimental, and may not work well.";
+            xcb_warned = true;
         }
         Display *dpy;
         if (GDK_IS_X11_DISPLAY(m_display)) {
@@ -239,9 +240,10 @@ void *QGtkIntegration::nativeResourceForIntegration(const QByteArray &resource)
 #endif
     } else if (resource == "display") {
 #ifdef GDK_WINDOWING_X11
-        static bool xcb_warned = false;
-        if (!xcb_warned) {
+        static bool x11_warned = false;
+        if (!x11_warned) {
             qWarning() << "X11 display handle; this is experimental, and may not work well.";
+            x11_warned = true;
         }
         Display *dpy;
         if (GDK_IS_X11_DISPLAY(m_display)) {
