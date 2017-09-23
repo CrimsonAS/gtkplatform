@@ -120,6 +120,9 @@ public:
     QGtkRefPtr<GtkWidget> gtkWindow() const;
 
 private:
+    void maybeForceTransientParent(Qt::WindowType windowType);
+    void reallyForceTransientFor(QWindow *transientParent);
+
     QGtkRefPtr<GtkWidget> m_window;
     QGtkRefPtr<GtkMenuBar> m_menubar;
     QGtkRefPtr<GtkWidget> m_content;

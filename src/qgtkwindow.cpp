@@ -206,30 +206,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
     // Now set a transient parent (for things that ought to have one). This is
     // required otherwise things like positioning windows will not work, as
     // Wayland doesn't have any concept of a global window position.
-    if (windowType == Qt::ToolTip ||
-        windowType == Qt::Popup ||
-        window()->modality() != Qt::NonModal) {
-        const QWindow *transientParent = window()->transientParent();
-        if (!transientParent) {
-            transientParent = qApp->focusWindow();
-            qWarning() << "Forcing transient parent to focus window " << transientParent << " for window " << window() << " -- but this is likely incorrect, and the window may end up incorrectly positioned.";
-        }
-        if (!transientParent) {
-            QWindowList wl = qApp->topLevelWindows();
-            if (!wl.isEmpty()) {
-                transientParent = wl.first();
-                qWarning() << "Forcing transient parent to first available toplevel " << transientParent << " for window " << window() << " -- this is definitely incorrect, and the window may end up incorrectly positioned.";
-            }
-        }
-        if (!transientParent) {
-            qWarning() << "Showing " << window() << " as a transient window without a transient parent, positioning will almost certainly be incorrect (if it works at all!)";
-        }
-
-        if (transientParent && transientParent->handle()) {
-            QGtkWindow *transientParentPlatform = static_cast<QGtkWindow*>(transientParent->handle());
-            gtk_window_set_transient_for(GTK_WINDOW(m_window.get()), GTK_WINDOW(transientParentPlatform->gtkWindow().get()));
-        }
-    }
+    maybeForceTransientParent(windowType);
 
     g_signal_connect(m_window.get(), "map", G_CALLBACK(map_cb), this);
     g_signal_connect(m_window.get(), "unmap", G_CALLBACK(unmap_cb), this);
@@ -305,6 +282,62 @@ QGtkWindow::~QGtkWindow()
     gtk_widget_remove_tick_callback(m_window.get(), m_tick_callback);
     QWindowSystemInterface::unregisterTouchDevice(m_touchDevice);
     gtk_widget_destroy(m_window.get());
+}
+
+void QGtkWindow::maybeForceTransientParent(Qt::WindowType windowType)
+{
+    bool shouldTransient = window()->modality() != Qt::NonModal;
+
+    switch (windowType) {
+    case Qt::Dialog:
+    case Qt::Sheet:
+    case Qt::Tool:
+    case Qt::SplashScreen:
+    case Qt::ToolTip:
+    case Qt::Drawer:
+    case Qt::Popup:
+        shouldTransient = true;
+        break;
+    default:
+        break;
+    }
+
+    if (!shouldTransient) {
+        return;
+    }
+
+    // Hope they specified one first.
+    QWindow *transientParent = window()->transientParent();
+    if (transientParent) {
+        reallyForceTransientFor(transientParent);
+        return;
+    }
+
+    // Try fall back to focus. We must have a top level window, though.
+    if (qApp->focusWindow() && qApp->focusWindow()->type() == Qt::Window) {
+        qWarning() << "Forcing transient parent to focus window " << qApp->focusWindow() << " for window " << window() << " -- this is bad, it ought to have a transientParent set, the window may end up incorrectly positioned";
+        reallyForceTransientFor(qApp->focusWindow());
+        return;
+    }
+
+    // Last ditch effort: try find a top level window.
+    QWindowList wl = qApp->topLevelWindows();
+    for (QWindow *win : wl) {
+        if (win->type() == Qt::Window) {
+            qWarning() << "Forcing transient parent to first available toplevel " << win << " for window " << window() << " -- this is bad, it ought to have a transientParent set, the window may end up incorrectly positioned.";
+            reallyForceTransientFor(win);
+            return;
+        }
+    }
+
+    qWarning() << "Showing " << window() << " as a transient window without a transient parent, positioning will almost certainly be incorrect (if it works at all!)";
+}
+
+void QGtkWindow::reallyForceTransientFor(QWindow *transientParent)
+{
+    transientParent->create(); // force pwin creation
+    QGtkWindow *transientParentPlatform = static_cast<QGtkWindow*>(transientParent->handle());
+    gtk_window_set_transient_for(GTK_WINDOW(m_window.get()), GTK_WINDOW(transientParentPlatform->gtkWindow().get()));
 }
 
 void QGtkWindow::onMap()
