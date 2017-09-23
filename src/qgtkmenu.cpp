@@ -136,14 +136,17 @@ void QGtkMenu::showPopup(const QWindow *parentWindow, const QRect &targetRect, c
     Q_UNUSED(item);
 
     if (m_popup) {
-        qCWarning(lcMenu) << "Trying to showPopup while one is already around";
         dismiss();
     }
 
     Q_EMIT aboutToShow();
 
+    QPoint pos = QPoint(targetRect.left(), targetRect.top() + targetRect.height());
+    if (parentWindow)
+        pos = parentWindow->mapToGlobal(pos);
+
     m_popup = gtkMenu();
-    GdkRectangle gRect { targetRect.x(), targetRect.y(), targetRect.width(), targetRect.height() };
+    GdkRectangle gRect { pos.x(), pos.y(), targetRect.width(), targetRect.height() };
     gtk_menu_popup_at_rect(
         m_popup.get(),
         gtk_widget_get_window(static_cast<QGtkWindow*>(parentWindow->handle())->gtkWindow().get()),
