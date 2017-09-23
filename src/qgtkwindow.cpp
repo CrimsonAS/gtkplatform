@@ -168,33 +168,44 @@ void QGtkWindow::create(Qt::WindowType windowType)
         gtk_widget_destroy(m_window.get());
     }
 
+    // Determine the window type. GTK_WINDOW_TOPLEVEL is usually right.
     GtkWindowType gtkWindowType = GTK_WINDOW_TOPLEVEL;
     if (windowType == Qt::ToolTip ||
         windowType == Qt::Popup) {
         gtkWindowType = GTK_WINDOW_POPUP;
     }
 
+    // Create the window.
     m_window = gtk_window_new(gtkWindowType);
 
-    if (windowType == Qt::ToolTip) {
+    // First things first, set a proper type hint on the window.
+    switch (windowType) {
+    case Qt::Window:
+        gtk_window_set_type_hint(GTK_WINDOW(m_window.get()), GDK_WINDOW_TYPE_HINT_NORMAL);
+        break;
+    case Qt::Dialog:
+    case Qt::Sheet:
+        gtk_window_set_type_hint(GTK_WINDOW(m_window.get()), GDK_WINDOW_TYPE_HINT_DIALOG);
+        break;
+    case Qt::Popup:
+        gtk_window_set_type_hint(GTK_WINDOW(m_window.get()), GDK_WINDOW_TYPE_HINT_MENU);
+        break;
+    case Qt::Tool:
+        gtk_window_set_type_hint(GTK_WINDOW(m_window.get()), GDK_WINDOW_TYPE_HINT_TOOLBAR);
+        break;
+    case Qt::SplashScreen:
+        gtk_window_set_type_hint(GTK_WINDOW(m_window.get()), GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
+        break;
+    case Qt::ToolTip:
         gtk_window_set_type_hint(GTK_WINDOW(m_window.get()), GDK_WINDOW_TYPE_HINT_TOOLTIP);
+        break;
+    default:
+        break;
     }
 
-    g_signal_connect(m_window.get(), "map", G_CALLBACK(map_cb), this);
-    g_signal_connect(m_window.get(), "unmap", G_CALLBACK(unmap_cb), this);
-    g_signal_connect(m_window.get(), "configure-event", G_CALLBACK(configure_cb), this);
-    g_signal_connect(m_window.get(), "enter-notify-event", G_CALLBACK(enter_leave_window_notify_cb), this);
-    g_signal_connect(m_window.get(), "leave-notify-event", G_CALLBACK(enter_leave_window_notify_cb), this);
-
-    // for whatever reason, configure-event is not enough. it doesn't seem to
-    // get emitted for popup type windows. so also connect to size-allocate just
-    // to be sure...
-    g_signal_connect(m_window.get(), "size-allocate", G_CALLBACK(size_allocate_cb), this);
-    g_signal_connect(m_window.get(), "delete-event", G_CALLBACK(delete_cb), this);
-    g_signal_connect(m_window.get(), "window-state-event", G_CALLBACK(window_state_event_cb), this);
-    m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), QGtkWindow::windowTickCallback, this, NULL);
-    setGeometry(window()->geometry());
-
+    // Now set a transient parent (for things that ought to have one). This is
+    // required otherwise things like positioning windows will not work, as
+    // Wayland doesn't have any concept of a global window position.
     if (windowType == Qt::ToolTip ||
         windowType == Qt::Popup ||
         window()->modality() != Qt::NonModal) {
@@ -219,6 +230,21 @@ void QGtkWindow::create(Qt::WindowType windowType)
             gtk_window_set_transient_for(GTK_WINDOW(m_window.get()), GTK_WINDOW(transientParentPlatform->gtkWindow().get()));
         }
     }
+
+    g_signal_connect(m_window.get(), "map", G_CALLBACK(map_cb), this);
+    g_signal_connect(m_window.get(), "unmap", G_CALLBACK(unmap_cb), this);
+    g_signal_connect(m_window.get(), "configure-event", G_CALLBACK(configure_cb), this);
+    g_signal_connect(m_window.get(), "enter-notify-event", G_CALLBACK(enter_leave_window_notify_cb), this);
+    g_signal_connect(m_window.get(), "leave-notify-event", G_CALLBACK(enter_leave_window_notify_cb), this);
+
+    // for whatever reason, configure-event is not enough. it doesn't seem to
+    // get emitted for popup type windows. so also connect to size-allocate just
+    // to be sure...
+    g_signal_connect(m_window.get(), "size-allocate", G_CALLBACK(size_allocate_cb), this);
+    g_signal_connect(m_window.get(), "delete-event", G_CALLBACK(delete_cb), this);
+    g_signal_connect(m_window.get(), "window-state-event", G_CALLBACK(window_state_event_cb), this);
+    m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), QGtkWindow::windowTickCallback, this, NULL);
+    setGeometry(window()->geometry());
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(m_window.get()), vbox);
