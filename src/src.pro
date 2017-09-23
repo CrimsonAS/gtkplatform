@@ -7,7 +7,7 @@ QT += core-private gui-private widgets
 equals(QT_MAJOR_VERSION, 5):lessThan(QT_MINOR_VERSION, 8): {
     QT += platformsupport-private
 } else {
-    QT += fontdatabase_support_private egl_support_private service_support_private
+    QT += fontdatabase_support_private glx_support_private egl_support_private service_support_private theme_support_private
 }
 
 equals(QT_MAJOR_VERSION, 5):greaterThan(QT_MINOR_VERSION, 7): {
