@@ -108,6 +108,8 @@ QGtkIntegration::QGtkIntegration(const QStringList &)
 #endif
 #ifdef GDK_WINDOWING_X11
     if (GDK_IS_X11_DISPLAY(m_display)) {
+        qWarning() << "Application is running under X11. While this may work, it is experimental.";
+        qWarning() << "Run under Wayland for best results.";
     }
     else
 #endif
@@ -219,30 +221,38 @@ void *QGtkIntegration::nativeResourceForIntegration(const QByteArray &resource)
         result = reinterpret_cast<void*>(m_eglDisplay);
     } else if (resource == "connection") {
 #ifdef GDK_WINDOWING_X11
-    Display *dpy;
-    if (GDK_IS_X11_DISPLAY(m_display)) {
-        dpy = gdk_x11_display_get_xdisplay(m_display);
-    } else {
-        if (!m_xDisplay) {
-            m_xDisplay = XOpenDisplay(nullptr);
+        static bool xcb_warned = false;
+        if (!xcb_warned) {
+            qWarning() << "XCB connection requested; this is experimental, and may not work well.";
         }
-        dpy = (Display*)m_xDisplay;
-    }
-    xcb_connection_t *conn = XGetXCBConnection(dpy);
-    result = reinterpret_cast<void*>(conn);
+        Display *dpy;
+        if (GDK_IS_X11_DISPLAY(m_display)) {
+            dpy = gdk_x11_display_get_xdisplay(m_display);
+        } else {
+            if (!m_xDisplay) {
+                m_xDisplay = XOpenDisplay(nullptr);
+            }
+            dpy = (Display*)m_xDisplay;
+        }
+        xcb_connection_t *conn = XGetXCBConnection(dpy);
+        result = reinterpret_cast<void*>(conn);
 #endif
     } else if (resource == "display") {
 #ifdef GDK_WINDOWING_X11
-    Display *dpy;
-    if (GDK_IS_X11_DISPLAY(m_display)) {
-        dpy = gdk_x11_display_get_xdisplay(m_display);
-    } else {
-        if (!m_xDisplay) {
-            m_xDisplay = XOpenDisplay(nullptr);
+        static bool xcb_warned = false;
+        if (!xcb_warned) {
+            qWarning() << "X11 display handle; this is experimental, and may not work well.";
         }
-        dpy = (Display*)m_xDisplay;
-    }
-    result = reinterpret_cast<void*>(dpy);
+        Display *dpy;
+        if (GDK_IS_X11_DISPLAY(m_display)) {
+            dpy = gdk_x11_display_get_xdisplay(m_display);
+        } else {
+            if (!m_xDisplay) {
+                m_xDisplay = XOpenDisplay(nullptr);
+            }
+            dpy = (Display*)m_xDisplay;
+        }
+        result = reinterpret_cast<void*>(dpy);
 #endif
     } else {
         qWarning() << "Unimplemented request for " << resource;
