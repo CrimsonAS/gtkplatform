@@ -65,11 +65,10 @@ QRect QGtkSystemTrayIcon::geometry() const
     return QRect();
 }
 
-void action_cb(NotifyNotification*, gchar *, gpointer)
+void action_cb(NotifyNotification*, gchar *, gpointer gtkSystemTrayIcon)
 {
-    if (qApp->focusWindow()) {
-        qApp->focusWindow()->raise();
-    }
+    QGtkSystemTrayIcon *ico = (QGtkSystemTrayIcon*)gtkSystemTrayIcon;
+    Q_EMIT ico->messageClicked();
 }
 
 void QGtkSystemTrayIcon::showMessage(const QString &title, const QString &msg,
@@ -100,7 +99,7 @@ void QGtkSystemTrayIcon::showMessage(const QString &title, const QString &msg,
     }
 
     notify_notification_set_timeout(n, msecs);
-    notify_notification_add_action(n, "default", "default", action_cb, NULL, NULL);
+    notify_notification_add_action(n, "default", "default", action_cb, this, NULL);
 
     notify_notification_show(n, NULL);
 }
