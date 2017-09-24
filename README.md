@@ -77,11 +77,9 @@ These are all available in Fedora 26 now.
 
 With dependencies installed:
 
-* qmake
-* make
-
-(may need to make as root to ensure the plugin is installed in your Qt plugin
-directory properly).
+* `qmake`
+* `make`
+* `make install` (as root)
 
 Then try launch something after setting QT_QPA_PLATFORM=gtk (or `-platform gtk`
 as a command line option)
