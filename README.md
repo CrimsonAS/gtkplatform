@@ -157,6 +157,30 @@ This project aims to help mitigate those issues.
   **A:** That's fine. Keep using what you are using today, and pretend this
   doesn't exist.
 
+* **Q:** Why is this any better than a theme for Qt which looks like a gtk+ theme?
+
+  **A:** These are separate, but related concerns. If I was just interested in
+  getting the contents of a window to look like the contents of a Qt window,
+  then sure, a theme/style plugin alone would be more than sufficient.
+
+  More importantly than the contents of the window, though, I want consistency
+  on the level of things underneath theming too. For instance, using this, you
+  get transparent Wayland support that looks and works good *right now* without
+  having to fix the numerous desktop-related pieces that are missing from QtWayland.
+  You get consistent high DPI support. You get window resizing that doesn't
+  flicker, unlike that of the xcb platform plugin.
+
+  Longer term, I have even bigger goals than this. I want to be able to use
+  platform-native features like GNotification, GtkHeaderBar, app menus, and more.
+  I'd also like to look into mapping GtkGesture into something that Qt applications
+  can make use of, so pinch/rotate/etc all work in the same way across all desktop
+  applications.
+
+  Most of this isn't realised yet, as for the time being I'm focusing on the
+  "basics", but in the longer term I expect it will come. In the short term,
+  this is about a more consistent, more usable out-of-the-box desktop
+  experience.
+
 * **Q:** Are you changing Qt's API?
 
   **A:** No. Your existing Qt applications of today will work with this with the
