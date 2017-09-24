@@ -116,6 +116,7 @@ bool QGtkWindow::onScrollEvent(GdkEvent *event)
     QPoint angleDelta;
     QPoint pixelDelta;
     Qt::MouseEventSource source = Qt::MouseEventNotSynthesized;
+    Qt::ScrollPhase phase = Qt::ScrollUpdate;
 
     // We cache the modifiers as they should not change after the scroll has
     // started. Doing that means that you'll zoom text in Creator or something,
@@ -123,11 +124,12 @@ bool QGtkWindow::onScrollEvent(GdkEvent *event)
     if (!m_scrollStarted) {
         m_scrollStarted = true;
         m_scrollModifiers = qt_convertToQtKeyboardMods(ev->state);
+        phase = Qt::ScrollBegin;
     }
-
     if (gdk_event_is_scroll_stop_event(event)) {
         m_scrollStarted = false;
         m_scrollModifiers = Qt::NoModifier;
+        phase = Qt::ScrollEnd;
     }
 
     if (ev->direction == GDK_SCROLL_SMOOTH) {
@@ -159,7 +161,7 @@ bool QGtkWindow::onScrollEvent(GdkEvent *event)
         pixelDelta,
         angleDelta,
         m_scrollModifiers,
-        Qt::NoScrollPhase,
+        phase,
         source,
         false /* isInverted */
     );
