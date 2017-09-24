@@ -230,27 +230,38 @@ QMimeData *QGtkClipboardData::mimeData() const
         const_cast<QGtkClipboardData*>(this)->m_systemData = new QMimeData();
     }
 
-    qCDebug(lcClipboard) << "Reading image data";
-    QGtkRefPtr<GdkPixbuf> img = gtk_clipboard_wait_for_image(m_clipboard);
-    if (img.get()) {
-        QImage data = qt_pixbufToImage(img);
-        if (!data.isNull()) {
-            m_systemData->setImageData(QVariant::fromValue(data));
+    GtkSelectionData *gsel = gtk_clipboard_wait_for_contents(m_clipboard, gdk_atom_intern("TARGETS", TRUE));
+    if (gsel) {
+        if (gtk_selection_data_targets_include_image(gsel, FALSE)) {
+            qCDebug(lcClipboard) << "Reading image data";
+            QGtkRefPtr<GdkPixbuf> img = gtk_clipboard_wait_for_image(m_clipboard);
+            if (img.get()) {
+                QImage data = qt_pixbufToImage(img);
+                if (!data.isNull()) {
+                    m_systemData->setImageData(QVariant::fromValue(data));
+                    qCDebug(lcClipboard) << "Read image " << data;
+                }
+            }
         }
-        return m_systemData;
+
+        if (gtk_selection_data_targets_include_text(gsel)) {
+
+            qCDebug(lcClipboard) << "Reading text data";
+            const gchar *rdata = gtk_clipboard_wait_for_text(m_clipboard);
+            if (rdata) {
+                QString data = QString::fromUtf8((rdata), strlen(rdata));
+                g_free((void*)rdata);
+                if (!data.isNull()) {
+                    m_systemData->setText(data);
+                    qCDebug(lcClipboard) << "Read text " << data;
+                }
+            }
+        }
+
+        gtk_selection_data_free(gsel);
     }
 
-    qCDebug(lcClipboard) << "Reading text data";
-    const gchar *rdata = gtk_clipboard_wait_for_text(m_clipboard);
-    if (rdata) {
-        QString data = QString::fromUtf8((rdata), strlen(rdata));
-        g_free((void*)rdata);
-        if (!data.isNull()) {
-            m_systemData->setText(data);
-            qCDebug(lcClipboard) << "Read text " << data;
-        }
-        return m_systemData;
-    }
+
 
     return m_systemData;
 }
