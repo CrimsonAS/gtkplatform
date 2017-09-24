@@ -221,7 +221,6 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_window.get(), "delete-event", G_CALLBACK(delete_cb), this);
     g_signal_connect(m_window.get(), "window-state-event", G_CALLBACK(window_state_event_cb), this);
     m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), QGtkWindow::windowTickCallback, this, NULL);
-    setGeometry(window()->geometry());
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(m_window.get()), vbox);
@@ -265,6 +264,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
     setWindowState(window()->windowState());
     propagateSizeHints();
     setWindowFlags(window()->flags());
+    setGeometry(window()->geometry());
     gtk_window_set_modal(GTK_WINDOW(m_window.get()), window()->modality() != Qt::NonModal);
     if (!window()->title().isEmpty())
         setWindowTitle(window()->title());
@@ -382,8 +382,30 @@ QSurfaceFormat QGtkWindow::format() const
     return window()->requestedFormat();
 }
 
-void QGtkWindow::setGeometry(const QRect &rect)
+void QGtkWindow::setGeometry(const QRect &crect)
 {
+    QRect rect(crect);
+    Qt::WindowType type = static_cast<Qt::WindowType>(int(m_flags & Qt::WindowType_Mask));
+    if (type != Qt::Window) {
+        // Ensure that child windows are positioned somewhere that makes sense.
+        // If we don't do this, then popup-type windows will end up off-screen,
+        // which isn't very useful.
+        //
+        // It'd be quite nice if in Qt 6, we could consider doing away with
+        // absolute positioning of menus and such, and rather, tie them to a
+        // pointer device or a parent widget + offset inside that widget, or
+        // something.
+        const QSize screenSize = window()->screen()->availableGeometry().size() / window()->screen()->devicePixelRatio();
+        int deltaX = rect.x() - rect.width();
+        int deltaY = rect.y() - rect.height();
+        if (rect.y() + rect.height() > screenSize.height()) {
+            rect.moveTop(deltaY);
+        }
+        if (rect.x() + rect.width() > screenSize.width()) {
+            rect.moveLeft(deltaX);
+        }
+    }
+
     if (!window()->isVisible()) {
         // if we aren't visible, we won't get a configure event, so cache the
         // geometry for the time being.
