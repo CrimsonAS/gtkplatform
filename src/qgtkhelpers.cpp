@@ -26,16 +26,26 @@
 
 #include "qgtkhelpers.h"
 
-QGtkRefPtr<GdkPixbuf> qt_imageToPixbuf(const QImage &image)
+QGtkRefPtr<GdkPixbuf> qt_imageToPixbuf(const QImage &cimage)
 {
-    if (image.isNull())
+    if (cimage.isNull())
         return 0;
+    QImage image = cimage;
+    if (image.hasAlphaChannel()) {
+        if (image.format() != QImage::Format_RGBA8888) {
+            image = image.convertToFormat(QImage::Format_RGBA8888);
+        }
+    } else {
+        if (image.format() != QImage::Format_RGB888) {
+            image = image.convertToFormat(QImage::Format_RGB888);
+        }
+    }
     guchar *buf = (guchar*)malloc(image.byteCount());
     memcpy(buf, image.constBits(), image.byteCount());
     QGtkRefPtr<GdkPixbuf> gpb = gdk_pixbuf_new_from_data(
         buf,
         GDK_COLORSPACE_RGB,
-        true, // ### assert image is in RGBA
+        image.hasAlphaChannel(),
         8,
         image.width(),
         image.height(),
