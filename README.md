@@ -41,10 +41,9 @@ What works:
 * Showing, resizing, and hiding windows windows (all hopefully flicker-free)
 * Rendering in those windows
     * Using QPainter
-    * Using QOpenGLContext (on Wayland; X11 is is tracked at
-      [#11](https://github.com/CrimsonAS/gtkplatform/issues/11))
+    * Using QOpenGLContext
     * A mix of OpenGL and software rendering in those windows (QOpenGLWidget, etc)
-    * QtWebEngine (if patched, tracked at [#9](https://github.com/CrimsonAS/gtkplatform/issues/9)
+    * QtWebEngine (if patched, tracked at [#9](https://github.com/CrimsonAS/gtkplatform/issues/9))
 * Simple clipboard interaction (text/image copying)
 * Native gtk+ dialogs (taken from Qt)
 * Native gtk+ menubar
@@ -81,7 +80,7 @@ With dependencies installed:
 * `make`
 * `make install` (as root)
 
-Then try launch something after setting QT_QPA_PLATFORM=gtk (or `-platform gtk`
+Then try launch something after setting `QT_QPA_PLATFORM=gtk` (or `-platform gtk`
 as a command line option)
 
 # history
@@ -130,11 +129,11 @@ This project aims to help mitigate those issues.
 
 * Notifications don't work right.
 
-  Right now, we're using libnotify, because using GtkApplication without using
-  g_application_run dodesn't seem trivial. This means that we're not using the
+  Right now, we're using libnotify, because using `GtkApplication` without using
+  `g_application_run` doesn't seem trivial. This means that we're not using the
   latest and greatest stuff, unfortunately. I'd like to fix this somehow.
 
-* Drag and drop doesn't work (or: Accessibility, your_feature_here)
+* Drag and drop doesn't work (or: Accessibility, your\_feature\_here)
 
   It isn't written yet. There's rather a lot of features like that, actually.
   I'm sure it will improve with time.
