@@ -395,7 +395,7 @@ void QGtkWindow::setGeometry(const QRect &crect)
         // absolute positioning of menus and such, and rather, tie them to a
         // pointer device or a parent widget + offset inside that widget, or
         // something.
-        const QSize screenSize = window()->screen()->availableGeometry().size() / window()->screen()->devicePixelRatio();
+        const QSize screenSize = window()->screen()->availableGeometry().size();
         int deltaX = rect.x() - rect.width();
         int deltaY = rect.y() - rect.height();
         if (rect.y() + rect.height() > screenSize.height()) {
