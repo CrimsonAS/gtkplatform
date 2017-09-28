@@ -42,18 +42,17 @@ QGtkScreen::QGtkScreen(GdkMonitor *monitor)
 
 QRect QGtkScreen::availableGeometry() const
 {
-    qreal dpr = devicePixelRatio();
     GdkRectangle geometry;
     gdk_monitor_get_workarea(m_monitor, &geometry);
-    return QRect(geometry.x / dpr, geometry.y / dpr, geometry.width / dpr, geometry.height / dpr);
+    return QRect(geometry.x, geometry.y, geometry.width, geometry.height);
 }
 
 QRect QGtkScreen::geometry() const
 {
-    qreal dpr = devicePixelRatio();
     GdkRectangle geometry;
     gdk_monitor_get_geometry(m_monitor, &geometry);
-    return QRect(geometry.x / dpr, geometry.y / dpr, geometry.width / dpr, geometry.height / dpr);
+    qCDebug(lcScreen) << QRect(geometry.x, geometry.y, geometry.width, geometry.height);
+    return QRect(geometry.x, geometry.y, geometry.width, geometry.height);
 }
 
 int QGtkScreen::depth() const
