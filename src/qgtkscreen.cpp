@@ -32,6 +32,10 @@
 
 #include <gtk/gtk.h>
 
+#ifdef GDK_WINDOWING_WAYLAND
+#include <gdk/gdkwayland.h>
+#endif
+
 Q_LOGGING_CATEGORY(lcScreen, "qt.qpa.gtk.screen");
 
 QGtkScreen::QGtkScreen(GdkMonitor *monitor)
@@ -42,7 +46,14 @@ QGtkScreen::QGtkScreen(GdkMonitor *monitor)
 
 QRect QGtkScreen::availableGeometry() const
 {
-    qreal dpr = devicePixelRatio();
+    qreal dpr = 1.0;
+    GdkDisplay *dpy = gdk_display_get_default();
+#ifdef GDK_WINDOWING_WAYLAND
+    // Workaround for https://bugzilla.gnome.org/show_bug.cgi?id=788497
+    if (GDK_IS_WAYLAND_DISPLAY(dpy)) {
+        dpr = devicePixelRatio();
+    }
+#endif
     GdkRectangle geometry;
     gdk_monitor_get_workarea(m_monitor, &geometry);
     return QRect(geometry.x / dpr, geometry.y / dpr, geometry.width / dpr, geometry.height / dpr);
@@ -50,7 +61,14 @@ QRect QGtkScreen::availableGeometry() const
 
 QRect QGtkScreen::geometry() const
 {
-    qreal dpr = devicePixelRatio();
+    qreal dpr = 1.0;
+    GdkDisplay *dpy = gdk_display_get_default();
+#ifdef GDK_WINDOWING_WAYLAND
+    // Workaround for https://bugzilla.gnome.org/show_bug.cgi?id=788497
+    if (GDK_IS_WAYLAND_DISPLAY(dpy)) {
+        dpr = devicePixelRatio();
+    }
+#endif
     GdkRectangle geometry;
     gdk_monitor_get_geometry(m_monitor, &geometry);
     return QRect(geometry.x / dpr, geometry.y / dpr, geometry.width / dpr, geometry.height / dpr);
