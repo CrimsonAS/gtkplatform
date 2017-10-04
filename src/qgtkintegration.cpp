@@ -226,14 +226,11 @@ void *QGtkIntegration::nativeResourceForIntegration(const QByteArray &resource)
             qWarning() << "XCB connection requested; this is experimental, and may not work well.";
             xcb_warned = true;
         }
-        Display *dpy;
+        Display *dpy = nullptr;
         if (GDK_IS_X11_DISPLAY(m_display)) {
             dpy = gdk_x11_display_get_xdisplay(m_display);
         } else {
-            if (!m_xDisplay) {
-                m_xDisplay = XOpenDisplay(nullptr);
-            }
-            dpy = (Display*)m_xDisplay;
+            qWarning() << "Can't get XCB connection, GDK_BACKEND is not X11.";
         }
         xcb_connection_t *conn = XGetXCBConnection(dpy);
         result = reinterpret_cast<void*>(conn);
@@ -245,14 +242,11 @@ void *QGtkIntegration::nativeResourceForIntegration(const QByteArray &resource)
             qWarning() << "X11 display handle; this is experimental, and may not work well.";
             x11_warned = true;
         }
-        Display *dpy;
+        Display *dpy = nullptr;
         if (GDK_IS_X11_DISPLAY(m_display)) {
             dpy = gdk_x11_display_get_xdisplay(m_display);
         } else {
-            if (!m_xDisplay) {
-                m_xDisplay = XOpenDisplay(nullptr);
-            }
-            dpy = (Display*)m_xDisplay;
+            qWarning() << "Can't get XCB connection, GDK_BACKEND is not X11.";
         }
         result = reinterpret_cast<void*>(dpy);
 #endif
