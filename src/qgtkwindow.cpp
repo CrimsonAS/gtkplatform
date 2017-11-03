@@ -170,8 +170,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
 
     // Determine the window type. GTK_WINDOW_TOPLEVEL is usually right.
     GtkWindowType gtkWindowType = GTK_WINDOW_TOPLEVEL;
-    if (windowType == Qt::ToolTip ||
-        windowType == Qt::Popup) {
+    if ((windowType & Qt::Popup) == Qt::Popup) {
         gtkWindowType = GTK_WINDOW_POPUP;
     }
 
