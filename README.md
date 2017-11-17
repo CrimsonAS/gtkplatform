@@ -14,8 +14,8 @@ Thanks to:
 * John Brooks (rendering work and OpenGL implementation)
 * Gunnar Sletta (all sorts of assistance and brainstorming)
 
-Needless to say, if you're interested in the work you see here, feel free to
-[get in touch](https://crimson.no).
+If you'd like to have a chat with us, feel free to
+[drop in on Telegram](https://t.me/joinchat/FlwGHw366p2Z9tBZ_f1yTA).
 
 ## what this is
 
