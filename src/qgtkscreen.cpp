@@ -47,8 +47,8 @@ QGtkScreen::QGtkScreen(GdkMonitor *monitor)
 QRect QGtkScreen::availableGeometry() const
 {
     qreal dpr = 1.0;
+#if defined(GDK_WINDOWING_WAYLAND) && !GTK_CHECK_VERSION(3, 22, 25)
     GdkDisplay *dpy = gdk_display_get_default();
-#ifdef GDK_WINDOWING_WAYLAND
     // Workaround for https://bugzilla.gnome.org/show_bug.cgi?id=788497
     if (GDK_IS_WAYLAND_DISPLAY(dpy)) {
         dpr = devicePixelRatio();
@@ -62,8 +62,8 @@ QRect QGtkScreen::availableGeometry() const
 QRect QGtkScreen::geometry() const
 {
     qreal dpr = 1.0;
+#if defined(GDK_WINDOWING_WAYLAND) && !GTK_CHECK_VERSION(3, 22, 25)
     GdkDisplay *dpy = gdk_display_get_default();
-#ifdef GDK_WINDOWING_WAYLAND
     // Workaround for https://bugzilla.gnome.org/show_bug.cgi?id=788497
     if (GDK_IS_WAYLAND_DISPLAY(dpy)) {
         dpr = devicePixelRatio();
