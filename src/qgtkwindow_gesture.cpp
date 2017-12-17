@@ -95,7 +95,11 @@ void QGtkWindow::beginZoom(QPointF &contentPoint, guint32 ts)
     m_initialZoomSet = false;
     if (m_activeNativeGestures++ == 0) {
         qCDebug(lcGesture) << "Started native gesture sequence (due to zoom)";
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+        QWindowSystemInterface::handleGestureEvent(window(), nullptr, ts, Qt::BeginNativeGesture, contentPoint, contentPoint);
+#else
         QWindowSystemInterface::handleGestureEvent(window(), ts, Qt::BeginNativeGesture, contentPoint, contentPoint);
+#endif
     }
 }
 
@@ -111,14 +115,22 @@ void QGtkWindow::zoom(QPointF &contentPoint, double scale, guint32 ts)
     }
     double modScale = (scale - m_initialZoom) / m_initialZoom;
     m_initialZoom = scale;
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+    QWindowSystemInterface::handleGestureEventWithRealValue(window(), nullptr, ts, Qt::ZoomNativeGesture, modScale, contentPoint, contentPoint);
+#else
     QWindowSystemInterface::handleGestureEventWithRealValue(window(), ts, Qt::ZoomNativeGesture, modScale, contentPoint, contentPoint);
+#endif
 }
 
 void QGtkWindow::endZoom(QPointF &contentPoint, guint32 ts)
 {
     if (--m_activeNativeGestures == 0) {
         qCDebug(lcGesture) << "Ended native gesture sequence (due to zoom)";
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+        QWindowSystemInterface::handleGestureEvent(window(), nullptr, ts, Qt::EndNativeGesture, contentPoint, contentPoint);
+#else
         QWindowSystemInterface::handleGestureEvent(window(), ts, Qt::EndNativeGesture, contentPoint, contentPoint);
+#endif
     }
 }
 
@@ -172,7 +184,11 @@ void QGtkWindow::beginRotate(QPointF &contentPoint, guint32 ts)
     m_initialRotateSet = false;
     if (m_activeNativeGestures++ == 0) {
         qCDebug(lcGesture) << "Started native gesture sequence (due to rotate)";
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+        QWindowSystemInterface::handleGestureEvent(window(), nullptr, ts, Qt::BeginNativeGesture, contentPoint, contentPoint);
+#else
         QWindowSystemInterface::handleGestureEvent(window(), ts, Qt::BeginNativeGesture, contentPoint, contentPoint);
+#endif
     }
 }
 
@@ -186,14 +202,22 @@ void QGtkWindow::rotate(QPointF &contentPoint, double angle, double angle_delta,
     }
     double degrees = m_initialRotate - (angle * 180 / M_PI);
     m_initialRotate = angle * 180 / M_PI;
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+    QWindowSystemInterface::handleGestureEventWithRealValue(window(), nullptr, ts, Qt::RotateNativeGesture, degrees, contentPoint, contentPoint);
+#else
     QWindowSystemInterface::handleGestureEventWithRealValue(window(), ts, Qt::RotateNativeGesture, degrees, contentPoint, contentPoint);
+#endif
 }
 
 void QGtkWindow::endRotate(QPointF &contentPoint, guint32 ts)
 {
     if (--m_activeNativeGestures == 0) {
         qCDebug(lcGesture) << "Ended native gesture sequence (due to rotate)";
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+        QWindowSystemInterface::handleGestureEvent(window(), nullptr, ts, Qt::EndNativeGesture, contentPoint, contentPoint);
+#else
         QWindowSystemInterface::handleGestureEvent(window(), ts, Qt::EndNativeGesture, contentPoint, contentPoint);
+#endif
     }
 }
 

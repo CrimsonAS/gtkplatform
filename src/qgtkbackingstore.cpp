@@ -76,10 +76,18 @@ void QGtkBackingStore::endPaint()
 }
 
 void QGtkBackingStore::composeAndFlush(QWindow *window, const QRegion &region, const QPoint &offset,
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+                                       QPlatformTextureList *textures, bool translucentBackground)
+#else
                                        QPlatformTextureList *textures, QOpenGLContext *context, bool translucentBackground)
+#endif
 {
     TRACE_EVENT0("gfx", "QGtkBackingStore::composeAndFlush");
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+    QPlatformBackingStore::composeAndFlush(window, region, offset, textures, translucentBackground);
+#else
     QPlatformBackingStore::composeAndFlush(window, region, offset, textures, context, translucentBackground);
+#endif
 }
 
 void QGtkBackingStore::flush(QWindow *window, const QRegion &region, const QPoint &offset)

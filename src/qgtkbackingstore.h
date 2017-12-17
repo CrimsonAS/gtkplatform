@@ -43,7 +43,11 @@ public:
     void beginPaint(const QRegion &region) override;
     void endPaint() override;
     void composeAndFlush(QWindow *window, const QRegion &region, const QPoint &offset,
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+                         QPlatformTextureList *textures, bool translucentBackground) override;
+#else
                          QPlatformTextureList *textures, QOpenGLContext *context, bool translucentBackground) override;
+#endif
     void flush(QWindow *window, const QRegion &region, const QPoint &offset) override;
     void resize(const QSize &size, const QRegion &staticContents) override;
     QImage toImage() const override;
