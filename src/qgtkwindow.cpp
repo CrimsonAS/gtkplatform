@@ -529,6 +529,7 @@ void QGtkWindow::setWindowState(Qt::WindowStates requestedState)
 #else
 void QGtkWindow::setWindowState(Qt::WindowState requestedState)
 {
+    const Qt::WindowState state = requestedState;
 #endif
 
     if (state == m_state) {
