@@ -49,7 +49,11 @@ void QGtkWindow::onDraw(cairo_t *cr)
 {
     if (m_newGeometry != m_windowGeometry) {
         bool needsExpose = m_newGeometry.size() != m_windowGeometry.size();
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+        QWindowSystemInterface::handleGeometryChange(window(), m_newGeometry);
+#else
         QWindowSystemInterface::handleGeometryChange(window(), m_newGeometry, m_windowGeometry);
+#endif
         m_windowGeometry = m_newGeometry;
 
         if (needsExpose) {

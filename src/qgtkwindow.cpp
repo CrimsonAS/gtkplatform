@@ -522,8 +522,15 @@ void QGtkWindow::setWindowFlags(Qt::WindowFlags flags)
     }
 }
 
-void QGtkWindow::setWindowState(Qt::WindowState state)
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+void QGtkWindow::setWindowState(Qt::WindowStates requestedState)
 {
+    const Qt::WindowState state = QWindowPrivate::effectiveState(requestedState);
+#else
+void QGtkWindow::setWindowState(Qt::WindowState requestedState)
+{
+#endif
+
     if (state == m_state) {
         return;
     }
