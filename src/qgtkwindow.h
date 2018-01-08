@@ -102,6 +102,7 @@ public:
     void onRender();
     void onMap();
     void onUnmap();
+    void onScreenChanged();
     void onConfigure();
     bool onDelete();
     bool onKeyPress(GdkEvent *event);

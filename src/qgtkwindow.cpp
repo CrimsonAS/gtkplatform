@@ -26,6 +26,7 @@
 
 #include "qgtkwindow.h"
 #include "qgtkhelpers.h"
+#include "qgtkscreen.h"
 
 #include <QtGui/qguiapplication.h>
 #include <qpa/qwindowsysteminterface.h>
@@ -37,6 +38,14 @@
 
 Q_LOGGING_CATEGORY(lcWindow, "qt.qpa.gtk.window");
 Q_LOGGING_CATEGORY(lcWindowEvents, "qt.qpa.gtk.window");
+
+static gboolean screen_changed_cb(GtkWidget *, GdkScreen * /*previous_screen*/, gpointer platformWindow)
+{
+    QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
+    qCDebug(lcWindowEvents) << "screen_changed_cb" << pw;
+    pw->onScreenChanged();
+    return FALSE;
+}
 
 static gboolean map_cb(GtkWidget *, gpointer platformWindow)
 {
@@ -212,6 +221,7 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_window.get(), "configure-event", G_CALLBACK(configure_cb), this);
     g_signal_connect(m_window.get(), "enter-notify-event", G_CALLBACK(enter_leave_window_notify_cb), this);
     g_signal_connect(m_window.get(), "leave-notify-event", G_CALLBACK(enter_leave_window_notify_cb), this);
+    g_signal_connect(m_window.get(), "screen-changed", G_CALLBACK(screen_changed_cb), this);
 
     // for whatever reason, configure-event is not enough. it doesn't seem to
     // get emitted for popup type windows. so also connect to size-allocate just
@@ -363,6 +373,21 @@ void QGtkWindow::onMap()
 void QGtkWindow::onUnmap()
 {
     QWindowSystemInterface::handleExposeEvent(window(), QRegion());
+}
+
+void QGtkWindow::onScreenChanged()
+{
+    GdkWindow *gwindow = gtk_widget_get_window(m_window.get());
+    GdkMonitor *m = gdk_display_get_monitor_at_window(gdk_display_get_default(), gwindow);
+    qWarning() << "Screen changed " << this << m;
+
+    const auto screens = static_cast<QGtkScreen*>(screen())->virtualSiblings();
+    for (QPlatformScreen *screen : qAsConst(screens)) {
+        QGtkScreen *gs = static_cast<QGtkScreen*>(screen);
+        if (gs->monitor() == m) {
+            QWindowSystemInterface::handleWindowScreenChanged(window(), gs->QPlatformScreen::screen());
+        }
+    }
 }
 
 void QGtkWindow::onConfigure()
