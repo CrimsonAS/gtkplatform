@@ -39,12 +39,11 @@
 Q_LOGGING_CATEGORY(lcWindow, "qt.qpa.gtk.window");
 Q_LOGGING_CATEGORY(lcWindowEvents, "qt.qpa.gtk.window");
 
-static gboolean screen_changed_cb(GtkWidget *, GdkScreen * /*previous_screen*/, gpointer platformWindow)
+static void scale_factor_changed_cb(GtkWidget *, GParamSpec* /*pspec*/, gpointer platformWindow)
 {
     QGtkWindow *pw = static_cast<QGtkWindow*>(platformWindow);
-    qCDebug(lcWindowEvents) << "screen_changed_cb" << pw;
-    pw->onScreenChanged();
-    return FALSE;
+    qCDebug(lcWindowEvents) << "scale_factor_changed_cb" << pw;
+    pw->onScaleFactorChanged();
 }
 
 static gboolean map_cb(GtkWidget *, gpointer platformWindow)
@@ -218,10 +217,10 @@ void QGtkWindow::create(Qt::WindowType windowType)
 
     g_signal_connect(m_window.get(), "map", G_CALLBACK(map_cb), this);
     g_signal_connect(m_window.get(), "unmap", G_CALLBACK(unmap_cb), this);
+    g_signal_connect(m_window.get(), "notify::scale-factor", G_CALLBACK(scale_factor_changed_cb), this);
     g_signal_connect(m_window.get(), "configure-event", G_CALLBACK(configure_cb), this);
     g_signal_connect(m_window.get(), "enter-notify-event", G_CALLBACK(enter_leave_window_notify_cb), this);
     g_signal_connect(m_window.get(), "leave-notify-event", G_CALLBACK(enter_leave_window_notify_cb), this);
-    g_signal_connect(m_window.get(), "screen-changed", G_CALLBACK(screen_changed_cb), this);
 
     // for whatever reason, configure-event is not enough. it doesn't seem to
     // get emitted for popup type windows. so also connect to size-allocate just
@@ -375,17 +374,24 @@ void QGtkWindow::onUnmap()
     QWindowSystemInterface::handleExposeEvent(window(), QRegion());
 }
 
-void QGtkWindow::onScreenChanged()
+// if the scale factor changes, then change the monitor.
+// ### this is not perfect at all but can we do better?
+void QGtkWindow::onScaleFactorChanged()
 {
     GdkWindow *gwindow = gtk_widget_get_window(m_window.get());
     GdkMonitor *m = gdk_display_get_monitor_at_window(gdk_display_get_default(), gwindow);
-    qWarning() << "Screen changed " << this << m;
+    qWarning() << "Screen changed for" << this << "to" << m << "(gtk)" << screen() << "(qt)";
 
-    const auto screens = static_cast<QGtkScreen*>(screen())->virtualSiblings();
-    for (QPlatformScreen *screen : qAsConst(screens)) {
-        QGtkScreen *gs = static_cast<QGtkScreen*>(screen);
+    const auto screens = qGuiApp->screens();
+    for (QScreen *publicScreen : qAsConst(screens)) {
+        QGtkScreen *gs = static_cast<QGtkScreen*>(publicScreen->handle());
+        qWarning() << "Want" << m << " got " << gs->monitor();
         if (gs->monitor() == m) {
+            qWarning() << "Setting screen to " << gs->QPlatformScreen::screen();
             QWindowSystemInterface::handleWindowScreenChanged(window(), gs->QPlatformScreen::screen());
+            if (window()->isVisible()) {
+                QWindowSystemInterface::handleExposeEvent(window(), QRect(QPoint(), geometry().size()));
+            }
         }
     }
 }
