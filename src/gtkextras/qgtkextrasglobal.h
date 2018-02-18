@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2017 Crimson AS <info@crimson.no>
+** Copyright (C) 2018 Crimson AS <info@crimson.no>
 ** Contact: https://www.crimson.no
 **
 ** GNU Lesser General Public License Usage
@@ -24,44 +24,24 @@
 **
 ****************************************************************************/
 
-#include <QApplication>
-#include <QWidget>
-#include <QWindow>
-#include <QLabel>
-#include <QDebug>
+#ifndef QTGTKEXTRASGLOBAL_H
+#define QTGTKEXTRASGLOBAL_H
 
-#include <QtGtkExtras/QGtkHeaderBar>
+#include <QtCore/qglobal.h>
 
-#include <gtk/gtk.h>
+QT_BEGIN_NAMESPACE
 
-class TestWindow : public QWidget
-{
-public:
-    TestWindow()
-    {
-        QGtkHeaderBar *qhb = new QGtkHeaderBar(this);
-        GtkWidget *hb = qhb->headerBarWidget();
+#ifndef QT_STATIC
+#  if defined(QT_BUILD_GTKEXTRAS_LIB)
+#    define Q_GTKEXTRAS_EXPORT Q_DECL_EXPORT
+#  else
+#    define Q_GTKEXTRAS_EXPORT Q_DECL_IMPORT
+#  endif
+#else
+#  define Q_GTKEXTRAS_EXPORT
+#endif
 
-        gtk_header_bar_set_title(GTK_HEADER_BAR(hb), "A magical Qt test");
-        gtk_header_bar_set_subtitle(GTK_HEADER_BAR(hb), "Featuring a real GtkHeaderBar");
-        gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(hb), TRUE);
+QT_END_NAMESPACE
 
-        GtkWidget *button = gtk_button_new_from_icon_name("open-menu-symbolic", GTK_ICON_SIZE_BUTTON);
-        gtk_header_bar_pack_end(GTK_HEADER_BAR(hb), button);
-    }
-};
+#endif // QTGTKEXTRASGLOBAL_H
 
-int main(int argc, char **argv)
-{
-    QApplication app(argc, argv);
-
-    TestWindow w;
-
-    QLabel l(&w);
-    l.setText("I'm a QLabel");
-
-    w.resize(200, 200);
-    w.show();
-
-    return app.exec();
-}

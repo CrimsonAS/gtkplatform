@@ -1,4 +1,4 @@
-QT += widgets gui-private
+QT += widgets gui-private gtkextras
 
 TEMPLATE = app
 TARGET = testheaderbar
