@@ -31,6 +31,7 @@
 #include <QDebug>
 
 #include <QtGtkExtras/QGtkHeaderBar>
+#include <QtGtkExtras/QGtkRefPtr>
 
 #include <gtk/gtk.h>
 
@@ -46,9 +47,12 @@ public:
         gtk_header_bar_set_subtitle(GTK_HEADER_BAR(hb), "Featuring a real GtkHeaderBar");
         gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(hb), TRUE);
 
-        GtkWidget *button = gtk_button_new_from_icon_name("open-menu-symbolic", GTK_ICON_SIZE_BUTTON);
-        gtk_header_bar_pack_end(GTK_HEADER_BAR(hb), button);
+        openMenuButton = gtk_button_new_from_icon_name("open-menu-symbolic", GTK_ICON_SIZE_BUTTON);
+        gtk_header_bar_pack_end(GTK_HEADER_BAR(hb), openMenuButton.get());
     }
+
+private:
+    QGtkRefPtr<GtkWidget> openMenuButton;
 };
 
 int main(int argc, char **argv)
