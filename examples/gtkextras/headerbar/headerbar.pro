@@ -11,3 +11,6 @@ CONFIG += link_pkgconfig
 PKGCONFIG += gtk+-3.0
 
 CONFIG += no_keywords
+
+target.path = $$[QT_INSTALL_EXAMPLES]/gtkextras/headerbar
+INSTALLS += target

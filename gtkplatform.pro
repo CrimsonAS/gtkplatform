@@ -1,2 +1,1 @@
-TEMPLATE = subdirs
-SUBDIRS = src
+load(qt_parts)
