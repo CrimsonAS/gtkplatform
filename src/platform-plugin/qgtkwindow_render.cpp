@@ -29,6 +29,7 @@
 
 #include <QtCore/qloggingcategory.h>
 #include <QtCore/qthread.h>
+#include <QtCore/qtimer.h>
 #include <QtGui/private/qwindow_p.h>
 
 #include "CSystrace.h"
@@ -122,6 +123,26 @@ void QGtkWindow::onWindowTickCallback()
         m_wantsUpdate = false;
         TRACE_EVENT_ASYNC_END0("gfx", "QGtkWindow::requestUpdate", this);
         QWindowPrivate::get(window())->deliverUpdateRequest();
+    } else {
+        if (m_cancelTickTimer) {
+            return;
+        }
+        qCDebug(lcWindowRender) << "Preparing to remove tick callback" << this;
+        // Stop delivering ticks if update requests end for a long time.
+        m_cancelTickTimer = new QTimer(this);
+        m_cancelTickTimer->setInterval(1000);
+        m_cancelTickTimer->setSingleShot(true);
+        m_cancelTickTimer->start();
+        connect(m_cancelTickTimer, &QTimer::timeout, this, [=]() {
+            if (!m_wantsUpdate) {
+                qCDebug(lcWindowRender) << "Removing tick callback" << this;
+                gtk_widget_remove_tick_callback(m_window.get(), m_tick_callback);
+                m_tick_callback = 0;
+                m_hasTickCallback = false;
+                m_cancelTickTimer->deleteLater();
+                m_cancelTickTimer = nullptr;
+            }
+        });
     }
 }
 
@@ -129,6 +150,16 @@ void QGtkWindow::requestUpdate()
 {
     TRACE_EVENT_ASYNC_BEGIN0("gfx", "QGtkWindow::requestUpdate", this);
     m_wantsUpdate = true;
+    if (!m_hasTickCallback) {
+        qCDebug(lcWindowRender) << "Installing tick callback" << this;
+        m_hasTickCallback = true;
+        m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), QGtkWindow::windowTickCallback, this, NULL);
+    }
+    if (m_cancelTickTimer) {
+        m_cancelTickTimer->deleteLater();
+        m_cancelTickTimer = nullptr;
+        qCDebug(lcWindowRender) << "Cancelling remove of tick callback" << this;
+    }
 }
 
 QGtkCourierObject::QGtkCourierObject(QObject *parent)

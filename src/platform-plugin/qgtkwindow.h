@@ -38,7 +38,7 @@ QT_BEGIN_NAMESPACE
 
 class QTouchDevice;
 
-class QGtkWindow : public QPlatformWindow
+class QGtkWindow : public QObject, public QPlatformWindow
 {
 public:
     QGtkWindow(QWindow *window);
@@ -172,6 +172,8 @@ private:
     double m_initialZoom = 0;
     bool m_initialRotateSet = false;
     double m_initialRotate = 0;
+    bool m_hasTickCallback = false;
+    QTimer *m_cancelTickTimer = nullptr;
 };
 
 class QGtkCourierObject : public QObject

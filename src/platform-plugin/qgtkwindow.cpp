@@ -220,7 +220,6 @@ void QGtkWindow::create(Qt::WindowType windowType)
     g_signal_connect(m_window.get(), "size-allocate", G_CALLBACK(size_allocate_cb), this);
     g_signal_connect(m_window.get(), "delete-event", G_CALLBACK(delete_cb), this);
     g_signal_connect(m_window.get(), "window-state-event", G_CALLBACK(window_state_event_cb), this);
-    m_tick_callback = gtk_widget_add_tick_callback(m_window.get(), QGtkWindow::windowTickCallback, this, NULL);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(m_window.get()), vbox);
