@@ -306,7 +306,7 @@ void *QGtkIntegration::nativeResourceForScreen(const QByteArray &resource, QScre
             qWarning() << "Can't get root X window, GDK_BACKEND is not X11.";
         }
 
-        result = reinterpret_cast<void*>(screen ? screen->root : nullptr);
+        result = reinterpret_cast<void*>(screen ? screen->root : 0);
 #endif
     } else {
         qWarning() << "Unimplemented request for " << resource << " on " << screen;
