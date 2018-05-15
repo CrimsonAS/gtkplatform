@@ -287,6 +287,25 @@ void *QGtkIntegration::nativeResourceForScreen(const QByteArray &resource, QScre
         }
 
         result = reinterpret_cast<void*>(type + 1);
+    } else if (resource == "rootwindow") {
+#ifdef GDK_WINDOWING_X11
+        static bool rootwin_warned = false;
+        if (!rootwin_warned) {
+            qWarning() << "X root window requested; this is experimental, and may not work well.";
+            rootwin_warned = true;
+        }
+        Display *dpy = nullptr;
+        if (GDK_IS_X11_DISPLAY(m_display)) {
+            dpy = gdk_x11_display_get_xdisplay(m_display);
+            xcb_connection_t *conn = XGetXCBConnection(dpy);
+
+            // use the first screen... hopefully this is okay? sigh...
+            xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
+            result = reinterpret_cast<void*>(screen->root);
+        } else {
+            qWarning() << "Can't get root X window, GDK_BACKEND is not X11.";
+        }
+#endif
     } else {
         qWarning() << "Unimplemented request for " << resource << " on " << screen;
     }

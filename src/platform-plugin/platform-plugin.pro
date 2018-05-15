@@ -69,7 +69,7 @@ QT += gtkextras
 
 CONFIG += qpa/genericunixfontdatabase
 
-LIBS += -lX11-xcb
+LIBS += -lX11-xcb -lxcb
 
 CONFIG += link_pkgconfig
 PKGCONFIG_PRIVATE += gdk-3.0 gtk+-3.0 libnotify
