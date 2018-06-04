@@ -10,9 +10,10 @@ as it uses e.g. cocoa on macOS for instance.
 
 Thanks to:
 
-* Robin Burchell (initial idea & heavy lifting)
-* John Brooks (rendering work and OpenGL implementation)
-* Gunnar Sletta (all sorts of assistance and brainstorming)
+* Robin Burchell (@rburchell, initial idea & heavy lifting)
+* John Brooks (@special, rendering work and OpenGL implementation)
+* Gunnar Sletta (@sletta, all sorts of assistance and brainstorming)
+* Donald Carr (@sirspudd, Arch Linux packaging)
 
 If you'd like to have a chat with us, feel free to
 [drop in on Telegram](https://t.me/joinchat/FlwGHw366p2Z9tBZ_f1yTA).
@@ -25,16 +26,13 @@ Linux desktop.
 ## what this is **not**
 
 It's not the most performant way to run applications, and as a result, not well
-suited for the embedded environment.
-
-This is not to say that performance is a non-goal or that performance is _bad_.
-Rather, I say this to emphasize that while I would like to see better
-performance, the first priority for me is having a nice, consistent desktop
-environment that I can use today.
+suited for the embedded environment. This is particularly noticable with QtQuick
+applications, as they make use of OpenGL. This goes through a copy step: the
+scene is drawn offscreen, copied, and uploaded to the gtk+ window, which is
+rather inefficient. Hopefully, gtk+ will grow API to allow this to be done
+better in the future.
 
 ## current state
-
-_use with caution_.
 
 What works:
 
@@ -53,9 +51,7 @@ What works:
     * Keyboard
     * Mouse, including smooth scroll events
 
-What doesn't:
-
-* Basically everything else.
+Not everything does work, though. See the known issues section.
 
 # screenshots
 
@@ -67,12 +63,17 @@ If you'd like to see more, [go take a look at the wiki](https://github.com/Crims
 
 # building
 
-* Qt 5.7.1
-* gtk+ 3.22
+These are the versions I test with.
+
+* Qt 5.10.1
+* gtk+ 3.22.30
 * libnotify 0.7.7
 
-Newer versions used as needed. Older versions, probably not, but let's see.
-These are all available in Fedora 26 now.
+These are all available in Fedora 28, which is where I do testing/development.
+Good support is also available on Arch Linux, using [the package generously
+maintained by @sirspudd](https://aur.archlinux.org/packages/qt-gtk-platform-plugin/).
+
+Other distributions may, or may not work, but I don't have any involvement with them.
 
 With dependencies installed:
 
@@ -133,7 +134,8 @@ This project aims to help mitigate those issues.
   `g_application_run` doesn't seem trivial. This means that we're not using the
   latest and greatest stuff, unfortunately. I'd like to fix this somehow.
 
-* Drag and drop doesn't work (or: Accessibility, your\_feature\_here)
+* Accessibility doesn't work
+* Drag and drop doesn't work
 
   It isn't written yet. There's rather a lot of features like that, actually.
   I'm sure it will improve with time.
@@ -194,51 +196,11 @@ This project aims to help mitigate those issues.
   same. And maybe once I have that, we can focus on improving everything at once
   rather than fighting over who has the better toolkit.
 
-* **Q:** If you prefer gtk+, why don't you just use that?
-
-  **A:** I don't necessarily prefer gtk+, I just happen to regularly use a GNOME
-  desktop. Besides that, I don't want to rewrite every application I use on a day
-  to day basis, nor do I think that is an especially productive use of anybody's time.
-
 * **Q:** Why isn't this part of Qt?
 
   **A:** Firstly, it's easier to develop something that is rapidly changing
   out-of-tree. Secondly, I want this to be usable on my desktop _now_, not
   in 6-12 months time.
-
-* **Q:** Why didn't you provide a gtk+ platform using Qt?
-
-  **A:** Because I consider the gtk+ application experience to be better on my
-  particular desktop. QtWayland is not of very good quality for desktop use: it
-  doesn't support smooth trackpad scrolling, it has bad (more or less unusable)
-  window decorations, it has no real font configuration support, and so on. The
-  xcb experience is better, but still not great. Font choices are often wrong,
-  and there's a lot of black flickering when resizing things, as well as it not
-  being particularly future proof.
-
-  In addition to that, I'm more familiar with Qt's internals, so going this
-  direction was a lot easier for me than the opposite would have been, and I
-  don't think out of tree ports are possible with gtk+.
-
-* **Q:** Aren't you just giving up on Qt on the desktop?
-
-  **A:** I don't think so. For a start, the Linux desktop (where gtk+ is used)
-  is not a huge part of the computer audience of the world right now. This isn't
-  going to make the Mac or macOS ports any worse. Nor does it inherently affect
-  or damage the non-gtk+ Linux desktop world: I don't imagine that KDE desktops
-  will want to make use of this code, for instance, because they have their own
-  window decorations, their own theming and font handling, etc. This code is
-  specifically designed for use in environments like the GNOME desktop.
-
-  That having been said, I have to say that my own *personal* view is that Qt,
-  while a great platform for embedded use and single purpose systems, is not
-  doing especially well for desktop use.
-
-  There's a lot of rough edges on QtWayland on desktop, a separate set of
-  issues on the xcb side, and it seems like this situation has been more or
-  less indefinite (at least, since I started using Linux on a day to day
-  basis in 2008). This is my own attempt at improving that situation. Whether or
-  not it will be successful, I don't know.
 
 * **Q:** There's no system tray icon support
 
@@ -257,7 +219,7 @@ This project aims to help mitigate those issues.
 
   **A:** They probably don't.
 
-  More seriously, I haven't tested them at all yet. There's probably going to
+  More seriously, I haven't tested them much yet. There's probably going to
   be a lot of bugs there. When all that stabilizes, though, it should work the
   same as it does with gtk+ applications.
 
@@ -291,3 +253,6 @@ This project aims to help mitigate those issues.
   would have been a more difficult task.
   The ["adwaita" QStyle plugin](https://github.com/MartinBriza/adwaita-qt) is
   also great in that it helps the contents of windows blend in very well.
+
+  Of course, none of this would be possible without the work of everyone in the
+  greater Linux desktop community, too, particularly the gtk+ and Qt contributors.
