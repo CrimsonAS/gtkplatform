@@ -73,6 +73,9 @@ These are all available in Fedora 28, which is where I do testing/development.
 Good support is also available on Arch Linux, using [the package generously
 maintained by @sirspudd](https://aur.archlinux.org/packages/qt-gtk-platform-plugin/).
 
+Note that on Fedora, you need qt5-qtbase-static and redhat-rpm-config installed
+to build from source.
+
 Other distributions may, or may not work, but I don't have any involvement with them.
 
 With dependencies installed:
