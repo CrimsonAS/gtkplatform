@@ -129,18 +129,51 @@ QGtkIntegration::~QGtkIntegration()
 
 void QGtkIntegration::onMonitorAdded(GdkMonitor *monitor)
 {
-    qDebug() << "Added " << monitor;
-    m_screens.append(new QGtkScreen(monitor));
-    screenAdded(m_screens.at(m_screens.count() - 1));
+    bool isPrimary = gdk_monitor_is_primary(monitor) || m_screens.count() == 0;
+    qDebug() << "Added " << monitor << " isPrimary " << isPrimary;
+    QGtkScreen *screen = new QGtkScreen(monitor);
+    screen->setPrimary(isPrimary);
+    m_screens.append(screen);
+    screenAdded(screen, isPrimary);
+    if (isPrimary) {
+        qDebug() << "Changed primary screen on add";
+        // clear old screens
+        for (int i = 0; i < m_screens.count(); i++) {
+            QGtkScreen *os = m_screens.at(i);
+            screen->setPrimary(os == screen);
+        }
+        setPrimaryScreen(screen);
+    }
 }
 
 void QGtkIntegration::onMonitorRemoved(GdkMonitor *monitor)
 {
     qDebug() << "Removed " << monitor;
     for (int i = 0; i < m_screens.count(); ++i) {
-        if (m_screens.at(i)->monitor() == monitor) {
-            removeScreen(m_screens.at(i)->screen());
+        QGtkScreen *screen = m_screens.at(i);
+        if (screen->monitor() == monitor) {
+            qDebug() << "Removing QGtkScreen " << screen << screen->isPrimary();
+            bool wasPrimary = screen->isPrimary();
+            removeScreen(screen->screen());
             m_screens.removeAt(i);
+
+            if (wasPrimary) {
+                qDebug() << "Changed primary screen on remove";
+                GdkMonitor *primaryScreen = gdk_display_get_primary_monitor(m_display);
+                QGtkScreen *newPrimary = nullptr;
+                for (int i = 0; i < m_screens.count(); ++i) {
+                    QGtkScreen *screen = m_screens.at(i);
+                    screen->setPrimary(false);
+                    if (screen->monitor() == primaryScreen || primaryScreen == nullptr) {
+                        qDebug() << "Changed primary screen to index " << i << " ptr " << screen;
+                        newPrimary = screen;
+                    }
+                }
+
+                setPrimaryScreen(newPrimary);
+                newPrimary->setPrimary(true);
+            }
+
             return;
         }
     }

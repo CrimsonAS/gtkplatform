@@ -53,10 +53,13 @@ public:
     QPlatformCursor *cursor() const override;
 
     GdkMonitor *monitor() const { return m_monitor; }
+    bool isPrimary() const { return m_isPrimary; }
+    void setPrimary(bool p) { m_isPrimary = p; }
 
 public:
     GdkMonitor *m_monitor;
     std::unique_ptr<QGtkCursor> m_cursor;
+    bool m_isPrimary = false;
 };
 
 
