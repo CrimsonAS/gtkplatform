@@ -122,7 +122,11 @@ void QGtkWindow::onWindowTickCallback()
     if (m_wantsUpdate) {
         m_wantsUpdate = false;
         TRACE_EVENT_ASYNC_END0("gfx", "QGtkWindow::requestUpdate", this);
+#if QT_VERSION >= QT_VERSION_CHECK(5,12,0)
+        this->deliverUpdateRequest();
+#else
         QWindowPrivate::get(window())->deliverUpdateRequest();
+#endif
     } else {
         if (m_cancelTickTimer) {
             return;
