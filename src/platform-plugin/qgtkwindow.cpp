@@ -833,3 +833,6 @@ QGtkRefPtr<GtkMenuBar> QGtkWindow::gtkMenuBar() const
     return m_menubar;
 }
 
+QDebug operator<< (QDebug d, const QGtkWindow* window) {
+    return d << static_cast<const QPlatformWindow*>(window);
+}

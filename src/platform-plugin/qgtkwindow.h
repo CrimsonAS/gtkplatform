@@ -187,6 +187,8 @@ public:
     Q_INVOKABLE void queueDraw(QGtkWindow *win);
 };
 
+QDebug operator<< (QDebug d, const QGtkWindow* window);
+
 QT_END_NAMESPACE
 
 #endif // QGTKWINDOW_H
