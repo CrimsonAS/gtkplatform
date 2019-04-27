@@ -29,6 +29,7 @@
 
 #include "qgtkrefptr.h"
 
+#include <QDebug>
 #include <qpa/qplatformwindow.h>
 #include <qpa/qwindowsysteminterface.h>
 
@@ -186,6 +187,12 @@ public:
     QGtkCourierObject(QObject *parent = nullptr);
     Q_INVOKABLE void queueDraw(QGtkWindow *win);
 };
+
+// QGtkWindow is ambiguous with the QObject* and QPlatformSurface* overloads; choose one
+inline QDebug operator<<(QDebug debug, const QGtkWindow *surface)
+{
+    return debug << static_cast<const QPlatformWindow*>(surface);
+}
 
 QT_END_NAMESPACE
 
