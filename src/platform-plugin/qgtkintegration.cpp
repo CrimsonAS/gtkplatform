@@ -134,7 +134,11 @@ void QGtkIntegration::onMonitorAdded(GdkMonitor *monitor)
     QGtkScreen *screen = new QGtkScreen(monitor);
     screen->setPrimary(isPrimary);
     m_screens.append(screen);
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 13, 0))
+    QWindowSystemInterface::handleScreenAdded(screen, isPrimary);
+#else
     screenAdded(screen, isPrimary);
+#endif
     if (isPrimary) {
         qDebug() << "Changed primary screen on add";
         // clear old screens
@@ -142,7 +146,12 @@ void QGtkIntegration::onMonitorAdded(GdkMonitor *monitor)
             QGtkScreen *os = m_screens.at(i);
             screen->setPrimary(os == screen);
         }
+
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 13, 0))
+        QWindowSystemInterface::handlePrimaryScreenChanged(screen);
+#else
         setPrimaryScreen(screen);
+#endif
     }
 }
 
@@ -154,7 +163,11 @@ void QGtkIntegration::onMonitorRemoved(GdkMonitor *monitor)
         if (screen->monitor() == monitor) {
             qDebug() << "Removing QGtkScreen " << screen << screen->isPrimary();
             bool wasPrimary = screen->isPrimary();
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 13, 0))
+            QWindowSystemInterface::handleScreenRemoved(screen);
+#else
             removeScreen(screen->screen());
+#endif
             m_screens.removeAt(i);
 
             if (wasPrimary) {
@@ -170,7 +183,11 @@ void QGtkIntegration::onMonitorRemoved(GdkMonitor *monitor)
                     }
                 }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 13, 0))
+                QWindowSystemInterface::handlePrimaryScreenChanged(newPrimary);
+#else
                 setPrimaryScreen(newPrimary);
+#endif
                 newPrimary->setPrimary(true);
             }
 
