@@ -386,10 +386,14 @@ void QGtkWindow::onConfigure()
 
 bool QGtkWindow::onDelete()
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+    return QWindowSystemInterface::handleCloseEvent<QWindowSystemInterface::SynchronousDelivery>(window());
+#else
     bool accepted = false;
     QWindowSystemInterface::handleCloseEvent(window(), &accepted);
     QWindowSystemInterface::flushWindowSystemEvents();
     return accepted;
+#endif
 }
 
 QSurfaceFormat QGtkWindow::format() const

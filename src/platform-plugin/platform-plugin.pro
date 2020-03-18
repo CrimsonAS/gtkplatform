@@ -1,7 +1,9 @@
 TARGET = qgtk
 
-CONFIG -= release
-CONFIG += debug
+!gtkplatform-release {
+    CONFIG -= release
+    CONFIG += debug
+}
 QT += core-private gui-private widgets
 
 equals(QT_MAJOR_VERSION, 5):lessThan(QT_MINOR_VERSION, 8): {

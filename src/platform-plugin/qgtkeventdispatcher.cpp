@@ -266,7 +266,11 @@ static gboolean postEventSourcePrepare(GSource *s, gint *timeout)
 
     GPostEventSource *source = reinterpret_cast<GPostEventSource *>(s);
     return (!canWait
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+            || (source->serialNumber.loadRelaxed() != source->lastSerialNumber));
+#else
             || (source->serialNumber.load() != source->lastSerialNumber));
+#endif
 }
 
 static gboolean postEventSourceCheck(GSource *source)
@@ -278,7 +282,11 @@ static gboolean postEventSourceDispatch(GSource *s, GSourceFunc, gpointer)
 {
     TRACE_EVENT0("gfx", "QGtkEventDispatcher::postEventSourceDispatch");
     GPostEventSource *source = reinterpret_cast<GPostEventSource *>(s);
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+    source->lastSerialNumber = source->serialNumber.loadRelaxed();
+#else
     source->lastSerialNumber = source->serialNumber.load();
+#endif
     QCoreApplication::sendPostedEvents();
     source->d->runTimersOnceWithNormalPriority();
     return true; // i dunno, george...
@@ -376,7 +384,11 @@ QGtkEventDispatcherPrivate::QGtkEventDispatcherPrivate(GMainContext *context)
     postEventSource = reinterpret_cast<GPostEventSource *>(g_source_new(&postEventSourceFuncs,
                                                                         sizeof(GPostEventSource)));
     g_source_set_priority(&postEventSource->source, QT_BASE_PRIORITY - 1);
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+    postEventSource->serialNumber.storeRelaxed(1);
+#else
     postEventSource->serialNumber.store(1);
+#endif
     postEventSource->d = this;
     g_source_set_can_recurse(&postEventSource->source, true);
     g_source_attach(&postEventSource->source, mainContext);
